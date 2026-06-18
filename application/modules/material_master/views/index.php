@@ -16,7 +16,7 @@ $ENABLE_DELETE  = has_permission('Material_Master.Delete');
 			<div class="row g-2 flex-grow-1">
 				<div class="col-md-3">
 					<select name="level1" id="level1" class="form-control select2">
-						<option value="0">JENIS LOGAM</option>
+						<option value="0">METAL TYPE</option>
 						<?php foreach ($get_level_1 as $key => $value) : ?>
 							<option value="<?= $value['code_lv1']; ?>"><?= strtoupper($value['nama']); ?></option>
 						<?php endforeach; ?>
@@ -65,10 +65,10 @@ $ENABLE_DELETE  = has_permission('Material_Master.Delete');
 				<thead class="table-light">
 					<tr>
 						<th>#</th>
-						<th>Jenis Logam</th>
+						<th>Metal Type</th>
 						<th>Slitted / Mother Coil</th>
 						<th>Boron / Non Boron</th>
-						<th>Nama Material</th>
+						<th>Material Name</th>
 						<th>Status</th>
 						<th width="7%">Action</th>
 					</tr>
@@ -330,8 +330,8 @@ $ENABLE_DELETE  = has_permission('Material_Master.Delete');
 		}
 
 		swal({
-			title: "Anda Yakin?",
-			text: "Data akan diproses!",
+			title: "Are you sure?",
+			text: "Data will be processed!",
 			type: "warning",
 			showCancelButton: true,
 			confirmButtonClass: "btn-info",
@@ -352,9 +352,11 @@ $ENABLE_DELETE  = has_permission('Material_Master.Delete');
 				success: function(res) {
 					if (res.status == '1') {
 						swal({
-							title: "Sukses",
+							title: "Success",
 							text: res.pesan,
-							type: "success"
+							type: "success",
+							timer: 1500,
+							showConfirmButton: false
 						}, function() {
 							window.location.reload(true);
 						})
@@ -406,12 +408,14 @@ $ENABLE_DELETE  = has_permission('Material_Master.Delete');
 					checkbox.prop('checked', newStatus == 1);
 
 					swal({
-						title: "Sukses",
+						title: "Success",
 						text: msg,
-						type: "success"
+						type: "success",
+						timer: 1500,
+						showConfirmButton: false
 					});
 				} else {
-					const msg = response.message || response.pesan || "Gagal update status.";
+					const msg = response.message || response.pesan || "Failed to update status.";
 					checkbox.prop('checked', currentStatus == 1);
 
 					swal({
@@ -441,8 +445,8 @@ $ENABLE_DELETE  = has_permission('Material_Master.Delete');
 		var id = $(this).data('id');
 
 		swal({
-				title: "Anda Yakin?",
-				text: "Data akan di hapus!",
+				title: "Are you sure?",
+				text: "Data will be deleted!",
 				type: "warning",
 				showCancelButton: true,
 				confirmButtonClass: "btn-info",
@@ -461,9 +465,11 @@ $ENABLE_DELETE  = has_permission('Material_Master.Delete');
 					success: function(res) {
 						if (res.status == '1') {
 							swal({
-								title: "Sukses",
+								title: "Success",
 								text: res.pesan,
-								type: "success"
+								type: "success",
+								timer: 1500,
+								showConfirmButton: false
 							}, function() {
 								window.location.reload(true);
 							})

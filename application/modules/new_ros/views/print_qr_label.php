@@ -44,7 +44,7 @@
 <body onload="window.print();">
     <div class="no-print" style="background: #fdfd96; padding: 10px; margin-bottom: 20px;">
         <button onclick="window.print()">Print Now</button>
-        <p><i>Pastikan printer label sudah siap. Tekan Print untuk mencetak semua label yang dipilih.</i></p>
+        <p><i>Make sure the label printer is ready. Press Print to print all selected labels.</i></p>
     </div>
 
     <?php foreach ($results as $row): ?>
@@ -81,15 +81,15 @@
                     <td>: <?= $row['nm_erp'] ?></td>
                 </tr>
                 <tr>
-                    <td><b>Nama Alias</b></td>
+                    <td><b>Alias Name</b></td>
                     <td>: <?= $row['nm_alias'] ?></td>
                 </tr>
                 <tr>
-                    <td><b>No. Coil</b></td>
+                    <td><b>Coil No.</b></td>
                     <td>: <?= $row['no_coil'] ?></td>
                 </tr>
                 <tr>
-                    <td><b>Kode Internal</b></td>
+                    <td><b>Internal Code</b></td>
                     <td>: <?= $row['kode_internal'] ?></td>
                 </tr>
                 <tr>

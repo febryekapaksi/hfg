@@ -16,7 +16,7 @@ $ENABLE_DELETE = has_permission('Purchase_Order.Delete');
 		</div>
 		<div>
 			<button class="btn btn-danger" id="btn-clear-checked-pr" onclick="clear_checked_pr()"><i class="far fa-trash-alt"></i> Clear Checked PR</button>
-			<button class="btn btn-primary" id="btn-proses-do" onclick="proses_do()"><i class="fas fa-sign-in-alt"></i> Proses PO</button>
+			<button class="btn btn-primary" id="btn-proses-do" onclick="proses_do()"><i class="fas fa-sign-in-alt"></i> Process PO</button>
 		</div>
 	</div>
 
@@ -26,8 +26,8 @@ $ENABLE_DELETE = has_permission('Purchase_Order.Delete');
 				<thead>
 					<tr>
 						<th class="text-center">#</th>
-						<th class="text-center">No PR</th>
-						<th class="text-center">Tgl PR</th>
+						<th class="text-center">PR No.</th>
+						<th class="text-center">PR Date</th>
 						<th class="text-center">Requestor</th>
 						<th class="text-center">Status</th>
 						<?php if ($ENABLE_MANAGE) : ?>
@@ -166,7 +166,7 @@ $ENABLE_DELETE = has_permission('Purchase_Order.Delete');
 		<div class="modal-content">
 			<div class="modal-header">
 				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				<h4 class="modal-title" id="myModalLabel"><span class="fa fa-file-pdf-o"></span>&nbsp;Rekap Data Customer</h4>
+				<h4 class="modal-title" id="myModalLabel"><span class="fa fa-file-pdf-o"></span>&nbsp;Customer Data Summary</h4>
 			</div>
 			<div class="modal-body" id="MyModalBody">...</div>
 			<div class="modal-footer">
@@ -182,7 +182,7 @@ $ENABLE_DELETE = has_permission('Purchase_Order.Delete');
 		<div class="modal-content">
 			<div class="modal-header">
 				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				<h4 class="modal-title" id="myModalLabel"><span class="fa fa-users"></span>&nbsp;Data Penawaran</h4>
+				<h4 class="modal-title" id="myModalLabel"><span class="fa fa-users"></span>&nbsp;Quotation Data</h4>
 			</div>
 			<div class="modal-body" id="ModalView">...</div>
 			<div class="modal-footer">

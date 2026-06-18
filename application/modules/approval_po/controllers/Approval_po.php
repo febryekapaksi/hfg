@@ -91,13 +91,13 @@ class Approval_po extends Admin_Controller
       if ($this->db->trans_status() === FALSE) {
         $this->db->trans_rollback();
         $Arr_Data  = array(
-          'pesan'    => 'Save gagal disimpan ...',
+          'pesan'    => 'Save failed.',
           'status'  => 0
         );
       } else {
         $this->db->trans_commit();
         $Arr_Data  = array(
-          'pesan'    => 'Save berhasil disimpan. Thanks ...',
+          'pesan'    => 'Save successful.',
           'status'  => 1
         );
         history("Create material planning  : " . $so_number);

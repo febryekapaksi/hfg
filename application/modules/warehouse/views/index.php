@@ -12,13 +12,13 @@
             <li class="nav-item">
                 <a class="nav-link active" id="tab-produksi-coil-tab"
                     data-bs-toggle="tab" href="#tab-produksi-coil" role="tab">
-                    <i class="fa fa-warehouse"></i> Gudang Produksi
+                    <i class="fa fa-warehouse"></i> Production Warehouse
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" id="tab-slitting-coil-tab"
                     data-bs-toggle="tab" href="#tab-slitting-coil" role="tab">
-                    <i class="fa fa-store"></i> Gudang Slitting
+                    <i class="fa fa-store"></i> Slitting Warehouse
                 </a>
             </li>
             <li class="nav-item">
@@ -44,9 +44,9 @@
                         <thead class="bg-blue">
                             <tr>
                                 <th width="4%">No</th>
-                                <th>Nama Material (Lv.4)</th>
+                                <th>Material Name (Lv.4)</th>
                                 <th class="text-center">No. Coil</th>
-                                <th class="text-center">Kode Internal</th>
+                                <th class="text-center">Internal Code</th>
                                 <th class="text-right">Nett Weight (Kg)</th>
                                 <th class="text-right">Gross Weight (Kg)</th>
                                 <th class="text-right">Length (M)</th>
@@ -70,9 +70,9 @@
                         <thead class="bg-green">
                             <tr>
                                 <th width="4%">No</th>
-                                <th>Nama Material (Lv.4)</th>
+                                <th>Material Name (Lv.4)</th>
                                 <th class="text-center">No. Coil</th>
-                                <th class="text-center">Kode Internal</th>
+                                <th class="text-center">Internal Code</th>
                                 <th class="text-right">Nett Weight (Kg)</th>
                                 <th class="text-right">Gross Weight (Kg)</th>
                                 <th class="text-right">Length (M)</th>
@@ -90,7 +90,7 @@
                 <div class="row mb-3 g-2 align-items-end">
                     <div class="col-md-3">
                         <label class="form-label mb-1 fw-semibold" style="font-size:12px;">
-                            <i class="fa fa-calendar"></i> Per Tanggal
+                            <i class="fa fa-calendar"></i> As of Date
                         </label>
                         <input type="text" id="hc_date_snap" class="form-control form-control-sm"
                             placeholder="dd/mm/yyyy" readonly>
@@ -100,14 +100,14 @@
                             <i class="fa fa-filter"></i> Gudang
                         </label>
                         <select id="hc_gudang" class="form-select form-select-sm">
-                            <option value="">-- Semua Gudang --</option>
-                            <option value="PRO">Gudang Produksi</option>
-                            <option value="SLI">Gudang Slitting</option>
+                            <option value="">-- All Warehouses --</option>
+                            <option value="PRO">Production Warehouse</option>
+                            <option value="SLI">Slitting Warehouse</option>
                         </select>
                     </div>
                     <div class="col-md-3 text-end">
                         <button class="btn btn-primary btn-sm" id="btn-filter-hc">
-                            <i class="fa fa-search"></i> Tampilkan
+                            <i class="fa fa-search"></i> Show
                         </button>
                         <button class="btn btn-secondary btn-sm" id="btn-reset-hc">
                             <i class="fa fa-refresh"></i> Reset
@@ -124,10 +124,10 @@
                         <thead class="table-warning">
                             <tr>
                                 <th width="4%">No</th>
-                                <th>Nama Material (Lv.4)</th>
+                                <th>Material Name (Lv.4)</th>
                                 <th>Gudang</th>
                                 <th class="text-center">No. Coil</th>
-                                <th class="text-center">Kode Internal</th>
+                                <th class="text-center">Internal Code</th>
                                 <th class="text-right">Nett Weight (Kg)</th>
                                 <th class="text-right">Gross Weight (Kg)</th>
                                 <th class="text-right">Length (M)</th>
@@ -138,7 +138,7 @@
                             <tr>
                                 <td colspan="9" class="text-center text-muted py-4">
                                     <i class="fa fa-info-circle"></i>
-                                    Pilih rentang tanggal lalu klik <strong>Tampilkan</strong>
+                                    Select a date then click <strong>Show</strong>
                                 </td>
                             </tr>
                         </tbody>
@@ -208,7 +208,7 @@
             {
                 data: 4,
                 className: 'text-center'
-            }, // Kode Internal
+            }, // Internal Code
             {
                 data: 5,
                 className: 'text-end'
@@ -249,9 +249,9 @@
                 [1, 'asc']
             ],
             language: {
-                processing: '<i class="fa fa-spinner fa-spin fa-fw"></i> Memuat data...',
-                zeroRecords: 'Tidak ada data coil.',
-                emptyTable: 'Tidak ada data.',
+                processing: '<i class="fa fa-spinner fa-spin fa-fw"></i> Loading data...',
+                zeroRecords: 'No coil data available.',
+                emptyTable: 'No data available.',
             }
         });
 
@@ -281,9 +281,9 @@
                             [1, 'asc']
                         ],
                         language: {
-                            processing: '<i class="fa fa-spinner fa-spin fa-fw"></i> Memuat data...',
-                            zeroRecords: 'Tidak ada data coil.',
-                            emptyTable: 'Tidak ada data.',
+                            processing: '<i class="fa fa-spinner fa-spin fa-fw"></i> Loading data...',
+                            zeroRecords: 'No coil data available.',
+                            emptyTable: 'No data available.',
                         }
                     });
                 }
@@ -333,9 +333,9 @@
                     [1, 'desc']
                 ],
                 language: {
-                    processing: '<i class="fa fa-spinner fa-spin fa-fw"></i> Memuat data...',
-                    zeroRecords: 'Tidak ada data untuk tanggal ini.',
-                    emptyTable: 'Tidak ada data.',
+                    processing: '<i class="fa fa-spinner fa-spin fa-fw"></i> Loading data...',
+                    zeroRecords: 'No data available for this date.',
+                    emptyTable: 'No data available.',
                 }
             });
         }
@@ -355,7 +355,7 @@
                 $('#table-history-coil tbody').html(
                     '<tr><td colspan="9" class="text-center text-muted py-4">' +
                     '<i class="fa fa-info-circle"></i> ' +
-                    'Pilih tanggal lalu klik <strong>Tampilkan</strong>' +
+                    'Select a date then click <strong>Show</strong>' +
                     '</td></tr>'
                 );
             }

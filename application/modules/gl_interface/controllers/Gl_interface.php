@@ -91,17 +91,17 @@ class Gl_interface extends Admin_Controller
 
         $id = $this->input->post('id');
         if (empty($id)) {
-            echo json_encode(['status' => 0, 'pesan' => 'ID tidak boleh kosong']);
+            echo json_encode(['status' => 0, 'pesan' => 'ID is required']);
             return;
         }
 
         $header = $this->Gl_interface_model->get_header($id);
         if (empty($header)) {
-            echo json_encode(['status' => 0, 'pesan' => 'Data tidak ditemukan']);
+            echo json_encode(['status' => 0, 'pesan' => 'Data not found']);
             return;
         }
         if ($header['status'] === 'posted') {
-            echo json_encode(['status' => 0, 'pesan' => 'Data sudah pernah diposting']);
+            echo json_encode(['status' => 0, 'pesan' => 'Data has already been posted']);
             return;
         }
 
@@ -117,7 +117,7 @@ class Gl_interface extends Admin_Controller
                 $already = $this->db->get_where(DBACC . '.japh', ['nomor' => $nomor])->num_rows();
             }
             if ($already > 0) {
-                echo json_encode(['status' => 0, 'pesan' => 'Nomor ' . $nomor . ' sudah ada di accounting']);
+                echo json_encode(['status' => 0, 'pesan' => 'Number ' . $nomor . ' already exists in accounting']);
                 return;
             }
         }
@@ -132,20 +132,20 @@ class Gl_interface extends Admin_Controller
                 'status'    => 'error',
                 'error_msg' => $e->getMessage(),
             ], ['id' => $id]);
-            echo json_encode(['status' => 0, 'pesan' => 'Posting gagal: ' . $e->getMessage()]);
+            echo json_encode(['status' => 0, 'pesan' => 'Posting failed: ' . $e->getMessage()]);
             return;
         }
 
         $this->db->trans_complete();
 
         if ($this->db->trans_status() === false) {
-            echo json_encode(['status' => 0, 'pesan' => 'Posting gagal (trans_status false)']);
+            echo json_encode(['status' => 0, 'pesan' => 'Posting failed (trans_status false)']);
             return;
         }
 
         // Ambil nomor yang baru di-generate
         $updated = $this->Gl_interface_model->get_header($id);
-        echo json_encode(['status' => 1, 'pesan' => 'Posting berhasil — Nomor: ' . ($updated['nomor'] ?? '-')]);
+        echo json_encode(['status' => 1, 'pesan' => 'Posting successful — Number: ' . ($updated['nomor'] ?? '-')]);
     }
 
     // ─── BATCH POST ──────────────────────────────────────────────────
@@ -155,7 +155,7 @@ class Gl_interface extends Admin_Controller
 
         $ids = $this->input->post('ids');
         if (empty($ids) || !is_array($ids)) {
-            echo json_encode(['status' => 0, 'pesan' => 'Tidak ada data dipilih']);
+            echo json_encode(['status' => 0, 'pesan' => 'No data selected']);
             return;
         }
 
@@ -181,7 +181,7 @@ class Gl_interface extends Admin_Controller
                 }
                 if ($already > 0) {
                     $failed++;
-                    $errors[] = $nomor . ' sudah ada di accounting';
+                    $errors[] = $nomor . ' already exists in accounting';
                     continue;
                 }
             }
@@ -209,7 +209,7 @@ class Gl_interface extends Admin_Controller
 
         echo json_encode([
             'status' => ($success > 0) ? 1 : 0,
-            'pesan'  => "Berhasil: {$success}, Gagal: {$failed}",
+            'pesan'  => "Success: {$success}, Failed: {$failed}",
             'errors' => $errors,
         ]);
     }
@@ -234,7 +234,7 @@ class Gl_interface extends Admin_Controller
 
         $details = $this->db->get_where('gl_interface_detail', ['id_gl_interface' => $id])->result_array();
         if (empty($details)) {
-            throw new Exception('Detail jurnal kosong');
+            throw new Exception('Journal detail is empty');
         }
 
         // ── Generate nomor jurnal baru saat posting ──
@@ -246,7 +246,7 @@ class Gl_interface extends Admin_Controller
         }
 
         if (empty($nomor)) {
-            throw new Exception('Gagal generate nomor jurnal');
+            throw new Exception('Failed to generate journal number');
         }
 
         // ── Update nomor di gl_interface header ──

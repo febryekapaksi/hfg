@@ -143,7 +143,7 @@
             <?php $no = 1;
             foreach ($detail as $det):
                 $berat = ($det->berat != null) ? $det->berat . ' Kg,' : '';
-                $harga = ($det->harga != null) ? '(Harga Rp. ' . number_format($det->harga) . ')' : '';
+                $harga = ($det->harga != null) ? '(Price Rp. ' . number_format($det->harga) . ')' : '';
             ?>
                 <tr>
                     <td class="text-center"><?= $det->item ?></td>
@@ -155,7 +155,7 @@
             <?php endforeach; ?>
             <?php if (empty($detail)): ?>
                 <tr>
-                    <td colspan="6" class="text-center">Tidak ada data item</td>
+                    <td colspan="6" class="text-center">No item data available</td>
                 </tr>
             <?php endif; ?>
         </tbody>
@@ -175,9 +175,9 @@
         <div style="width: 60%;">
             <table class="no-border">
                 <tr class="text-center">
-                    <td>Dibuat Oleh,</td>
-                    <td>Diperiksa Oleh,</td>
-                    <td>Disetujui Oleh,</td>
+                    <td>Prepared By,</td>
+                    <td>Reviewed By,</td>
+                    <td>Approved By,</td>
                 </tr>
                 <tr>
                     <td class="h40"></td>

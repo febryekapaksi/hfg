@@ -56,32 +56,32 @@ $is_balance = (round($total_debet) === round($total_kredit));
     <!-- BACK BUTTON -->
     <div class="mb-3">
         <a href="<?= base_url('gl_interface') ?>" class="btn btn-outline-secondary btn-sm">
-            <i class="fa fa-arrow-left"></i> Kembali ke Daftar
+            <i class="fa fa-arrow-left"></i> Back to List
         </a>
     </div>
 
     <!-- HEADER INFO -->
     <div class="card shadow-sm mb-3 summary-card">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fa fa-file-text-o me-2"></i> Detail GL Interface — <?= !empty($header['nomor']) ? htmlspecialchars($header['nomor']) : '<span class="text-muted">Nomor belum di-generate</span>' ?></h5>
+            <h5 class="mb-0"><i class="fa fa-file-text-o me-2"></i> GL Interface Detail — <?= !empty($header['nomor']) ? htmlspecialchars($header['nomor']) : '<span class="text-muted">Number not yet generated</span>' ?></h5>
             <span class="badge badge-status badge-<?= $header['status'] ?>"><?= strtoupper($header['status']) ?></span>
         </div>
         <div class="card-body">
             <div class="row">
                 <div class="col-md-3 mb-2">
-                    <span class="info-label">Nomor</span><br>
-                    <?= !empty($header['nomor']) ? htmlspecialchars($header['nomor']) : '<span class="text-warning"><i class="fa fa-clock-o"></i> Akan di-generate saat posting</span>' ?>
+                    <span class="info-label">Number</span><br>
+                    <?= !empty($header['nomor']) ? htmlspecialchars($header['nomor']) : '<span class="text-warning"><i class="fa fa-clock-o"></i> Will be generated upon posting</span>' ?>
                 </div>
                 <div class="col-md-2 mb-2">
-                    <span class="info-label">Tanggal</span><br>
+                    <span class="info-label">Date</span><br>
                     <?= htmlspecialchars($header['tgl']) ?>
                 </div>
                 <div class="col-md-2 mb-2">
-                    <span class="info-label">Jenis</span><br>
+                    <span class="info-label">Type</span><br>
                     <?= htmlspecialchars($header['jenis']) ?>
                 </div>
                 <div class="col-md-2 mb-2">
-                    <span class="info-label">Tipe Transaksi</span><br>
+                    <span class="info-label">Transaction Type</span><br>
                     <?= ucfirst(htmlspecialchars($header['jenis_transaksi'])) ?>
                 </div>
                 <div class="col-md-3 mb-2">
@@ -91,7 +91,7 @@ $is_balance = (round($total_debet) === round($total_kredit));
             </div>
             <div class="row mt-2">
                 <div class="col-md-6 mb-2">
-                    <span class="info-label">Keterangan</span><br>
+                    <span class="info-label">Description</span><br>
                     <?= htmlspecialchars($header['keterangan']) ?>
                 </div>
                 <?php if (!empty($memo['nama_supplier'])): ?>
@@ -116,7 +116,7 @@ $is_balance = (round($total_debet) === round($total_kredit));
 
             <?php if ($header['status'] === 'posted' && !empty($header['posted_at'])): ?>
                 <div class="alert alert-success mt-2 mb-0">
-                    <i class="fa fa-check-circle"></i> Diposting pada: <?= htmlspecialchars($header['posted_at']) ?>
+                    <i class="fa fa-check-circle"></i> Posted on: <?= htmlspecialchars($header['posted_at']) ?>
                 </div>
             <?php endif; ?>
         </div>
@@ -125,7 +125,7 @@ $is_balance = (round($total_debet) === round($total_kredit));
     <!-- DETAIL JURNAL TABLE -->
     <div class="card shadow-sm mb-3">
         <div class="card-header bg-white">
-            <h6 class="mb-0"><i class="fa fa-list me-1"></i> Detail Jurnal</h6>
+            <h6 class="mb-0"><i class="fa fa-list me-1"></i> Journal Detail</h6>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -134,8 +134,8 @@ $is_balance = (round($total_debet) === round($total_kredit));
                         <tr>
                             <th width="40">#</th>
                             <th>COA</th>
-                            <th>Nama COA</th>
-                            <th>Keterangan</th>
+                            <th>COA Name</th>
+                            <th>Description</th>
                             <th>No Reff</th>
                             <th>No Request</th>
                             <th class="text-end">Debet</th>
@@ -165,7 +165,7 @@ $is_balance = (round($total_debet) === round($total_kredit));
                         </tr>
                         <?php if (!$is_balance): ?>
                             <tr class="text-danger">
-                                <td colspan="6" class="text-end fw-bold">SELISIH</td>
+                                <td colspan="6" class="text-end">VARIANCE</td>
                                 <td colspan="2" class="text-end fw-bold"><?= number_format(abs($total_debet - $total_kredit), 0, ',', '.') ?></td>
                             </tr>
                         <?php endif; ?>
@@ -178,13 +178,13 @@ $is_balance = (round($total_debet) === round($total_kredit));
     <!-- ACTION BUTTONS -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <a href="<?= base_url('gl_interface') ?>" class="btn btn-secondary">
-            <i class="fa fa-arrow-left"></i> Kembali
+            <i class="fa fa-arrow-left"></i> Back
         </a>
 
         <?php if ($ENABLE_MANAGE && $is_pending): ?>
             <?php if (!$is_balance): ?>
                 <div class="alert alert-warning mb-0 py-2 px-3">
-                    <i class="fa fa-warning"></i> Debet dan Kredit tidak balance. Tidak bisa diposting.
+                    <i class="fa fa-warning"></i> Debit and Credit are not balanced. Cannot post.
                 </div>
             <?php else: ?>
                 <button type="button" class="btn btn-success btn-lg" id="btnPostAccounting">
@@ -201,18 +201,18 @@ $is_balance = (round($total_debet) === round($total_kredit));
         $('#btnPostAccounting').on('click', function() {
             var btn = $(this);
             Swal.fire({
-                title: 'Post ke Accounting?',
-                html: 'Nomor: <strong><?= htmlspecialchars($header['nomor']) ?></strong><br>Pastikan data jurnal sudah sesuai sebelum diposting.',
+                title: 'Post to Accounting?',
+                html: 'Number: <strong><?= htmlspecialchars($header['nomor']) ?></strong><br>Make sure the journal data is correct before posting.',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#28a745',
-                confirmButtonText: '<i class="fa fa-paper-plane"></i> Ya, Post Sekarang!',
-                cancelButtonText: 'Batal'
+                confirmButtonText: '<i class="fa fa-paper-plane"></i> Yes, Post Now!',
+                cancelButtonText: 'Cancel'
             }).then(function(result) {
                 if (result.isConfirmed) {
-                    btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Memproses...');
+                    btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
                     Swal.fire({
-                        title: 'Memproses...',
+                        title: 'Processing...',
                         allowOutsideClick: false,
                         didOpen: function() {
                             Swal.showLoading();
@@ -225,7 +225,7 @@ $is_balance = (round($total_debet) === round($total_kredit));
                         if (res.status == 1) {
                             Swal.fire({
                                 icon: 'success',
-                                title: 'Berhasil!',
+                                title: 'Success!',
                                 text: res.pesan,
                                 showConfirmButton: true,
                                 confirmButtonText: 'OK'
@@ -235,18 +235,18 @@ $is_balance = (round($total_debet) === round($total_kredit));
                         } else {
                             Swal.fire({
                                 icon: 'error',
-                                title: 'Gagal',
+                                title: 'Failed',
                                 text: res.pesan
                             });
-                            btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i> Post ke Accounting');
+                            btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i> Post to Accounting');
                         }
                     }, 'json').fail(function() {
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: 'Terjadi kesalahan server'
+                            text: 'A server error occurred'
                         });
-                        btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i> Post ke Accounting');
+                        btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i> Post to Accounting');
                     });
                 }
             });

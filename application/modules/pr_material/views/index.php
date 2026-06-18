@@ -15,9 +15,9 @@
                         <th style="width:60px;">#</th>
                         <th>No.PR</th>
                         <th style="min-width: 200px;">Material</th>
-                        <th style="min-width: 200px;">Nama Lain</th>
+                        <th style="min-width: 200px;">Alias Name</th>
                         <th>Qty</th>
-                        <th>Dibutuhkan</th>
+                        <th>Required Date</th>
                         <th>Status</th>
                         <th>Request By</th>
                         <th>Request Date</th>

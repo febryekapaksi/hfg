@@ -52,7 +52,7 @@ $tgl_dibutuhkan = (!empty($header[0]['tgl_dibutuhkan'])) ? date('d F Y', strtoti
 								<td width='20%'>No Request / SO</td>
 								<td width='1%'>:</td>
 								<td width='29%'><?= $header[0]['so_number']; ?></td>
-								<td width='20%'>Tgl Dibutuhkan </td>
+								<td width='20%'>Required Date </td>
 								<td width='1%'>:</td>
 								<td width='29%'>
 									<input type="date" name="tgl_dibutuhkan" id="" class="form-control input-sm" value="<?= $header[0]['tgl_dibutuhkan'] ?>">
@@ -62,7 +62,7 @@ $tgl_dibutuhkan = (!empty($header[0]['tgl_dibutuhkan'])) ? date('d F Y', strtoti
 								<td>No. PR</td>
 								<td>:</td>
 								<td><?= $header[0]['no_pr']; ?></td>
-								<td>Tingkat PR</td>
+								<td>PR Priority</td>
 								<td>:</td>
 								<td>
 									<select name="tingkat_pr" id="" class="form-control input-sm">
@@ -81,8 +81,8 @@ $tgl_dibutuhkan = (!empty($header[0]['tgl_dibutuhkan'])) ? date('d F Y', strtoti
 								<tr>
 									<th class="text-center">Approval By</th>
 									<th class="text-center">Status</th>
-									<th class="text-center">Alasan Reject</th>
-									<th class="text-center">Keterangan</th>
+									<th class="text-center">Rejection Reason</th>
+									<th class="text-center">Remarks</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -109,7 +109,7 @@ $tgl_dibutuhkan = (!empty($header[0]['tgl_dibutuhkan'])) ? date('d F Y', strtoti
 								<tr class='bg-blue'>
 									<th class='text-center th'>#</th>
 									<th class='text-center th'>Material Name</th>
-									<th class='text-center th'>Nama Lain</th>
+									<th class='text-center th'>Alias Name</th>
 									<th class='text-center th'>Min Stock</th>
 									<th class='text-center th'>Max Stock</th>
 									<th class='text-center th'>Min Order</th>
@@ -150,7 +150,7 @@ $tgl_dibutuhkan = (!empty($header[0]['tgl_dibutuhkan'])) ? date('d F Y', strtoti
 								<tr class='bg-blue'>
 									<th class='text-center th'>#</th>
 									<th class='text-center th'>Material Name</th>
-									<th class='text-center th'>Nama Lain</th>
+									<th class='text-center th'>Alias Name</th>
 									<th class='text-center th'>Min Stock</th>
 									<th class='text-center th'>Max Stock</th>
 									<th class='text-center th'>Min Order</th>
@@ -212,7 +212,7 @@ $tgl_dibutuhkan = (!empty($header[0]['tgl_dibutuhkan'])) ? date('d F Y', strtoti
 
 			<div class="form-group row">
 				<div class="text-center">
-					<button type="button" class="btn btn-md btn-secondary" name="back" id="back"><i class="fa fa-reply"></i> Kembali</button>
+					<button type="button" class="btn btn-md btn-secondary" name="back" id="back"><i class="fa fa-reply"></i> Back</button>
 					<button type="button" class="btn btn-md btn-success" name="save" id="save"><i class="fa fa-edit"></i> Update</button>
 				</div>
 			</div>

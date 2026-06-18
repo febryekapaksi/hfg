@@ -543,7 +543,7 @@ class Pr_material extends Admin_Controller
         ", [$so_number])->row();
 
         if (!$header) {
-            show_error('SO tidak ditemukan: ' . htmlspecialchars($so_number), 404);
+            show_error('SO not found: ' . htmlspecialchars($so_number), 404);
             return;
         }
 

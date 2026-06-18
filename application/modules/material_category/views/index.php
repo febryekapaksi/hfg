@@ -20,7 +20,7 @@ $ENABLE_DELETE  = has_permission('Material_Category.Delete');
 				<thead class="table-light">
 					<tr>
 						<th>#</th>
-						<th>Jenis Logam</th>
+						<th>Metal Type</th>
 						<th>Slitted / Mother Coil</th>
 						<th>Status</th>
 						<th>Action</th>
@@ -174,8 +174,8 @@ $ENABLE_DELETE  = has_permission('Material_Category.Delete');
 			}
 
 			swal({
-				title: "Anda Yakin?",
-				text: "Data akan diproses!",
+				title: "Are you sure?",
+				text: "Data will be processed!",
 				type: "warning",
 				showCancelButton: true,
 				confirmButtonClass: "btn-info",
@@ -191,7 +191,7 @@ $ENABLE_DELETE  = has_permission('Material_Category.Delete');
 					success: function(res) {
 						if (res.status == '1') {
 							swal({
-								title: "Sukses",
+								title: "Success",
 								text: res.pesan,
 								type: "success"
 							}, function() {
@@ -208,7 +208,7 @@ $ENABLE_DELETE  = has_permission('Material_Category.Delete');
 					error: function() {
 						swal({
 							title: "Error",
-							text: "Error proccess !",
+							text: "Error processing!",
 							type: "error"
 						});
 					}
@@ -222,8 +222,8 @@ $ENABLE_DELETE  = has_permission('Material_Category.Delete');
 			var id = $(this).data('id');
 
 			swal({
-				title: "Anda Yakin?",
-				text: "Data akan di hapus!",
+				title: "Are you sure?",
+				text: "Data will be deleted!",
 				type: "warning",
 				showCancelButton: true,
 				confirmButtonClass: "btn-info",
@@ -241,7 +241,7 @@ $ENABLE_DELETE  = has_permission('Material_Category.Delete');
 					success: function(res) {
 						if (res.status == '1') {
 							swal({
-								title: "Sukses",
+								title: "Success",
 								text: res.pesan,
 								type: "success"
 							}, function() {
@@ -258,7 +258,7 @@ $ENABLE_DELETE  = has_permission('Material_Category.Delete');
 					error: function() {
 						swal({
 							title: "Error",
-							text: "Error proccess !",
+							text: "Error processing!",
 							type: "error"
 						});
 					}
@@ -294,12 +294,12 @@ $ENABLE_DELETE  = has_permission('Material_Category.Delete');
 						checkbox.prop('checked', newStatus == 1);
 
 						swal({
-							title: "Sukses",
+							title: "Success",
 							text: msg,
 							type: "success"
 						});
 					} else {
-						const msg = response.message || response.pesan || "Gagal update status.";
+						const msg = response.message || response.pesan || "Failed to update status.";
 						checkbox.prop('checked', currentStatus == 1);
 
 						swal({

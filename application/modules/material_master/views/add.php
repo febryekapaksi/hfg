@@ -47,11 +47,11 @@ $status2 = (!empty($listData[0]->status) && $listData[0]->status == '0') ? 'chec
 
 <div class="form-group row mb-3">
 	<div class="col-md-2">
-		<label for="code_lv1">Jenis Logam <span class='text-danger'>*</span></label>
+		<label for="code_lv1">Metal Type <span class='text-danger'>*</span></label>
 	</div>
 	<div class="col-md-10">
 		<select name="code_lv1" id="code_lv1" class="form-control chosen-select" required onchange="generateNama()">
-			<option value="0">Select Jenis Logam</option>
+			<option value="0">Select Metal Type</option>
 			<?php
 			foreach ($listLevel1 as $key => $value) {
 				$selected = ($code_lv1 == $value['code_lv1']) ? 'selected' : '';
@@ -106,7 +106,7 @@ $status2 = (!empty($listData[0]->status) && $listData[0]->status == '0') ? 'chec
 
 <div class="form-group row mb-3">
 	<div class="col-md-2">
-		<label for="nama">Nama Material <span class='text-danger'>*</span></label>
+		<label for="nama">Material Name <span class='text-danger'>*</span></label>
 	</div>
 	<div class="col-md-10">
 		<input type="hidden" class="form-control" id="id" name="id" value="<?= $id; ?>">
@@ -138,7 +138,7 @@ $status2 = (!empty($listData[0]->status) && $listData[0]->status == '0') ? 'chec
 		</select>
 	</div>
 	<div class="col-md-2">
-		<label for="trade_name">Nama Lain</label>
+		<label for="trade_name">Alias Name</label>
 	</div>
 	<div class="col-md-4">
 		<input type="text" class="form-control" id="trade_name" name="trade_name" value="<?= $trade_name; ?>" placeholder="Alias">
@@ -176,10 +176,10 @@ $status2 = (!empty($listData[0]->status) && $listData[0]->status == '0') ? 'chec
 		<input type="text" class="form-control maskThickness" id="thickness" name="thickness" value="<?= $thickness ?>" placeholder="Thickness" onkeyup="generateNama()">
 	</div>
 	<div class="col-md-2">
-		<label>Warna</label>
+		<label>Color</label>
 	</div>
 	<div class="col-md-4">
-		<input type="text" class="form-control" id="warna" name="warna" value="<?= $warna ?>" onkeyup="generateNama()" placeholder="Warna">
+		<input type="text" class="form-control" id="warna" name="warna" value="<?= $warna ?>" onkeyup="generateNama()" placeholder="Color">
 	</div>
 </div>
 
@@ -269,16 +269,16 @@ $status2 = (!empty($listData[0]->status) && $listData[0]->status == '0') ? 'chec
 
 <div class="form-group row mb-3">
 	<div class="col-md-2">
-		<label for="max_stok">Maximum Stok <span class='text-danger'>*</span></label>
+		<label for="max_stok">Maximum Stock <span class='text-danger'>*</span></label>
 	</div>
 	<div class="col-md-4">
-		<input type="text" class="form-control maskM" id="max_stok" name="max_stok" value="<?= $max_stok; ?>" placeholder="Maximum Stok">
+		<input type="text" class="form-control maskM" id="max_stok" name="max_stok" value="<?= $max_stok; ?>" placeholder="Maximum Stock">
 	</div>
 	<div class="col-md-2">
-		<label for="min_stok">Minimum Stok <span class='text-danger'>*</span></label>
+		<label for="min_stok">Minimum Stock <span class='text-danger'>*</span></label>
 	</div>
 	<div class="col-md-4">
-		<input type="text" class="form-control maskM" id="min_stok" name="min_stok" value="<?= $min_stok; ?>" placeholder="Minimum Stok">
+		<input type="text" class="form-control maskM" id="min_stok" name="min_stok" value="<?= $min_stok; ?>" placeholder="Minimum Stock">
 	</div>
 </div>
 
@@ -372,7 +372,7 @@ $status2 = (!empty($listData[0]->status) && $listData[0]->status == '0') ? 'chec
 
 <div class="form-group row mb-3">
 	<div class="col-md-2">
-		<label>Dimensi (L,W,H)</label>
+		<label>Dimension (L,W,H)</label>
 	</div>
 	<div class="col-md-3">
 		<input type="text" class="form-control maskM getCub" id="length" name="length" value="<?= $length; ?>" placeholder="Length">

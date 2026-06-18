@@ -82,13 +82,13 @@ class App_pr_material extends Admin_Controller
             if ($this->db->trans_status() === FALSE) {
                 $this->db->trans_rollback();
                 $Arr_Data  = array(
-                    'pesan'    => 'Save gagal disimpan ...',
+                    'pesan'    => 'Save failed. Please try again later...',
                     'status'  => 0
                 );
             } else {
                 $this->db->trans_commit();
                 $Arr_Data  = array(
-                    'pesan'    => 'Save berhasil disimpan. Thanks ...',
+                    'pesan'    => 'Save successful. Thank you.',
                     'status'  => 1
                 );
                 history("Create material planning  : " . $so_number);

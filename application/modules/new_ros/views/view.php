@@ -56,8 +56,8 @@ $total_fc = $h['cost_bm'] + $h['cost_bm_kite'] + $h['cost_bmt'] + $h['cost_cukai
 
 <div class="card">
     <div class="card-body">
-        <div class="d-flex align-items-center justify-content-between mb-2">            
-        <a href="<?= base_url('new_ros') ?>" class="btn btn-sm btn-secondary"><i class="fas fa-arrow-left"></i> Kembali</a>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <a href="<?= base_url('new_ros') ?>" class="btn btn-sm btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
             <span class="badge rounded-pill <?= $h['status'] == 1 ? 'bg-success' : 'bg-warning' ?>"><?= $h['status'] == 1 ? 'Final' : 'Draft' ?></span>
         </div>
         <hr>
@@ -70,15 +70,41 @@ $total_fc = $h['cost_bm'] + $h['cost_bm_kite'] + $h['cost_bmt'] + $h['cost_cukai
         </div>
 
         <!-- TAHAP 1 -->
-        <div class="section-title pib"><i class="fas fa-file-invoice"></i> Data PIB</div>
+        <div class="section-title pib"><i class="fas fa-file-invoice"></i> PIB Data</div>
+
         <div class="row mb-3">
-            <div class="col-md-4"><strong>Nilai PO (U$):</strong> <?= number_format($h['nilai_po_usd'], 4) ?></div>
-            <div class="col-md-4"><strong>Kurs PIB:</strong> <?= number_format($h['kurs_pib'], 2) ?></div>
-            <div class="col-md-4"><strong>Nilai PO PIB (Rp):</strong> <?= number_format($h['nilai_po_pib_rp'], 2) ?></div>
+            <div class="col-md-3">
+                <strong>No. Submission:</strong><br>
+                <?= $h['no_pengajuan'] ?: '-' ?>
+            </div>
+            <div class="col-md-3">
+                <strong>No. Billing:</strong><br>
+                <?= $h['no_billing'] ?: '-' ?>
+            </div>
+            <div class="col-md-3">
+                <strong>Tgl. Billing:</strong><br>
+                <?= $h['tgl_billing'] ? date('d-m-Y', strtotime($h['tgl_billing'])) : '-' ?>
+            </div>
+            <div class="col-md-3">
+                <strong>Doc PIB:</strong><br>
+                <?php if (!empty($h['file_original_name_pib'])) : ?>
+                    <a href="<?= base_url('uploads/pib_ros/' . $h['file_hash_name_pib']) ?>" target="_blank">
+                        <i class="fas fa-paperclip"></i> <?= $h['file_original_name_pib'] ?>
+                    </a>
+                <?php else : ?>
+                    -
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-4"><strong>PO Value (U$):</strong> <?= number_format($h['nilai_po_usd'], 4) ?></div>
+            <div class="col-md-4"><strong>PIB Exchange Rate:</strong> <?= number_format($h['kurs_pib'], 2) ?></div>
+            <div class="col-md-4"><strong>PO PIB Value (Rp):</strong> <?= number_format($h['nilai_po_pib_rp'], 2) ?></div>
         </div>
         <div class="row mb-3">
-            <div class="col-md-4"><strong>Total KG Kotor PIB:</strong> <?= number_format($h['total_kg_kotor_pib'], 4) ?></div>
-            <div class="col-md-4"><strong>Total KG Bersih PIB:</strong> <?= number_format($h['total_kg_bersih_pib'], 4) ?></div>
+            <div class="col-md-4"><strong>Total Gross KG PIB:</strong> <?= number_format($h['total_kg_kotor_pib'], 4) ?></div>
+            <div class="col-md-4"><strong>Total Net KG PIB:</strong> <?= number_format($h['total_kg_bersih_pib'], 4) ?></div>
         </div>
 
         <h6 class="fw-bold">F&C Estimation</h6>
@@ -98,7 +124,7 @@ $total_fc = $h['cost_bm'] + $h['cost_bm_kite'] + $h['cost_bmt'] + $h['cost_cukai
                         <td class="text-end"><?= number_format($h['cost_bmt'], 0) ?></td>
                     </tr>
                     <tr>
-                        <td>Cukai</td>
+                        <td>Excise Duty</td>
                         <td class="text-end"><?= number_format($h['cost_cukai'], 0) ?></td>
                     </tr>
                     <tr>
@@ -122,36 +148,68 @@ $total_fc = $h['cost_bm'] + $h['cost_bm_kite'] + $h['cost_bmt'] + $h['cost_cukai
         </div>
 
         <!-- TAHAP 2 -->
-        <div class="section-title ls"><i class="fas fa-search-dollar"></i> Biaya LS (Surveyor)</div>
+        <div class="section-title ls"><i class="fas fa-search-dollar"></i> LS Cost (Surveyor)</div>
         <div class="row mb-3">
-            <div class="col-md-3"><strong>Biaya LS:</strong> <?= number_format($h['biaya_ls'], 0) ?></div>
-            <div class="col-md-3"><strong>PPN LS:</strong> <?= number_format($h['ppn_ls'], 0) ?></div>
-            <div class="col-md-3"><strong>PPH LS:</strong> <?= number_format($h['pph_ls'], 0) ?></div>
+            <div class="col-md-3">
+                <strong>No. Invoice LS:</strong><br>
+                <?= $h['no_invoice_ls'] ?: '-' ?>
+            </div>
+            <div class="col-md-3">
+                <strong>LS Cost:</strong><br>
+                <?= number_format($h['biaya_ls'], 0) ?>
+            </div>
+            <div class="col-md-3">
+                <strong>PPN LS:</strong><br>
+                <?= number_format($h['ppn_ls'], 0) ?>
+            </div>
+            <div class="col-md-3">
+                <strong>PPH LS:</strong><br>
+                <?= number_format($h['pph_ls'], 0) ?>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <strong>DPP <small class="text-muted">(LS Cost × 11/12):</small></strong><br>
+                <?= number_format($h['biaya_ls'] * (11 / 12), 0) ?>
+            </div>
+            <div class="col-md-3">
+                <strong>Total Biaya LS <small class="text-muted">(DPP + PPN - PPH):</small></strong><br>
+                <?= number_format(($h['biaya_ls'] * (11 / 12)) + $h['ppn_ls'] - $h['pph_ls'], 0) ?>
+            </div>
         </div>
 
         <!-- TAHAP 3 -->
         <div class="section-title insurance"><i class="fas fa-shield-alt"></i> Insurance</div>
         <div class="row mb-3">
-            <div class="col-md-4"><strong>Nilai Insurance:</strong> <?= number_format($h['insurance'], 0) ?></div>
+            <div class="col-md-3">
+                <strong>No. Insurance:</strong><br>
+                <?= $h['no_insurance'] ?: '-' ?>
+            </div>
+            <div class="col-md-3">
+                <strong>Insurance Value:</strong><br>
+                <?= number_format($h['insurance'], 0) ?>
+            </div>
         </div>
 
         <!-- TAHAP 4 -->
-        <div class="section-title others"><i class="fas fa-coins"></i> Biaya Lain-lain</div>
+        <div class="section-title others"><i class="fas fa-coins"></i> Other Costs</div>
         <?php if (!empty($others)) : ?>
             <div class="row mb-3">
                 <div class="col-md-6">
                     <table class="table table-bordered table-sm">
                         <thead class="table-light">
                             <tr>
-                                <th>No</th>
-                                <th>Keterangan</th>
-                                <th class="text-end">Nilai (Rp)</th>
+                                <th class="text-center">No</th>
+                                <th>No. Ref</th>
+                                <th>Description</th>
+                                <th class="text-end">Amount (Rp)</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($others as $idx => $ot) : ?>
                                 <tr>
                                     <td class="text-center"><?= $idx + 1 ?></td>
+                                    <td><?= $ot['no_others'] ?: '-' ?></td>
                                     <td><?= $ot['keterangan'] ?></td>
                                     <td class="text-end"><?= number_format($ot['nilai'], 0) ?></td>
                                 </tr>
@@ -159,7 +217,7 @@ $total_fc = $h['cost_bm'] + $h['cost_bm_kite'] + $h['cost_bmt'] + $h['cost_cukai
                         </tbody>
                         <tfoot>
                             <tr class="table-secondary">
-                                <td colspan="2" class="text-end fw-bold">Total</td>
+                                <td colspan="3" class="text-end fw-bold">Total</td>
                                 <td class="text-end fw-bold"><?= number_format($total_others_val, 0) ?></td>
                             </tr>
                         </tfoot>
@@ -167,18 +225,18 @@ $total_fc = $h['cost_bm'] + $h['cost_bm_kite'] + $h['cost_bmt'] + $h['cost_cukai
                 </div>
             </div>
         <?php else : ?>
-            <p class="text-muted">Tidak ada biaya lain-lain.</p>
+            <p class="text-muted">No other costs.</p>
         <?php endif; ?>
 
         <!-- DATA PO -->
-        <div class="section-title data-po"><i class="fas fa-calculator"></i> Data PO & Kalkulasi Nilai Inventory</div>
+        <div class="section-title data-po"><i class="fas fa-calculator"></i> PO Data & Inventory Value Calculation</div>
         <div class="table-responsive">
             <table class="table table-bordered table-sm table-view">
                 <thead class="table-light">
                     <tr>
                         <th class="text-center">No</th>
-                        <th class="text-center">Nama di PO</th>
-                        <th class="text-center">Nama PO (Alias)</th>
+                        <th class="text-center">PO Name</th>
+                        <th class="text-center">PO Name (Alias)</th>
                         <th class="text-center">Kg Unit</th>
                         <th class="text-center">Unit Price (U$)</th>
                         <th class="text-center">Total Value (U$)</th>
@@ -188,8 +246,8 @@ $total_fc = $h['cost_bm'] + $h['cost_bm_kite'] + $h['cost_bmt'] + $h['cost_cukai
                         <th class="text-center">Prorate LS</th>
                         <th class="text-center">Forwarding Cost</th>
                         <th class="text-center">Pro Rate Insurance</th>
-                        <th class="text-center">Pro Rate Biaya Lain</th>
-                        <th class="text-center">Total Nilai Inventory</th>
+                        <th class="text-center">Pro Rate Other Costs</th>
+                        <th class="text-center">Total Inventory Value</th>
                         <th class="text-center">Cost Book</th>
                     </tr>
                 </thead>
@@ -268,17 +326,17 @@ $total_fc = $h['cost_bm'] + $h['cost_bm_kite'] + $h['cost_bmt'] + $h['cost_cukai
         ?>
         <?php if ($has_coil) : ?>
             <div class="section-title" style="border-left-color:#17a2b8;">
-                <i class="fas fa-file-excel"></i> Data Coil (Packing List)
+                <i class="fas fa-file-excel"></i> Coil Data (Packing List)
             </div>
             <div class="table-responsive">
                 <table class="table table-bordered table-sm table-view">
                     <thead class="table-light">
                         <tr>
                             <th class="text-center" width="4%">No</th>
-                            <th class="text-center">Nama Asli</th>
-                            <th class="text-center">Nama Alias</th>
-                            <th class="text-center">No. Coil</th>
-                            <th class="text-center">Kode Internal</th>
+                            <th class="text-center">Original Name</th>
+                            <th class="text-center">Alias Name</th>
+                            <th class="text-center">Coil No.</th>
+                            <th class="text-center">Internal Code</th>
                             <th class="text-center">N.W. (Kg)</th>
                             <th class="text-center">G.W. (Kg)</th>
                             <th class="text-center">Length (M)</th>
@@ -326,7 +384,7 @@ $total_fc = $h['cost_bm'] + $h['cost_bm_kite'] + $h['cost_bmt'] + $h['cost_cukai
     </div>
 
     <div class="card-footer text-end">
-        <a href="<?= base_url('new_ros') ?>" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Kembali</a>
+        <a href="<?= base_url('new_ros') ?>" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
         <?php if ($h['status'] == 0) : ?>
             <a href="<?= base_url('new_ros/edit/' . $h['id']) ?>" class="btn btn-warning"><i class="fas fa-edit"></i> Edit</a>
         <?php endif; ?>

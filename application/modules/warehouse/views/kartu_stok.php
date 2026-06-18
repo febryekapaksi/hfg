@@ -13,11 +13,11 @@
                 <thead class="bg-blue">
                     <tr>
                         <th rowspan='2'>#</th>
-                        <th rowspan='2'>Tgl Transaksi</th>
-                        <th rowspan='2'>No.Transaksi</th>
-                        <th rowspan='2'>Jenis Transaksi</th>
-                        <th rowspan='2'>Id Produk</th>
-                        <th rowspan='2' style="min-width: 200px;">Produk</th>
+                        <th rowspan='2'>Transaction Date</th>
+                        <th rowspan='2'>Transaction No.</th>
+                        <th rowspan='2'>Transaction Type</th>
+                        <th rowspan='2'>Product ID</th>
+                        <th rowspan='2' style="min-width: 200px;">Product</th>
                         <th colspan='3' class="text-center">AWAL</th>
                         <th colspan='2' class="text-center">TRANSAKSI</th>
                         <th colspan='3' class="text-center">AKHIR</th>

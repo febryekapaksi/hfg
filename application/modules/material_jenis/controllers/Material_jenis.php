@@ -148,11 +148,11 @@ class Material_jenis extends Admin_Controller
 
     // Tentukan pesan dan status berdasarkan hasil operasi
     if ($this->db->trans_status() === FALSE) {
-      $keterangan = "GAGAL, ubah status Jenis: $id";
+      $keterangan = "FAILED, change status Jenis: $id";
       $status = 0;
     } else {
-      $status_text = ($new_status == 1) ? 'Aktif' : 'Non-Aktif';
-      $keterangan = "SUKSES, ubah status Jenis ID: $id menjadi $status_text";
+      $status_text = ($new_status == 1) ? 'Active' : 'Inactive';
+      $keterangan = "SUCCESS, change status Jenis ID: $id to $status_text";
       $status = 1;
     }
 

@@ -111,7 +111,7 @@ class Incoming extends Admin_Controller
 
                 $btn_submit = '<button class="btn btn-sm btn-success btn-submit-draft" 
                                 data-id="' . $row['id'] . '" style="width:100px">
-                                <i class="fa fa-paper-plane"></i> Ajukan
+                                <i class="fa fa-paper-plane"></i> Submit
                            </button>';
 
                 $coil_ids = $this->db->query(
@@ -310,8 +310,8 @@ class Incoming extends Admin_Controller
                 <i class="fa fa-edit"></i> Edit
             </a>';
 
-            $btn_submit = '<button class="btn btn-sm btn-success btn-submit-draft" data-id="' . $row['id'] . '" title="Ajukan Draft" style="width:100px">
-                <i class="fa fa-paper-plane"></i> Ajukan
+            $btn_submit = '<button class="btn btn-sm btn-success btn-submit-draft" data-id="' . $row['id'] . '" title="Submit Draft" style="width:100px">
+                <i class="fa fa-paper-plane"></i> Submit
             </button>';
 
             $coil_ids = $this->db->query(
@@ -374,7 +374,7 @@ class Incoming extends Admin_Controller
         ])->row();
 
         if (empty($ros_header)) {
-            echo json_encode(['status' => 0, 'pesan' => 'Data tidak ditemukan atau sudah diajukan!']);
+            echo json_encode(['status' => 0, 'pesan' => 'Data not found or already submitted!']);
             return;
         }
 
@@ -386,7 +386,7 @@ class Incoming extends Admin_Controller
         ", [$no_ros])->num_rows();
 
         if ($coils_no_gudang > 0) {
-            echo json_encode(['status' => 0, 'pesan' => 'Masih ada coil yang belum dipilih gudang tujuannya! Silakan edit terlebih dahulu.']);
+            echo json_encode(['status' => 0, 'pesan' => 'Some coils have not been assigned a destination warehouse! Please edit first.']);
             return;
         }
 
@@ -397,7 +397,7 @@ class Incoming extends Admin_Controller
             'revision_note'   => null, // Clear revision note
         ], ['id' => $no_ros]);
 
-        echo json_encode(['status' => 1, 'pesan' => 'Draft berhasil diajukan ke Finalize Incoming!']);
+        echo json_encode(['status' => 1, 'pesan' => 'Draft submitted to Finalize Incoming successfully.']);
     }
 
     // DATA TABLE — Tab DRAFT
@@ -714,7 +714,7 @@ class Incoming extends Admin_Controller
         $details     = json_decode($detail_json, true);
 
         if (empty($details)) {
-            echo json_encode(['status' => 0, 'pesan' => 'Data coil tidak ditemukan!']);
+            echo json_encode(['status' => 0, 'pesan' => 'Coil data not found!']);
             return;
         }
 
@@ -762,7 +762,7 @@ class Incoming extends Admin_Controller
 
         if ($this->db->trans_status() === FALSE) {
             $this->db->trans_rollback();
-            echo json_encode(['status' => 0, 'pesan' => 'Gagal menyimpan draft!']);
+            echo json_encode(['status' => 0, 'pesan' => 'Failed to save draft!']);
             return;
         }
 
@@ -789,7 +789,7 @@ class Incoming extends Admin_Controller
 
         echo json_encode([
             'status'       => 1,
-            'pesan'        => 'Draft berhasil disimpan!',
+            'pesan'        => 'Draft saved successfully!',
             'no_ros'       => $no_ros,
             'print_url'    => base_url('incoming/print_qr/' . ($coil_ids->ids ?? '')),
             'print_pl_url' => base_url('incoming/print_pl_by_gudang/' . $no_ros),
@@ -1103,7 +1103,7 @@ class Incoming extends Admin_Controller
         ])->row();
 
         if (empty($ros_header)) {
-            echo json_encode(['status' => 0, 'pesan' => 'Data draft tidak ditemukan!']);
+            echo json_encode(['status' => 0, 'pesan' => 'Draft data not found!']);
             return;
         }
 
@@ -1145,7 +1145,7 @@ class Incoming extends Admin_Controller
 
         foreach ($coils as $c) {
             if (empty($c['id_gudang_ke'])) {
-                echo json_encode(['status' => 0, 'pesan' => 'Masih ada coil belum dipilih gudang!']);
+                echo json_encode(['status' => 0, 'pesan' => 'Some coils have not been assigned a warehouse!']);
                 return;
             }
         }
@@ -1341,7 +1341,7 @@ class Incoming extends Admin_Controller
         if ($this->db->trans_status() === FALSE) {
             $this->db->trans_rollback();
             ob_clean();
-            echo json_encode(['status' => 0, 'pesan' => 'Gagal proses finalize!']);
+            echo json_encode(['status' => 0, 'pesan' => 'Failed to process finalize!']);
             return;
         }
         $this->db->trans_commit();
@@ -1367,9 +1367,9 @@ class Incoming extends Admin_Controller
         ob_clean();
         header('Content-Type: application/json');
         if ($jurnal_error) {
-            echo json_encode(['status' => 2, 'pesan' => 'Finalize berhasil, namun GL Interface gagal: ' . $jurnal_error]);
+            echo json_encode(['status' => 2, 'pesan' => 'Finalize successful, but GL Interface failed: ' . $jurnal_error]);
         } else {
-            echo json_encode(['status' => 1, 'pesan' => 'Finalize berhasil! Stok dan Jurnal telah diproses.']);
+            echo json_encode(['status' => 1, 'pesan' => 'Finalize successful! Stock and journal have been processed.']);
         }
         exit;
     }
@@ -1383,7 +1383,7 @@ class Incoming extends Admin_Controller
         $coa_map   = ['produksi' => '1105-01-01', 'slitting' => '1105-01-02', 'intransit' => '1105-01-03'];
         $coa_check = $this->_validate_and_get_coa_names($coa_map);
         if (!$coa_check['valid']) {
-            throw new Exception('COA tidak ditemukan: ' . implode(', ', $coa_check['not_found']));
+            throw new Exception('COA not found: ' . implode(', ', $coa_check['not_found']));
         }
         $coa_names = $coa_check['names'];
 
@@ -1909,7 +1909,7 @@ class Incoming extends Admin_Controller
             ")->result_array();
 
         if (empty($data_coil)) {
-            die("Data tidak ditemukan.");
+            die("Data not found.");
         }
 
         $data = ['results' => $data_coil];
@@ -2147,7 +2147,7 @@ class Incoming extends Admin_Controller
 
         if ($this->db->trans_status() === FALSE) {
             $this->db->trans_rollback();
-            echo json_encode(['status' => 0, 'pesan' => 'Gagal simpan data transaksi!']);
+            echo json_encode(['status' => 0, 'pesan' => 'Failed to save transaction data!']);
             return;
         }
         $this->db->trans_commit();
@@ -2174,9 +2174,9 @@ class Incoming extends Admin_Controller
         }
 
         if ($jurnal_error) {
-            echo json_encode(['status' => 2, 'pesan' => 'Data transaksi berhasil disimpan, namun jurnal akuntansi gagal. Silakan repost via menu GL Interface.']);
+            echo json_encode(['status' => 2, 'pesan' => 'Transaction data saved successfully, but accounting journal failed. Please repost via GL Interface menu.']);
         } else {
-            echo json_encode(['status' => 1, 'pesan' => 'Sukses! Stok, Hutang, dan Jurnal telah diproses.']);
+            echo json_encode(['status' => 1, 'pesan' => 'Success! Stock, payables, and journal have been processed.']);
         }
     }
 
@@ -2485,7 +2485,7 @@ class Incoming extends Admin_Controller
         $gl = $this->db->get_where('gl_interface', ['nomor' => $nomor_jv, 'status' => 'pending'])->row();
         if (empty($gl)) {
             return $this->output->set_content_type('application/json')
-                ->set_output(json_encode(['status' => 0, 'pesan' => 'Data tidak ditemukan atau sudah diposting']));
+                ->set_output(json_encode(['status' => 0, 'pesan' => 'Data not found or already posted']));
         }
 
         $this->db->trans_start();
@@ -2494,11 +2494,11 @@ class Incoming extends Admin_Controller
 
         if ($this->db->trans_status() === false) {
             return $this->output->set_content_type('application/json')
-                ->set_output(json_encode(['status' => 0, 'pesan' => 'Posting ulang gagal']));
+                ->set_output(json_encode(['status' => 0, 'pesan' => 'Repost failed']));
         }
 
         return $this->output->set_content_type('application/json')
-            ->set_output(json_encode(['status' => 1, 'pesan' => 'Posting ulang berhasil untuk JV ' . $nomor_jv]));
+            ->set_output(json_encode(['status' => 1, 'pesan' => 'Repost successful for JV ' . $nomor_jv]));
     }
 
     // UPLOAD FILE
@@ -2546,7 +2546,7 @@ class Incoming extends Admin_Controller
         )->row();
 
         if (empty($cabang)) {
-            throw new Exception('Data cabang tidak ditemukan untuk generate nomor JV!');
+            throw new Exception('Branch data not found for generating JV number!');
         }
 
         $nomor_urut = (int) $cabang->nomorJC + 1;
@@ -2747,7 +2747,7 @@ class Incoming extends Admin_Controller
         ", [$no_ros])->row_array();
 
         if (empty($header)) {
-            echo json_encode(['status' => 0, 'pesan' => 'Data ROS tidak ditemukan!']);
+            echo json_encode(['status' => 0, 'pesan' => 'ROS data not found!']);
             return;
         }
 

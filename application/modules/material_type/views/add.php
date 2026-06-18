@@ -11,7 +11,7 @@ $nama = (!empty($listData[0]->nama)) ? $listData[0]->nama : '';
 
 <div class="form-group row">
 	<div class="col-md-3">
-		<label for="nama">Jenis Logam <span class='text-danger'>*</span></label>
+		<label for="nama">Metal Type <span class='text-danger'>*</span></label>
 	</div>
 	<div class="col-md-9">
 		<input type="hidden" class="form-control" id="id" name="id" value='<?= $id; ?>'>

@@ -122,9 +122,7 @@ class Pr_material_model extends BF_Model
         if ($like) {
             $this->db->group_start();
             $this->db->like('a.nama', $like);
-            $this->db->or_like('a.code', $like);
-            $this->db->or_like('a.code_lv4', $like);
-            $this->db->or_like('REPLACE(a.code_lv4,".","")', str_replace('.', '', $like), 'both', false);
+            $this->db->or_like('a.trade_name', $like);
             $this->db->group_end();
         }
 
@@ -316,8 +314,7 @@ class Pr_material_model extends BF_Model
         if ($getCheckY > 0 && $getCheckN > 0) {
             $warna = "orange";
             $sts = "Approved Partial";
-        }
-        elseif ($getCheckN <= 0) {
+        } elseif ($getCheckN <= 0) {
             $warna = "green";
             $sts = "Approved";
         }

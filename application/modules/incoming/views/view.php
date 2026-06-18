@@ -11,7 +11,7 @@ if ($tanda != 'request') { ?>
                 <td class="text-left"><?= $no_surat; ?></td>
             </tr>
             <tr>
-                <td class="text-left"><b>Tanggal Penerimaan</b></td>
+                <td class="text-left"><b>Receipt Date</b></td>
                 <td class="text-left">:</td>
                 <td class="text-left"><?= $tanggal; ?></td>
             </tr>
@@ -48,8 +48,8 @@ if ($tanda != 'request') { ?>
             </tr>
             <tr>
                 <th class="text-center" style="background-color: #69c79d !important;">No. Coil</th>
-                <th class="text-center" style="background-color: #69c79d !important;">Berat Kotor</th>
-                <th class="text-center" style="background-color: #69c79d !important;">Berat Bersih</th>
+                <th class="text-center" style="background-color: #69c79d !important;">Gross Weight</th>
+                <th class="text-center" style="background-color: #69c79d !important;">Net Weight</th>
                 <th class="text-center" style="background-color: #69c79d !important;">Length</th>
                 <th class="text-center" style="background-color: #f3b44e !important;" hidden>OK</th>
                 <th class="text-center" style="background-color: #f3b44e !important;" hidden>REJECT</th>
@@ -94,7 +94,7 @@ if ($tanda != 'request') { ?>
                     $no++;
                 }
             } else {
-                echo "<tr><td colspan='9' align='center'>Data tidak ditemukan</td></tr>";
+                echo "<tr><td colspan='9' align='center'>Data not found</td></tr>";
             }
             ?>
         </tbody>

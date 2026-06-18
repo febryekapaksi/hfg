@@ -13,11 +13,11 @@ $nama     = (!empty($listData[0]->nama)) ? $listData[0]->nama : '';
 
 <div class="form-group row mb-3">
 	<div class="col-md-3">
-		<label for="code_lv1">Jenis Logam <span class='text-danger'>*</span></label>
+		<label for="code_lv1">Metal Type <span class='text-danger'>*</span></label>
 	</div>
 	<div class="col-md-9">
 		<select name="code_lv1" id="code_lv1" class="form-control chosen-select" required>
-			<option value="0">Select Jenis Logam</option>
+			<option value="0">Select Metal Type</option>
 			<?php
 			foreach ($listLevel1 as $key => $value) {
 				$selected = ($code_lv1 == $value['code_lv1']) ? 'selected' : '';
@@ -53,11 +53,11 @@ $nama     = (!empty($listData[0]->nama)) ? $listData[0]->nama : '';
 
 <div class="form-group row mb-3">
 	<div class="col-md-3">
-		<label for="nama">Material Jenis <span class='text-danger'>*</span></label>
+		<label for="nama">Material Sub-type <span class='text-danger'>*</span></label>
 	</div>
 	<div class="col-md-9">
 		<input type="hidden" class="form-control" id="id" name="id" value="<?= $id; ?>">
 		<input type="hidden" class="form-control" id="code" name="code" value="<?= $code; ?>">
-		<input type="text" class="form-control" id="nama" name="nama" required placeholder="Material Jenis" value="<?= $nama; ?>">
+		<input type="text" class="form-control" id="nama" name="nama" required placeholder="Material Sub-type" value="<?= $nama; ?>">
 	</div>
 </div>

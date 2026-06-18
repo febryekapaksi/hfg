@@ -340,7 +340,7 @@
                                 <td><?= htmlspecialchars($nm_supplier) ?></td>
                             </tr>
                             <tr>
-                                <td>Gudang</td>
+                                <td>Warehouse</td>
                                 <td>:</td>
                                 <td>
                                     <span class="badge-gudang">
@@ -360,14 +360,14 @@
                     <thead>
                         <tr>
                             <th style="width:24px;">No.</th>
-                            <th style="width:200px;">Nama Barang</th>
-                            <th style="width:200px;">Nama Lain</th>
-                            <th style="width:36px;">Satuan</th>
+                            <th style="width:200px;">Item Name</th>
+                            <th style="width:200px;">Alias / Other Name</th>
+                            <th style="width:36px;">Unit</th>
                             <th style="width:80px;">Length</th>
-                            <th style="width:100px;">No. Coil</th>
-                            <th style="width:100px;">Kode Internal</th>
-                            <th style="width:100px;">Berat Kotor (kg)</th>
-                            <th style="width:100px;">Berat Bersih (kg)</th>
+                            <th style="width:100px;">Coil No.</th>
+                            <th style="width:100px;">Internal Code</th>
+                            <th style="width:100px;">Gross Weight (kg)</th>
+                            <th style="width:100px;">Net Weight (kg)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -391,7 +391,7 @@
                         <?php else: ?>
                             <tr>
                                 <td colspan="9" class="text-center" style="color:#999; padding:20px;">
-                                    Tidak ada data coil.
+                                    No coil data.
                                 </td>
                             </tr>
                         <?php endif; ?>
@@ -407,15 +407,15 @@
 
                 <!-- ── Footer ── -->
                 <div class="print-footer">
-                    <span>Dicetak pada: <?= date('d-M-Y H:i') ?></span>
+                    <span>Printed On: <?= date('d-M-Y H:i') ?></span>
                     <div style="display:flex; gap:60px;">
                         <div class="sign-block">
                             <div class="sign-line"></div>
-                            Disiapkan oleh
+                            Prepared by
                         </div>
                         <div class="sign-block">
                             <div class="sign-line"></div>
-                            Diterima oleh
+                            Received by
                         </div>
                     </div>
                 </div>
@@ -426,7 +426,7 @@
 
     <?php else: ?>
         <div style="text-align:center; padding:60px; color:#999;">
-            Tidak ada data coil yang sudah di-assign ke gudang untuk ROS <b><?= htmlspecialchars($no_ros) ?></b>.
+            There is no coil data that has been assigned to the warehouse for ROS <b><?= htmlspecialchars($no_ros) ?></b>.
         </div>
     <?php endif; ?>
 

@@ -139,7 +139,7 @@ $ENABLE_DELETE = has_permission('Purchase_Order.Delete');
 		<div class="modal-content">
 			<div class="modal-header">
 				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				<h4 class="modal-title" id="myModalLabel"><span class="fa fa-file-pdf-o"></span> Rekap Data Customer</h4>
+				<h4 class="modal-title" id="myModalLabel"><span class="fa fa-file-pdf-o"></span> Customer Data Summary</h4>
 			</div>
 			<div class="modal-body" id="MyModalBody">...</div>
 			<div class="modal-footer">
@@ -199,19 +199,19 @@ $ENABLE_DELETE = has_permission('Purchase_Order.Delete');
 			var no_surat = $(this).data('no_surat');
 			swal({
 					title: "Close PO?",
-					text: "Masukkan alasan untuk close " + no_surat + ":",
+					text: "Enter reason to close " + no_surat + ":",
 					type: "input",
 					showCancelButton: true,
 					closeOnConfirm: false,
 					animation: "slide-from-top",
-					inputPlaceholder: "Tulis alasan di sini...",
+					inputPlaceholder: "Write reason here...",
 					showLoaderOnConfirm: true 
 				},
 				function(inputValue) {
 					if (inputValue === false) return false;
 
 					if (inputValue === "") {
-						swal.showInputError("Alasan closing PO wajib diisi!");
+						swal.showInputError("Close PO reason is required!");
 						return false;
 					}
 

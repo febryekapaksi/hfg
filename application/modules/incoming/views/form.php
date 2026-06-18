@@ -61,13 +61,13 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                 <!-- Kolom Kanan -->
                 <div class="col-md-6">
                     <div class="form-group row mb-2">
-                        <div class="col-md-4"><label class="col-form-label fw-bold">Tgl. Penerimaan</label></div>
+                        <div class="col-md-4"><label class="col-form-label fw-bold">Receipt Date</label></div>
                         <div class="col-md-8">
                             <p class="form-control-plaintext"><?= htmlspecialchars($tanggal ?? '-') ?></p>
                         </div>
                     </div>
                     <div class="form-group row mb-2">
-                        <div class="col-md-4"><label class="col-form-label fw-bold">Dokumen</label></div>
+                        <div class="col-md-4"><label class="col-form-label fw-bold">Document</label></div>
                         <div class="col-md-8">
                             <?php if (!empty($file_incoming_material)): ?>
                                 <div class="d-flex flex-column gap-1 pt-2">
@@ -80,7 +80,7 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                                     endforeach; ?>
                                 </div>
                             <?php else: ?>
-                                <p class="form-control-plaintext text-muted">Tidak ada dokumen.</p>
+                                <p class="form-control-plaintext text-muted">No documents available.</p>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -100,13 +100,13 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                             <th class="text-center" rowspan="2" style="vertical-align:middle;" width="8%">Qty PO</th>
                             <th class="text-center" colspan="4" style="background-color:#69c79d !important;">Data ROS (Packing List)</th>
                             <th class="text-center" rowspan="2" style="vertical-align:middle; background-color:#f3b44e !important;" width="8%">Status QC</th>
-                            <th class="text-center" rowspan="2" style="vertical-align:middle; background-color:#c8e6c9 !important;" width="10%">Gudang Tujuan</th>
+                            <th class="text-center" rowspan="2" style="vertical-align:middle; background-color:#c8e6c9 !important;" width="10%">Destination Warehouse</th>
                         </tr>
                         <tr>
                             <th class="text-center" style="background-color:#69c79d !important;">No. Coil</th>
-                            <th class="text-center" style="background-color:#69c79d !important;">Berat Kotor</th>
-                            <th class="text-center" style="background-color:#69c79d !important;">Berat Bersih</th>
-                            <th class="text-center" style="background-color:#69c79d !important;">Panjang</th>
+                            <th class="text-center" style="background-color:#69c79d !important;">Gross Weight</th>
+                            <th class="text-center" style="background-color:#69c79d !important;">Net Weight</th>
+                            <th class="text-center" style="background-color:#69c79d !important;">Length</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -149,17 +149,17 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                             endforeach;
                         else: ?>
                             <tr>
-                                <td colspan="10" class="text-center">Data tidak ditemukan.</td>
+                                <td colspan="10" class="text-center">Data not found.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Tombol Kembali -->
+            <!-- Tombol Back -->
             <div class="text-center mt-3">
                 <a href="<?= base_url('incoming') ?>" class="btn btn-secondary">
-                    <i class="fa fa-arrow-left"></i> Kembali
+                    <i class="fa fa-arrow-left"></i> Back
                 </a>
             </div>
 
@@ -226,10 +226,10 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                         <!-- Kolom Kanan -->
                         <div class="col-md-6">
                             <div class="form-group row mb-3">
-                                <div class="col-md-4"><label class="col-form-label">Tgl. Incoming</label></div>
+                                <div class="col-md-4"><label class="col-form-label">Incoming Date</label></div>
                                 <div class="col-md-8">
                                     <input type="text" name="tanggal" id="tgl-incoming" class="form-control"
-                                        value="<?= htmlspecialchars($tgl_default) ?>" placeholder="Pilih tanggal" autocomplete="off" readonly>
+                                        value="<?= htmlspecialchars($tgl_default) ?>" placeholder="Select date" autocomplete="off" readonly>
                                 </div>
                             </div>
                             <div class="form-group row mb-3">
@@ -247,11 +247,11 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                                                 <a href="<?= base_url($existing_hash) ?>" target="_blank" class="small">
                                                     <?= htmlspecialchars($existing_original) ?>
                                                 </a>
-                                                <span class="badge bg-secondary">Tersimpan</span>
+                                                <span class="badge bg-secondary">Saved</span>
                                             </div>
                                             <small class="text-warning">
                                                 <i class="fa fa-info-circle"></i>
-                                                Upload file baru untuk <b>mengganti</b> file lama.
+                                                Upload a new file to <b>replace</b> the existing file.
                                             </small>
                                         <?php endif; ?>
 
@@ -260,7 +260,7 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                                                 class="d-none" accept=".pdf,.jpg,.jpeg,.png" multiple>
                                             <button type="button" class="btn btn-outline-warning" id="btnPickFile">
                                                 <i class="ti ti-upload me-1"></i>
-                                                <?= !empty($existing_original) ? 'Ganti File' : 'Choose File' ?>
+                                                <?= !empty($existing_original) ? 'Replace File' : 'Choose File' ?>
                                             </button>
                                             <span class="text-muted" id="docFileName">No file chosen</span>
                                             <button type="button" class="btn btn-light border" id="btnClearFile" style="display:none;">
@@ -282,7 +282,7 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                     <!-- Gudang Check All & Search -->
                     <div class="row mb-3 align-items-center">
                         <div class="col-md-6">
-                            <label class="fw-bold me-2">Assign Semua ke Gudang:</label>
+                            <label class="fw-bold me-2">Assign All to Warehouse:</label>
                             <?php foreach ($list_gudang as $idx => $gd): ?>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input check-all-gudang" type="checkbox"
@@ -299,7 +299,7 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fa fa-search"></i></span>
                                 <input type="text" class="form-control" id="search-coil-table"
-                                    placeholder="Cari material / no coil...">
+                                    placeholder="Search material / coil no...">
                             </div>
                         </div>
                     </div>
@@ -313,8 +313,8 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                                     <th rowspan="2" class="text-center" style="vertical-align:middle;" width="18%">Material</th>
                                     <th rowspan="2" class="text-center" style="vertical-align:middle;" width="8%">Qty Order</th>
                                     <th rowspan="2" class="text-center" style="vertical-align:middle;" width="5%">Uom</th>
-                                    <th rowspan="2" class="text-center" style="vertical-align:middle;" width="8%">Qty Belum Kirim</th>
-                                    <th colspan="4" class="text-center" style="background-color:#d2d6de !important; color:#000;">Dari Data ROS (Packing List)</th>
+                                    <th rowspan="2" class="text-center" style="vertical-align:middle;" width="8%">Qty Not Shipped</th>
+                                    <th colspan="4" class="text-center" style="background-color:#d2d6de !important; color:#000;">From ROS Data (Packing List)</th>
                                     <?php foreach ($list_gudang as $gd): ?>
                                         <th rowspan="2" class="text-center" style="vertical-align:middle; background-color:#c8e6c9 !important; color:#000;" width="10%">
                                             <?= htmlspecialchars($gd['nm_gudang']) ?><br><small>(<?= htmlspecialchars($gd['kd_gudang']) ?>)</small>
@@ -323,15 +323,15 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                                 </tr>
                                 <tr>
                                     <th class="text-center" style="background-color:#d2d6de !important; color:#000;">No. Coil</th>
-                                    <th class="text-center" style="background-color:#d2d6de !important; color:#000;">Berat Kotor</th>
-                                    <th class="text-center" style="background-color:#d2d6de !important; color:#000;">Berat Bersih</th>
-                                    <th class="text-center" style="background-color:#d2d6de !important; color:#000;">Panjang</th>
+                                    <th class="text-center" style="background-color:#d2d6de !important; color:#000;">Gross Weight</th>
+                                    <th class="text-center" style="background-color:#d2d6de !important; color:#000;">Net Weight</th>
+                                    <th class="text-center" style="background-color:#d2d6de !important; color:#000;">Length</th>
                                 </tr>
                             </thead>
                             <tbody id="list-item-coil">
                                 <tr>
                                     <td colspan="<?= 9 + count($list_gudang) ?>" class="text-center">
-                                        <i class="fa fa-spinner fa-spin"></i> Memuat data coil...
+                                        <i class="fa fa-spinner fa-spin"></i> Loading coil data...
                                     </td>
                                 </tr>
                             </tbody>
@@ -341,17 +341,17 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                     <!-- Tombol Aksi -->
                     <div class="text-center mt-3 d-flex gap-2 justify-content-center">
                         <a href="<?= base_url('incoming') ?>" class="btn btn-secondary">
-                            <i class="fa fa-arrow-left"></i> Kembali
+                            <i class="fa fa-arrow-left"></i> Back
                         </a>
 
                         <button type="button" class="btn btn-primary" id="save-draft">
                             <i class="fa fa-save"></i>
-                            <?= $is_edit ? 'Update' : 'Simpan' ?>
+                            <?= $is_edit ? 'Update' : 'Save' ?>
                         </button>
 
                         <button type="button" class="btn btn-success" id="save-and-submit">
                             <i class="fa fa-paper-plane"></i>
-                            Simpan & Ajukan
+                            Save & Submit
                         </button>
 
                         <?php if ($is_edit && !empty($no_ros_default)): ?>
@@ -454,7 +454,7 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                 var colSpan = 9 + listGudang.length;
                 $('#list-item-coil').html(
                     '<tr><td colspan="' + colSpan + '" class="text-center">' +
-                    '<i class="fa fa-spinner fa-spin"></i> Memuat data...</td></tr>'
+                    '<i class="fa fa-spinner fa-spin"></i> Loading data...</td></tr>'
                 );
 
                 $.ajax({
@@ -507,8 +507,12 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                                         '</td>';
                                 });
 
-                                html +=
-                                    '<tr class="coil-row" data-material="' + (item.nm_material || '').toLowerCase() + '" data-nocoil="' + (item.no_coil || '').toLowerCase() + '" data-group="' + rowCounter + '">' +
+                                    html +=
+                                    '<tr class="coil-row"' +
+                                    ' data-material="' + (item.nm_material || '').toLowerCase() + '"' +
+                                    ' data-alias="' + (item.nm_alias || '').toLowerCase() + '"' +
+                                    ' data-nocoil="' + (item.no_coil || '').toLowerCase() + '"' +
+                                    ' data-group="' + rowCounter + '">' +
                                     rowMaterial +
                                     '<td class="text-center bg-light">' + item.no_coil + '</td>' +
                                     '<td class="text-end bg-light">' + parseFloat(item.ros_kotor).toLocaleString('id-ID') + '</td>' +
@@ -538,7 +542,7 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                     error: function(xhr) {
                         console.error('Error load coil:', xhr.responseText);
                         $('#list-item-coil').html(
-                            '<tr><td colspan="' + (9 + listGudang.length) + '" class="text-center text-danger">Gagal memuat data coil.</td></tr>'
+                            '<tr><td colspan="' + (9 + listGudang.length) + '" class="text-center text-danger">Failed to load coil data.</td></tr>'
                         );
                     }
                 });
@@ -628,8 +632,13 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                 $rows.each(function() {
                     var group = $(this).data('group');
                     var material = $(this).data('material') || '';
+                    var alias = $(this).data('alias') || '';
                     var nocoil = $(this).data('nocoil') || '';
-                    if (material.indexOf(keyword) > -1 || nocoil.indexOf(keyword) > -1) {
+                    if (
+                        material.indexOf(keyword) > -1 ||
+                        alias.indexOf(keyword) > -1 ||
+                        nocoil.indexOf(keyword) > -1
+                    ) {
                         matchedGroups[group] = true;
                     }
                 });
@@ -659,7 +668,7 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                     var colSpan = 9 + listGudang.length;
                     $('#list-item-coil').append(
                         '<tr id="no-result-coil"><td colspan="' + colSpan + '" class="text-center text-muted py-3">' +
-                        '<i class="fa fa-search"></i> Tidak ditemukan hasil untuk "<b>' + keyword + '</b>"</td></tr>'
+                        '<i class="fa fa-search"></i> No results found for "<b>' + keyword + '</b>"</td></tr>'
                     );
                 }
             });
@@ -679,8 +688,8 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
 
                 if (!validateGudang()) {
                     Swal.fire({
-                        title: 'Peringatan',
-                        text: 'Semua coil harus dipilih gudang tujuannya!',
+                        title: 'Warning',
+                        text: 'All coils must have a destination warehouse assigned!',
                         icon: 'warning'
                     });
                     return;
@@ -689,12 +698,12 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                 var endpoint = '<?= $is_edit ? "update_draft" : "save_draft" ?>';
 
                 Swal.fire({
-                    title: 'Simpan Draft?',
-                    text: 'Data gudang dan QC per coil akan disimpan. Anda masih bisa mengubahnya nanti.',
+                    title: 'Save Draft?',
+                    text: 'Warehouse and QC data per coil will be saved. You can still modify it later.',
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonText: 'Ya, Simpan Draft!',
-                    cancelButtonText: 'Batal'
+                    confirmButtonText: 'Yes, Save Draft!',
+                    cancelButtonText: 'Cancel'
                 }).then(function(result) {
                     if (!result.isConfirmed) return;
 
@@ -750,7 +759,7 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                         success: function(res) {
                             if (res.status == 1) {
                                 Swal.fire({
-                                    title: 'Draft Tersimpan!',
+                                    title: 'Draft Saved!',
                                     html: res.pesan + '<br><br><b>Pilih aksi selanjutnya:</b>',
                                     icon: 'success',
                                     showCancelButton: true,
@@ -786,8 +795,8 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
 
                 if (!validateGudang()) {
                     Swal.fire({
-                        title: 'Peringatan',
-                        text: 'Semua coil harus dipilih gudang tujuannya!',
+                        title: 'Warning',
+                        text: 'All coils must have a destination warehouse assigned!',
                         icon: 'warning'
                     });
                     return;
@@ -796,12 +805,12 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                 var endpoint = '<?= $is_edit ? "update_draft" : "save_draft" ?>';
 
                 Swal.fire({
-                    title: 'Simpan & Ajukan?',
-                    text: 'Data akan disimpan dan langsung diajukan ke Finalize Incoming.',
+                    title: 'Save & Submit?',
+                    text: 'Data will be saved and submitted to Finalize Incoming.',
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonText: 'Ya, Simpan & Ajukan!',
-                    cancelButtonText: 'Batal'
+                    confirmButtonText: 'Ya, Save & Submit!',
+                    cancelButtonText: 'Cancel'
                 }).then(function(result) {
                     if (!result.isConfirmed) return;
 
@@ -855,8 +864,8 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                         success: function(res) {
                             if (res.status == 1) {
                                 Swal.fire({
-                                    title: 'Berhasil!',
-                                    text: 'Data berhasil disimpan dan diajukan ke Finalize Incoming.',
+                                    title: 'Success!',
+                                    text: 'Data saved and submitted to Finalize Incoming successfully.',
                                     icon: 'success',
                                     timer: 1800,
                                     showConfirmButton: false
@@ -864,7 +873,11 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                                     window.location.href = siteurl + active_controller;
                                 });
                             } else {
-                                Swal.fire({ title: 'Gagal', text: res.pesan, icon: 'error' });
+                                Swal.fire({
+                                    title: 'Gagal',
+                                    text: res.pesan,
+                                    icon: 'error'
+                                });
                             }
                         }
                     });
@@ -877,8 +890,8 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
 
                 if (!validateGudang()) {
                     Swal.fire({
-                        title: 'Peringatan',
-                        text: 'Semua coil harus dipilih gudang tujuannya!',
+                        title: 'Warning',
+                        text: 'All coils must have a destination warehouse assigned!',
                         icon: 'warning',
                         confirmButtonText: 'OK'
                     });
@@ -890,8 +903,8 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                     text: 'Data akan diproses ke stok dan jurnal akuntansi!',
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: 'Ya, Proses!',
-                    cancelButtonText: 'Batal'
+                    confirmButtonText: 'Yes, Process!',
+                    cancelButtonText: 'Cancel'
                 }).then(function(result) {
                     if (!result.isConfirmed) return;
 
@@ -906,7 +919,7 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                         success: function(res) {
                             if (res.status == 1) {
                                 Swal.fire({
-                                    title: 'Berhasil!',
+                                    title: 'Success!',
                                     text: res.pesan,
                                     icon: 'success',
                                     timer: 1500,
@@ -916,7 +929,7 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                                 });
                             } else if (res.status == 2) {
                                 Swal.fire({
-                                    title: 'Transaksi Tersimpan',
+                                    title: 'Transaksi Saved',
                                     text: res.pesan,
                                     icon: 'warning',
                                     confirmButtonText: 'OK'
