@@ -43,7 +43,7 @@
         <div class="row mb-3 g-2 align-items-end" id="bar-filter-live">
             <div class="col-md-4">
                 <input type="text" id="filter_material" class="form-control"
-                    placeholder="Cari kode / nama material...">
+                    placeholder="Search code / material name...">
             </div>
             <div class="col-md-8 text-end">
                 <button class="btn btn-sm btn-primary" id="btn-filter">
@@ -64,14 +64,14 @@
                 <button class="nav-link active" id="tab-sv-produksi-tab"
                     data-bs-toggle="tab" data-bs-target="#tab-sv-produksi"
                     type="button" role="tab">
-                    <i class="fa fa-warehouse"></i> Gudang Produksi
+                    <i class="fa fa-warehouse"></i> Production Warehouse
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="tab-sv-slitting-tab"
                     data-bs-toggle="tab" data-bs-target="#tab-sv-slitting"
                     type="button" role="tab">
-                    <i class="fa fa-store"></i> Gudang Slitting
+                    <i class="fa fa-store"></i> Slitting Warehouse
                 </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -92,13 +92,13 @@
                         <thead class="table-primary">
                             <tr>
                                 <th width="4%">No</th>
-                                <th>Kode Material</th>
-                                <th>Nama Material</th>
-                                <th class="text-center">Jml Coil</th>
+                                <th>Material Code</th>
+                                <th>Material Name</th>
+                                <th class="text-center">Coil Count</th>
                                 <th class="text-end">Qty Stock (Kg)</th>
-                                <th class="text-end">Harga Beli (Avg)</th>
-                                <th class="text-end">Total Nilai</th>
-                                <th width="8%" class="text-center no-sort">Aksi</th>
+                                <th class="text-end">Purchase Price (Avg)</th>
+                                <th class="text-end">Total Value</th>
+                                <th width="8%" class="text-center no-sort">Action</th>
                             </tr>
                         </thead>
                         <tfoot>
@@ -120,13 +120,13 @@
                         <thead class="table-success">
                             <tr>
                                 <th width="4%">No</th>
-                                <th>Kode Material</th>
-                                <th>Nama Material</th>
-                                <th class="text-center">Jml Coil</th>
+                                <th>Material Code</th>
+                                <th>Material Name</th>
+                                <th class="text-center">Coil Count</th>
                                 <th class="text-end">Qty Stock (Kg)</th>
-                                <th class="text-end">Harga Beli (Avg)</th>
-                                <th class="text-end">Total Nilai</th>
-                                <th width="8%" class="text-center no-sort">Aksi</th>
+                                <th class="text-end">Purchase Price (Avg)</th>
+                                <th class="text-end">Total Value</th>
+                                <th width="8%" class="text-center no-sort">Action</th>
                             </tr>
                         </thead>
                         <tfoot>
@@ -150,14 +150,14 @@
                         <div class="row g-2">
                             <div class="col-md-5">
                                 <label class="form-label mb-1 fw-semibold" style="font-size:12px;">
-                                    <i class="fa fa-search"></i> Cari Material
+                                    <i class="fa fa-search"></i> Search Material
                                 </label>
                                 <input type="text" id="sv_hist_material" class="form-control form-control-sm"
-                                    placeholder="Kode / nama material...">
+                                    placeholder="Code / material name...">
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label mb-1 fw-semibold" style="font-size:12px;">
-                                    <i class="fa fa-calendar"></i> Per Tanggal
+                                    <i class="fa fa-calendar"></i> As of Date
                                 </label>
                                 <input type="text" id="sv_date_snap" class="form-control form-control-sm"
                                     placeholder="dd/mm/yyyy" readonly>
@@ -167,9 +167,9 @@
                                     <i class="fa fa-filter"></i> Gudang
                                 </label>
                                 <select id="sv_hist_gudang" class="form-select form-select-sm">
-                                    <option value="">-- Semua --</option>
-                                    <option value="PRO">Gudang Produksi</option>
-                                    <option value="SLI">Gudang Slitting</option>
+                                    <option value="">-- All --</option>
+                                    <option value="PRO">Production Warehouse</option>
+                                    <option value="SLI">Slitting Warehouse</option>
                                 </select>
                             </div>
                         </div>
@@ -177,7 +177,7 @@
 
                     <div class="col-md-4 text-end">
                         <button class="btn btn-primary btn-sm" id="btn-filter-svh">
-                            <i class="fa fa-search"></i> Tampilkan
+                            <i class="fa fa-search"></i> Show
                         </button>
                         <button class="btn btn-secondary btn-sm" id="btn-reset-svh">
                             <i class="fa fa-refresh"></i> Reset
@@ -201,22 +201,22 @@
                         <thead class="table-warning">
                             <tr>
                                 <th width="4%">No</th>
-                                <th>Kode Material</th>
-                                <th>Nama Material</th>
-                                <th class="text-center">Gudang</th>
-                                <th class="text-center">Tanggal</th>
-                                <th class="text-center">Jml Coil</th>
+                                <th>Material Code</th>
+                                <th>Material Name</th>
+                                <th class="text-center">Warehouse</th>
+                                <th class="text-center">Date</th>
+                                <th class="text-center">Coil Count</th>
                                 <th class="text-end">Qty Stock (Kg)</th>
-                                <th class="text-end">Harga Beli (Avg)</th>
-                                <th class="text-end">Total Nilai</th>
-                                <th width="8%" class="text-center no-sort">Aksi</th>
+                                <th class="text-end">Purchase Price (Avg)</th>
+                                <th class="text-end">Total Value</th>
+                                <th width="8%" class="text-center no-sort">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
                                 <td colspan="10" class="text-center text-muted py-4">
                                     <i class="fa fa-info-circle"></i>
-                                    Pilih rentang tanggal lalu klik <strong>Tampilkan</strong>
+                                    Select a date then click <strong>Show</strong>
                                 </td>
                             </tr>
                         </tbody>
@@ -244,9 +244,9 @@
                     <thead>
                         <tr>
                             <th>No</th>
-                            <th>Tanggal</th>
+                            <th>Date</th>
                             <th>No. Transaksi</th>
-                            <th class="text-center">Jml Coil</th>
+                            <th class="text-center">Coil Count</th>
                             <th class="text-end">Qty Awal (Kg)</th>
                             <th class="text-end">Qty Transaksi (Kg)</th>
                             <th class="text-end">Qty Akhir (Kg)</th>
@@ -259,7 +259,7 @@
                     </thead>
                     <tbody id="tbody-history">
                         <tr>
-                            <td colspan="13" class="text-center">Pilih material untuk melihat history</td>
+                            <td colspan="13" class="text-center">Select a material to view history</td>
                         </tr>
                     </tbody>
                 </table>
@@ -286,7 +286,7 @@
                             <tr>
                                 <th width="5%" class="text-center">No</th>
                                 <th>No. Coil</th>
-                                <th>Kode Internal</th>
+                                <th>Internal Code</th>
                                 <th class="text-end">Net Weight (Kg)</th>
                                 <th class="text-end">Gross Weight (Kg)</th>
                                 <th class="text-end">Panjang (m)</th>
@@ -322,7 +322,7 @@
                             <tr>
                                 <th width="5%" class="text-center">No</th>
                                 <th>No. Coil</th>
-                                <th>Kode Internal</th>
+                                <th>Internal Code</th>
                                 <th class="text-end">Net Weight (Kg)</th>
                                 <th class="text-end">Gross Weight (Kg)</th>
                                 <th class="text-end">Panjang (m)</th>
@@ -387,10 +387,10 @@
             }, // No
             {
                 targets: 1
-            }, // Kode Material
+            }, // Material Code
             {
                 targets: 2
-            }, // Nama Material
+            }, // Material Name
             {
                 targets: 3,
                 className: 'text-center'
@@ -398,11 +398,11 @@
             {
                 targets: 4,
                 className: 'text-center'
-            }, // Tanggal Snapshot
+            }, // Snapshot Date
             {
                 targets: 5,
                 className: 'text-center'
-            }, // Jml Coil
+            }, // Coil Count
             {
                 targets: 6,
                 className: 'text-right'
@@ -414,12 +414,12 @@
             {
                 targets: 8,
                 className: 'text-right'
-            }, // Total Nilai
+            }, // Total Value
             {
                 targets: 9,
                 orderable: false,
                 className: 'text-center'
-            } // Aksi
+            } // Action
         ];
 
         // ── Helper dd/mm/yyyy → yyyy-mm-dd ────────────────────────────────────
@@ -460,9 +460,9 @@
                     [2, 'asc']
                 ],
                 language: {
-                    processing: '<i class="fa fa-spinner fa-spin fa-fw"></i> Memuat data...',
-                    zeroRecords: 'Tidak ada data stock.',
-                    emptyTable: 'Tidak ada data.',
+                    processing: '<i class="fa fa-spinner fa-spin fa-fw"></i> Loading data...',
+                    zeroRecords: 'No stock data available.',
+                    emptyTable: 'No data available.',
                 },
                 drawCallback: function() {
                     $.post(siteurl + 'warehouse/get_grand_total_stock_value', {
@@ -555,9 +555,9 @@
                     [3, 'desc']
                 ],
                 language: {
-                    processing: '<i class="fa fa-spinner fa-spin fa-fw"></i> Memuat data...',
-                    zeroRecords: 'Tidak ada data untuk tanggal ini.',
-                    emptyTable: 'Tidak ada data.',
+                    processing: '<i class="fa fa-spinner fa-spin fa-fw"></i> Loading data...',
+                    zeroRecords: 'No data available for this date.',
+                    emptyTable: 'No data available.',
                 },
                 drawCallback: function() {
                     $.post(siteurl + 'warehouse/get_grand_total_stock_value_perday', {
@@ -588,7 +588,7 @@
                 $('#table-sv-history tbody').html(
                     '<tr><td colspan="8" class="text-center text-muted py-4">' +
                     '<i class="fa fa-info-circle"></i> ' +
-                    'Pilih tanggal lalu klik <strong>Tampilkan</strong>' +
+                    'Select a date then click <strong>Show</strong>' +
                     '</td></tr>'
                 );
             }
@@ -615,7 +615,7 @@
     //         id_gudang
     //     }, function(data) {
     //         if (!data.length) {
-    //             $('#tbody-history').html('<tr><td colspan="13" class="text-center">Tidak ada history</td></tr>');
+    //             $('#tbody-history').html('<tr><td colspan="13" class="text-center">No history available</td></tr>');
     //             return;
     //         }
     //         var html = '';
@@ -648,7 +648,7 @@
             id_gudang
         }, function(data) {
             if (!data.length) {
-                $('#tbody-history').html('<tr><td colspan="14" class="text-center">Tidak ada history</td></tr>');
+                $('#tbody-history').html('<tr><td colspan="14" class="text-center">No history available</td></tr>');
                 return;
             }
             var html = '';
@@ -703,7 +703,7 @@
         }, function(data) {
             if (!data.length) {
                 $('#tbody-detail-coil-trx').html(
-                    '<tr><td colspan="7" class="text-center">Tidak ada data coil</td></tr>'
+                    '<tr><td colspan="7" class="text-center">No data available.coil</td></tr>'
                 );
                 return;
             }
@@ -731,7 +731,7 @@
             id_gudang
         }, function(data) {
             if (!data.length) {
-                $('#tbody-detail-coil').html('<tr><td colspan="6" class="text-center">Tidak ada data coil</td></tr>');
+                $('#tbody-detail-coil').html('<tr><td colspan="6" class="text-center">No data available.coil</td></tr>');
                 return;
             }
             var html = '';

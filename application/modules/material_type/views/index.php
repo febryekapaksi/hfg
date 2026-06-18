@@ -26,7 +26,7 @@ $ENABLE_DELETE  = has_permission('Material_Type.Delete');
 				<thead class="table-light">
 					<tr>
 						<th>#</th>
-						<th>Jenis Logam</th>
+						<th>Metal Type</th>
 						<th>Status</th>
 						<th>Action</th>
 					</tr>

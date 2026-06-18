@@ -46,7 +46,7 @@ class Material_type extends Admin_Controller
 
     history("View index material type");
     $this->template->set($data);
-    $this->template->title('Jenis Logam');
+    $this->template->title('Metal Type');
     $this->template->render('index');
   }
 
@@ -140,11 +140,11 @@ class Material_type extends Admin_Controller
 
     // Tentukan pesan dan status berdasarkan hasil operasi
     if ($this->db->trans_status() === FALSE) {
-      $keterangan = "GAGAL, ubah status Type: $id";
+      $keterangan = "FAILED, change status Type: $id";
       $status = 0;
     } else {
-      $status_text = ($new_status == 1) ? 'Aktif' : 'Non-Aktif';
-      $keterangan = "SUKSES, ubah status Type ID: $id menjadi $status_text";
+      $status_text = ($new_status == 1) ? 'Active' : 'Inactive';
+      $keterangan = "SUCCESS, change status Type ID: $id to $status_text";
       $status = 1;
     }
 

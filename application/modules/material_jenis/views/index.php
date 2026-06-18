@@ -26,7 +26,7 @@ $ENABLE_DELETE  = has_permission('Material_Jenis.Delete');
 				<thead class="table-light">
 					<tr>
 						<th>#</th>
-						<th>Jenis Logam</th>
+						<th>Metal Type</th>
 						<th>Slitted / Mother Coil</th>
 						<th>Boron / Non Boron</th>
 						<th>Status</th>
@@ -227,7 +227,7 @@ $ENABLE_DELETE  = has_permission('Material_Jenis.Delete');
 			}
 
 			Swal.fire({
-				title: "Anda Yakin?", text: "Data akan diproses!", icon: "warning",
+				title: "Are you sure?", text: "Data will be processed!", icon: "warning",
 				showCancelButton: true, confirmButtonText: "Yes", cancelButtonText: "No"
 			}).then(function(result) {
 				if (result.isConfirmed) {
@@ -252,7 +252,7 @@ $ENABLE_DELETE  = has_permission('Material_Jenis.Delete');
 			var id = $(this).data('id');
 
 			Swal.fire({
-				title: "Anda Yakin?", text: "Data akan di hapus!", icon: "warning",
+				title: "Are you sure?", text: "Data will be deleted!", icon: "warning",
 				showCancelButton: true, confirmButtonColor: "#dc3545", confirmButtonText: "Yes", cancelButtonText: "No"
 			}).then(function(result) {
 				if (result.isConfirmed) {
@@ -292,7 +292,7 @@ $ENABLE_DELETE  = has_permission('Material_Jenis.Delete');
 						checkbox.prop('checked', newStatus == 1);
 						Swal.fire({ title: "Sukses", text: msg, icon: "success", timer: 1500, showConfirmButton: false });
 					} else {
-						const msg = response.message || response.pesan || "Gagal update status.";
+						const msg = response.message || response.pesan || "Failed to update status.";
 						checkbox.prop('checked', currentStatus == 1);
 						Swal.fire({ title: "Error", text: msg, icon: "error", confirmButtonText: "OK" });
 					}

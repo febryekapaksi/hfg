@@ -37,11 +37,11 @@ if (!empty($header[0]['app_3']) && $header[0]['app_3'] == '1') {
                     <input type="text" class="form-control" id="no_pr" value="<?= $header[0]['no_pr']; ?>" readonly>
                 </div>
                 <div class="col-md-6">
-                    <label for="tgl_dibutuhkan" class="form-label"><b>Tgl Dibutuhkan</b></label>
+                    <label for="tgl_dibutuhkan" class="form-label"><b>Required Date</b></label>
                     <input type="text" class="form-control" id="tgl_dibutuhkan" value="<?= $tgl_dibutuhkan; ?>" readonly>
                 </div>
                 <div class="col-md-6">
-                    <label for="tingkat_pr" class="form-label"><b>Tingkat PR</b></label>
+                    <label for="tingkat_pr" class="form-label"><b>PR Priority</b></label>
                     <input type="text" class="form-control" id="tingkat_pr" value="<?= ($header[0]['tingkat_pr'] == 2) ? 'Urgent' : 'Normal' ?>" readonly>
                 </div>
 
@@ -62,9 +62,9 @@ if (!empty($header[0]['app_3']) && $header[0]['app_3'] == '1') {
                         <tr class="table-light">
                             <th class="text-center">Approval By</th>
                             <th class="text-center">Status</th>
-                            <th class="text-center">Tgl Approval / Reject</th>
-                            <th class="text-center">Alasan Reject</th>
-                            <th class="text-center">Keterangan</th>
+                            <th class="text-center">Approval / Reject Date</th>
+                            <th class="text-center">Rejection Reason</th>
+                            <th class="text-center">Remarks</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -90,12 +90,12 @@ if (!empty($header[0]['app_3']) && $header[0]['app_3'] == '1') {
                         <tr>
                             <th class="text-center"><input type="checkbox" name="chk_all" id="chk_all"></th>
                             <th class="text-center">Material Name</th>
-                            <th class="text-center">Nama Lain</th>
+                            <th class="text-center">Alias Name</th>
                             <?php if ($pembeda == 'SO') { ?>
-                                <th class="text-center">Estimasi (Kg)</th>
+                                <th class="text-center">Estimation (Kg)</th>
                                 <th class="text-center">Stock Free (Kg)</th>
                                 <th class="text-center">Use Stock (Kg)</th>
-                                <th class="text-center">Sisa Stock Free (Kg)</th>
+                                <th class="text-center">Remaining Free Stock (Kg)</th>
                             <?php } ?>
                             <th class="text-center">Min Stock</th>
                             <th class="text-center">Max Stock</th>
@@ -182,7 +182,7 @@ if (!empty($header[0]['app_3']) && $header[0]['app_3'] == '1') {
                         <i class="fa fa-ban me-1"></i> Reject
                     </button>
                     <button type="button" class="btn btn-dark" id="back">
-                        <i class="fa fa-reply me-1"></i> Kembali
+                        <i class="fa fa-reply me-1"></i> Back
                     </button>
                 </div>
             </div>
@@ -246,7 +246,7 @@ if (!empty($header[0]['app_3']) && $header[0]['app_3'] == '1') {
             if ($('.chk_personal:checked').length == 0) {
                 swal({
                     title: "Error Message!",
-                    text: 'Checklist Minimal Satu !',
+                    text: 'Please check at least one item!',
                     type: "warning"
                 });
                 return false;

@@ -41,7 +41,7 @@ if (!empty($results['headerso'])) {
 									</div>
 									<div class="col-md-8">
 										<select id="id_suplier" name="id_suplier" class='form-control input-md chosen-select' onchange="get_lokasi()" required>
-											<option value="">--Pilih--</option>
+											<option value="">--Select--</option>
 											<?php foreach ($results['supplier'] as $supplier) { ?>
 												<option value="<?= $supplier->id_suplier ?>"><?= strtoupper(strtolower($supplier->name_suplier)) ?></option>
 											<?php } ?>
@@ -56,7 +56,7 @@ if (!empty($results['headerso'])) {
 							</div>
 							<div class="col-md-8" id="ubahloi">
 								<select id="loi" name="loi" class="form-control select2" onchange="get_kurs()" required>
-									<option value="">--Pilih--</option>
+									<option value="">--Select--</option>
 									<option value="Import">Import</option>
 									<option value="Lokal">Lokal</option>
 								</select>
@@ -107,7 +107,7 @@ if (!empty($results['headerso'])) {
 					<div class="col-sm-6">
 						<div class="form-group row">
 							<div class="col-md-4">
-								<label for="customer">Tanggal PO</label>
+								<label for="customer">PO Date</label>
 							</div>
 							<div class="col-md-8">
 								<input type="text" class="form-control" id="tanggal" value="" onkeyup required name="tanggal">
@@ -152,7 +152,7 @@ if (!empty($results['headerso'])) {
 							</div>
 							<div class="col-md-8">
 								<select id="term" name="term" class="form-control select2" required>
-									<option value="">-- Pilih --</option>
+									<option value="">-- Select --</option>
 									<?php foreach ($results['term'] as $term): ?>
 										<option value="<?= htmlspecialchars($term->id) ?>">
 											<?= htmlspecialchars($term->name) ?>
@@ -189,7 +189,7 @@ if (!empty($results['headerso'])) {
 							</div>
 							<div class="col-md-8">
 								<select id="cif" name="cif" class="form-control select2" required>
-									<option value="">--Pilih--</option>
+									<option value="">--Select--</option>
 									<option value="CIF">CIF</option>
 									<option value="FOB">FOB</option>
 									<option value="LOCO">LOCO</option>
@@ -205,7 +205,7 @@ if (!empty($results['headerso'])) {
 					<div class="col-sm-6">
 						<div class="form-group row">
 							<div class="col-md-4">
-								<label for="id_customer">Keterangan</label>
+								<label for="id_customer">Remarks</label>
 							</div>
 							<div class="col-md-8">
 								<textarea name="keterangan" id="" class="form-control"></textarea>
@@ -249,11 +249,11 @@ if (!empty($results['headerso'])) {
 								<th style="min-width: 100px;" hidden>Rate LME</th>
 								<th style="min-width: 100px;" hidden>Alloy Price</th>
 								<th style="min-width: 100px;" hidden>Fab Cost</th>
-								<th style="min-width: 150px;">Harga Satuan</th>
+								<th style="min-width: 150px;">Unit Price</th>
 								<th style="min-width: 100px;" hidden>Disc %</th>
-								<th style="min-width: 100px;" hidden>Biaya Kirim</th>
-								<th style="min-width: 150px;">Total Harga</th>
-								<th style="min-width: 150px;">Nilai Discount</th>
+								<th style="min-width: 100px;" hidden>Shipping Cost</th>
+								<th style="min-width: 150px;">Total Price</th>
+								<th style="min-width: 150px;">Discount Value</th>
 								<!-- <th style="min-width: 100px;">Nilai PPN</th> -->
 								<th style="min-width: 150px;">Sub Total</th>
 								<th style="min-width: 150px;">Deskripsi Item</th>
@@ -363,8 +363,8 @@ if (!empty($results['headerso'])) {
 													
 													<td hidden>
 														<select class='form-control input-sm' id='dt_ratelme_" . $key . "' name='dt[" . $key . "][ratelme]' onchange='CariPrice(" . $key . ")'>
-															<option value=''>-Pilih-</option>
-															<option value='Hari Ini'>Hari ini</option>
+															<option value=''>-Select-</option>
+															<option value='Hari Ini'>Today</option>
 															<option value='H-10'>H-10</option>
 															<option value='H-30'>H-30</option>
 														</select>
@@ -442,7 +442,7 @@ if (!empty($results['headerso'])) {
 										</td>
 									</tr> -->
 							<tr hidden>
-								<td class="text-end" colspan="12"><b>Biaya Kirim</b></td>
+								<td class="text-end" colspan="12"><b>Shipping Cost</b></td>
 								<td colspan="2">
 									<input type="hidden" class="form-control" id="taxtotal" onkeyup required name="taxtotal">
 									<input type="text" class="form-control auto_num text-end" id="kirim" onblur="cariTotal()" required name="kirim">
@@ -486,7 +486,7 @@ if (!empty($results['headerso'])) {
 						<div class="col-sm-6">
 							<div class="form-group row">
 								<div class="col-md-4">
-									<label for="id_customer">Sub Total Harga Satuan</label>
+									<label for="id_customer">Sub Total Unit Price</label>
 								</div>
 								<div class="col-md-8" id="ForHarga">
 									<input readonly type="text" class="form-control" id="hargatotal" onkeyup required name="hargatotal">
@@ -532,7 +532,7 @@ if (!empty($results['headerso'])) {
 						<div class="col-sm-6">
 							<div class="form-group row">
 								<div class="col-md-4">
-									<label for="id_customer">Biaya Kirim</label>
+									<label for="id_customer">Shipping Cost</label>
 								</div>
 								<div class="col-md-8" id="ForTax">
 									<input type="hidden" class="form-control" id="taxtotal" onkeyup required name="taxtotal">
@@ -606,9 +606,9 @@ if (!empty($results['headerso'])) {
 									<th class="text-center">Group TOP</th>
 									<th class="text-center">Progress (%)</th>
 									<th class="text-center">Value</th>
-									<th class="text-center">Keterangan</th>
-									<th class="text-center">Tipe Pembayaran</th>
-									<th class="text-center">Jatuh Tempo</th>
+									<th class="text-center">Remarks</th>
+									<th class="text-center">Payment Type</th>
+									<th class="text-center">Due Date</th>
 									<th class="text-center">Action</th>
 								</tr>
 							</thead>
@@ -620,7 +620,7 @@ if (!empty($results['headerso'])) {
 				</div>
 
 				<div class="text-center">
-					<button type="submit" class="btn btn-success" name="save" id="simpan-com"><i class="fa fa-save"></i> Simpan</button>
+					<button type="submit" class="btn btn-success" name="save" id="simpan-com"><i class="fa fa-save"></i> Save</button>
 				</div>
 
 			</div>
@@ -1032,22 +1032,22 @@ if (!empty($results['headerso'])) {
 
 			var data, xhr;
 			if (loi == '' || loi == null) {
-				swal("Warning", "Form Tidak Boleh Kosong :)", "error");
+				swal("Warning", "Form cannot be empty", "error");
 				return false;
 			} else if (tanggal == '' || tanggal == null) {
-				swal("Warning", "Tanggal Tidak Boleh Kosong :)", "error");
+				swal("Warning", "Date cannot be empty", "error");
 				return false;
 			} else if (supplier == '' || supplier == null) {
-				swal("Warning", "Supplier tidak boleh kosong  :)", "error");
+				swal("Warning", "Supplier is required", "error");
 				return false;
 			} else if (select_department == '' || select_department == null) {
-				swal("Warning", "Department tidak boleh kosong  :)", "error");
+				swal("Warning", "Department is required", "error");
 				return false;
 			} else if (delivery_date == '' || delivery_date == null) {
-				swal("Warning", "Delivery Date tidak boleh kosong  :)", "error");
+				swal("Warning", "Delivery Date is required", "error");
 				return false;
 			} else if (currency == '' || currency == null) {
-				swal("Warning", "Currency tidak boleh kosong  :)", "error");
+				swal("Warning", "Currency is required", "error");
 				return false;
 			} else if (ttl_persen_top > 100) {
 				swal("Warning", "Total TOP tidak boleh lebih dari 100%", "error");
@@ -1172,7 +1172,7 @@ if (!empty($results['headerso'])) {
 			targetRow.css('background-color', '#e8f5e9');
 			targetRow.find('label[for="lc"]').html('LC <i class="fa fa-check-circle text-success"></i>');
 
-			swal("Berhasil", "Data LC telah tersimpan di baris ini.", "success");
+			swal("Success", "LC data has been saved in this row.", "success");
 			$('#modal_lc').modal('hide');
 		});
 
@@ -1363,7 +1363,7 @@ if (!empty($results['headerso'])) {
 				let alamatSupplier = $('#supplier option:selected').data('address');
 
 				if (idSupplier === "") {
-					swal("Perhatian", "Silakan pilih Supplier terlebih dahulu di header form!", "warning");
+					swal("Attention", "Please select a Supplier in the header form first!", "warning");
 					$(this).prop('checked', false);
 					return false;
 				}
@@ -1463,7 +1463,7 @@ if (!empty($results['headerso'])) {
 		var loi = $("#loi").val();
 		var angka = jumlah + 1;
 		if (id_suplier == '' || id_suplier == null || loi == '' || loi == null) {
-			swal("Warning", "Silahkan Pilih Supplier Terlebih Dahulu :)", "error");
+			swal("Warning", "Please select a Supplier first", "error");
 			return false;
 		} else {
 			$.ajax({
@@ -1517,7 +1517,7 @@ if (!empty($results['headerso'])) {
 		var dt_ratelme = $("#dt_ratelme_" + id).val();
 		var dt_idmaterial = $("#dt_idmaterial_" + id).val();
 		if (dt_idmaterial == '' || dt_idmaterial == null) {
-			swal("Warning", "Silahkan Pilih Material Terlebih Dahulu :)", "error");
+			swal("Warning", "Please select a Material first", "error");
 			return false;
 		} else {
 			$.ajax({
@@ -1548,7 +1548,7 @@ if (!empty($results['headerso'])) {
 
 
 		// if (dt_idmaterial == '' || dt_idmaterial == null) {
-		// 	swal("Warning", "Silahkan Pilih Material Terlebih Dahulu :)", "error");
+		// 	swal("Warning", "Please select a Material first", "error");
 		// 	return false;
 		// } else {
 
@@ -1772,7 +1772,7 @@ if (!empty($results['headerso'])) {
 		var diskontotal = $("#diskontotal").val();
 		var taxtotal = $("#taxtotal").val();
 		if (qty == '' || qty == null || hargasatuan == '' || hargasatuan == null) {
-			swal("Warning", "Form Tidak Boleh Kosong :)", "error");
+			swal("Warning", "Form cannot be empty", "error");
 			return false;
 		} else {
 			$.ajax({

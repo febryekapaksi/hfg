@@ -1302,13 +1302,13 @@ class Purchase_order extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. Thanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'status'	=> 1
 			);
 		}
@@ -1330,13 +1330,13 @@ class Purchase_order extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Approve P.R. Thanks ...',
+				'pesan'		=> 'Failed to approve P.R.',
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Approve P.R. Thanks ...',
+				'pesan'		=> 'P.R. approved successfully.',
 				'status'	=> 1
 			);
 		}
@@ -1434,14 +1434,14 @@ class Purchase_order extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'code' => $code,
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'code' => $code,
 				'status'	=> 1
 			);
@@ -1752,9 +1752,9 @@ class Purchase_order extends Admin_Controller
 		if ($this->db->trans_status() === FALSE || $valid_qty == '0') {
 
 			$this->db->trans_rollback();
-			$msg = 'Gagal Save Item. Thanks ...';
+			$msg = 'Failed to save item.';
 			if ($valid_qty == '0') {
-				$msg = 'Maaf, ada PO Qty yang melebihi Qty PR !';
+				$msg = 'PO Qty exceeds PR Qty!';
 			}
 			$status	= array(
 				'pesan'		=> $msg,
@@ -1764,7 +1764,7 @@ class Purchase_order extends Admin_Controller
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'code' => $code,
 				'status'	=> 1
 			);
@@ -1990,7 +1990,7 @@ class Purchase_order extends Admin_Controller
 		// 6. Transaksi Selesai
 		if ($this->db->trans_status() === FALSE || $valid_qty == 0) {
 			$this->db->trans_rollback();
-			$msg = ($valid_qty == 0) ? 'Maaf, ada PO Qty yang melebihi Qty PR!' : 'Gagal Save Item.';
+			$msg = ($valid_qty == 0) ? 'PO Qty exceeds PR Qty!' : 'Failed to save item.';
 			$status = ['pesan' => $msg, 'status' => 0];
 		} else {
 			$this->db->trans_commit();
@@ -2152,7 +2152,7 @@ class Purchase_order extends Admin_Controller
 								$this->db->trans_rollback();
 								echo json_encode([
 									'status' => 0,
-									'pesan'  => 'Gagal simpan detail LC: ' . $this->db->error()['message']
+									'pesan'  => 'Failed to save LC detail: ' . $this->db->error()['message']
 								]);
 								exit;
 							}
@@ -2164,9 +2164,9 @@ class Purchase_order extends Admin_Controller
 
 		if ($this->db->trans_status() === FALSE || $valid_qty == '0') {
 			$this->db->trans_rollback();
-			$msg = 'Gagal Save Item. Thanks ...';
+			$msg = 'Failed to save item.';
 			if ($valid_qty == '0') {
-				$msg = 'Maaf, ada PO Qty yang melebihi Qty PR !';
+				$msg = 'PO Qty exceeds PR Qty!';
 			}
 			$status	= array(
 				'pesan'		=> $msg,
@@ -2176,7 +2176,7 @@ class Purchase_order extends Admin_Controller
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'code' => $code,
 				'status'	=> 1
 			);
@@ -2245,14 +2245,14 @@ class Purchase_order extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'code' => $code,
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'code' => $code,
 				'status'	=> 1
 			);
@@ -2753,14 +2753,14 @@ class Purchase_order extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'code' => $code,
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'code' => $code,
 				'status'	=> 1
 			);
@@ -2829,14 +2829,14 @@ class Purchase_order extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'code' => $id_bentuk,
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'code' => $id_bentuk,
 				'status'	=> 1
 			);
@@ -2854,13 +2854,13 @@ class Purchase_order extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. Thanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'status'	=> 1
 			);
 		}
@@ -2962,14 +2962,14 @@ class Purchase_order extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'code' => $id_bentuk,
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'code' => $id_bentuk,
 				'status'	=> 1
 			);
@@ -3157,13 +3157,13 @@ class Purchase_order extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'status'	=> 1
 			);
 		}
@@ -3259,13 +3259,13 @@ class Purchase_order extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'status'	=> 1
 			);
 		}

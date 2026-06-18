@@ -51,7 +51,7 @@ if (!empty($header)) {
 							<!-- <td width='20%'>Status</td>
 							<td width='1%'>:</td>
 							<td width='29%'><?= $status3 ?></td> -->
-							<td width='20%'>Keterangan</td>
+							<td width='20%'>Remarks</td>
 							<td width='1%'>:</td>
 							<td width='29%'><?= $keterangan_3 ?></td>
 						</tr>
@@ -59,7 +59,7 @@ if (!empty($header)) {
 							<td>No. PR</td>
 							<td>:</td>
 							<td><?= $header[0]['no_pr']; ?></td>
-							<td>Alasan Reject</td>
+							<td>Rejection Reason</td>
 							<td>:</td>
 							<td><?= $alasan_reject3 ?></td>
 						</tr>
@@ -139,7 +139,7 @@ if (!empty($header)) {
 			</div>
 			<div class="form-group row">
 				<div class="text-center">
-					<button type="button" class="btn btn-secondary" name="back" id="back"><i class="fas fa-arrow-left"></i> Kembali</button>
+					<button type="button" class="btn btn-secondary" name="back" id="back"><i class="fas fa-arrow-left"></i> Back</button>
 				</div>
 			</div>
 		</form>

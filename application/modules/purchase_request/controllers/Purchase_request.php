@@ -575,13 +575,13 @@ class Purchase_request extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. Thanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'status'	=> 1
 			);
 		}
@@ -603,13 +603,13 @@ class Purchase_request extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Approve P.R. Thanks ...',
+				'pesan'		=> 'Failed to approve P.R.',
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Approve P.R. Thanks ...',
+				'pesan'		=> 'P.R. approved successfully.',
 				'status'	=> 1
 			);
 		}
@@ -707,14 +707,14 @@ class Purchase_request extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'code' => $code,
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'code' => $code,
 				'status'	=> 1
 			);
@@ -778,14 +778,14 @@ class Purchase_request extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'code' => $code,
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'code' => $code,
 				'status'	=> 1
 			);
@@ -844,14 +844,14 @@ class Purchase_request extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'code' => $code,
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'code' => $code,
 				'status'	=> 1
 			);
@@ -889,14 +889,14 @@ class Purchase_request extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'code' => $code,
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'code' => $code,
 				'status'	=> 1
 			);
@@ -965,14 +965,14 @@ class Purchase_request extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'code' => $id_bentuk,
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'code' => $id_bentuk,
 				'status'	=> 1
 			);
@@ -990,13 +990,13 @@ class Purchase_request extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. Thanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'status'	=> 1
 			);
 		}
@@ -1098,14 +1098,14 @@ class Purchase_request extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'code' => $id_bentuk,
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'code' => $id_bentuk,
 				'status'	=> 1
 			);
@@ -1293,13 +1293,13 @@ class Purchase_request extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'status'	=> 1
 			);
 		}
@@ -1395,13 +1395,13 @@ class Purchase_request extends Admin_Controller
 		if ($this->db->trans_status() === FALSE) {
 			$this->db->trans_rollback();
 			$status	= array(
-				'pesan'		=> 'Gagal Save Item. Thanks ...',
+				'pesan'		=> 'Failed to save item.',
 				'status'	=> 0
 			);
 		} else {
 			$this->db->trans_commit();
 			$status	= array(
-				'pesan'		=> 'Success Save Item. invenThanks ...',
+				'pesan'		=> 'Item saved successfully.',
 				'status'	=> 1
 			);
 		}

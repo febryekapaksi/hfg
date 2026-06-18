@@ -77,7 +77,7 @@
 <body onload="window.print();">
     <div class="no-print" style="background: #fdfd96; padding: 10px; margin-bottom: 20px;">
         <button onclick="window.print()">Print Now</button>
-        <p><i>Pastikan printer label sudah siap. Tekan Print untuk mencetak semua label yang dipilih.</i></p>
+        <p><i>Make sure the label printer is ready. Click Print to print all selected labels.</i></p>
     </div>
 
     <?php foreach ($results as $row): ?>
@@ -115,11 +115,11 @@
 
             <table class="info-table">
                 <tr>
-                    <td><b>No. ROS</b></td>
+                    <td><b>ROS No.</b></td>
                     <td>: <?= $row['no_ros'] ?></td>
                 </tr>
                 <tr>
-                    <td><b>Nama</b></td>
+                    <td><b>Name</b></td>
                     <td>:
                         <?php
                         $nama_asli = $row['nm_alias'];
@@ -133,7 +133,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td><b>Kode Internal</b></td>
+                    <td><b>Internal Code</b></td>
                     <td>: <?= $row['kode_internal'] ?></td>
                 </tr>
                 <tr>
@@ -145,7 +145,7 @@
                     <td>: <?= number_format($row['berat_kotor'], 2) ?> Kg</td>
                 </tr>
                 <tr>
-                    <td><b>Gudang Tujuan</b></td>
+                    <td><b>Destination Warehouse</b></td>
                     <td>
                         : <?= !empty($row['nm_gudang_tujuan']) ? $row['nm_gudang_tujuan'] . ' (' . $row['kd_gudang_ke'] . ')' : '-' ?>
 

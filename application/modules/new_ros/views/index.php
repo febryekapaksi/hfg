@@ -10,122 +10,7 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
     .swal2-container {
         z-index: 99999 !important;
     }
-</style>
 
-<div class="card">
-    <div class="card-header">
-        <?php if ($ENABLE_ADD) : ?>
-            <a class="btn btn-success btn-md" href="<?= base_url('new_ros/add') ?>" title="Add">
-                <i class="fa fa-plus"></i> Add New ROS
-            </a>
-        <?php endif; ?>
-    </div>
-    <div class="card-body">
-
-        <!-- ── TABS ── -->
-        <ul class="nav nav-tabs mb-3" id="rosTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="tab-draft-btn" data-bs-toggle="tab"
-                    data-bs-target="#tab-draft" type="button" role="tab">
-                    <i class="fas fa-file-alt text-warning me-1"></i> Draft
-                    <!-- <span class="badge bg-warning text-dark ms-1" id="badge_draft">0</span> -->
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="tab-close-btn" data-bs-toggle="tab"
-                    data-bs-target="#tab-close" type="button" role="tab">
-                    <i class="fas fa-check-double text-success me-1"></i> Closed
-                    <!-- <span class="badge bg-success ms-1" id="badge_close">0</span> -->
-                </button>
-            </li>
-        </ul>
-
-        <div class="tab-content" id="rosTabContent">
-
-            <!-- ══════════════════════════════════════════ -->
-            <!-- TAB DRAFT                                  -->
-            <!-- ══════════════════════════════════════════ -->
-            <div class="tab-pane fade show active" id="tab-draft" role="tabpanel">
-                <table id="tbl_ros_draft" class="table table-bordered table-striped" width="100%">
-                    <thead>
-                        <tr>
-                            <th class="text-center" width="5%">No</th>
-                            <th class="text-center">Nomor ROS</th>
-                            <th class="text-center">Nomor PO</th>
-                            <th class="text-center">Supplier</th>
-                            <th class="text-center">Nilai PIB (Rp)</th>
-                            <th class="text-center" width="8%">Status</th>
-                            <th class="text-center" width="18%">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-
-            <!-- ══════════════════════════════════════════ -->
-            <!-- TAB CLOSED                                 -->
-            <!-- ══════════════════════════════════════════ -->
-            <div class="tab-pane fade" id="tab-close" role="tabpanel">
-                <table id="tbl_ros_close" class="table table-bordered table-striped" width="100%">
-                    <thead>
-                        <tr>
-                            <th class="text-center" width="5%">No</th>
-                            <th class="text-center">Nomor ROS</th>
-                            <th class="text-center">Nomor PO</th>
-                            <th class="text-center">Supplier</th>
-                            <th class="text-center">Nilai PIB (Rp)</th>
-                            <th class="text-center" width="10%">Status Incoming</th>
-                            <th class="text-center" width="12%">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-
-        </div><!-- end tab-content -->
-    </div>
-</div>
-
-<!-- ══════════════════════════════════════════════════════════ -->
-<!-- Modal Preview Close ROS                                    -->
-<!-- ══════════════════════════════════════════════════════════ -->
-<div class="modal fade" id="modalCloseROS" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-check-double"></i> Verifikasi Close ROS —
-                    <span id="modal_close_ros_id"></span>
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="modal_close_ros_body" style="max-height:75vh; overflow-y:auto;">
-                <div class="text-center py-4">
-                    <div class="spinner-border text-primary"></div>
-                    <div class="mt-2 text-muted">Memuat data...</div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <small class="text-muted me-auto">
-                    <i class="fas fa-info-circle"></i>
-                    Periksa data sebelum close. Setelah di-close, ROS akan masuk ke proses Incoming.
-                </small>
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
-                    <i class="fas fa-times"></i> Batal
-                </button>
-                <button type="button" class="btn btn-success btn-sm" id="btn_confirm_close_ros">
-                    <i class="fas fa-check-double"></i> Konfirmasi Close ROS
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script src="<?= base_url('assets/plugins/datatables/jquery.dataTables.min.js') ?>"></script>
-<script src="<?= base_url('assets/plugins/datatables/dataTables.bootstrap.min.js') ?>"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<style>
     .section-title-preview {
         background: #f8f9fa;
         padding: 7px 12px;
@@ -160,12 +45,113 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
     }
 </style>
 
+<div class="card">
+    <div class="card-header">
+        <?php if ($ENABLE_ADD) : ?>
+            <a class="btn btn-success btn-md" href="<?= base_url('new_ros/add') ?>" title="Add">
+                <i class="fa fa-plus"></i> Add New ROS
+            </a>
+        <?php endif; ?>
+    </div>
+    <div class="card-body">
+
+        <!-- ── TABS ── -->
+        <ul class="nav nav-tabs mb-3" id="rosTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tab-draft-btn" data-bs-toggle="tab"
+                    data-bs-target="#tab-draft" type="button" role="tab">
+                    <i class="fas fa-file-alt text-warning me-1"></i> Draft
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-close-btn" data-bs-toggle="tab"
+                    data-bs-target="#tab-close" type="button" role="tab">
+                    <i class="fas fa-check-double text-success me-1"></i> Closed
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="rosTabContent">
+
+            <!-- TAB DRAFT  -->
+            <div class="tab-pane fade show active" id="tab-draft" role="tabpanel">
+                <table id="tbl_ros_draft" class="table table-bordered table-striped" width="100%">
+                    <thead>
+                        <tr>
+                            <th class="text-center" width="5%">No</th>
+                            <th class="text-center">ROS Number</th>
+                            <th class="text-center">PO Number</th>
+                            <th class="text-center">Supplier</th>
+                            <th class="text-center">PIB Value (Rp)</th>
+                            <th class="text-center" width="8%">Status</th>
+                            <th class="text-center" width="18%">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- TAB CLOSED -->
+            <div class="tab-pane fade" id="tab-close" role="tabpanel">
+                <table id="tbl_ros_close" class="table table-bordered table-striped" width="100%">
+                    <thead>
+                        <tr>
+                            <th class="text-center" width="5%">No</th>
+                            <th class="text-center">ROS Number</th>
+                            <th class="text-center">PO Number</th>
+                            <th class="text-center">Supplier</th>
+                            <th class="text-center">PIB Value (Rp)</th>
+                            <th class="text-center" width="10%">Incoming Status</th>
+                            <th class="text-center" width="12%">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Preview Close ROS                                    -->
+<div class="modal fade" id="modalCloseROS" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" style="color: white;>
+                    <i class=" fas fa-check-double"></i> Verification Close ROS —
+                    <span id="modal_close_ros_id" "></span>
+                </h5>
+                <button type=" button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modal_close_ros_body" style="max-height:75vh; overflow-y:auto;">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary"></div>
+                    <div class="mt-2 text-muted">Loading data...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <small class="text-muted me-auto">
+                    <i class="fas fa-info-circle"></i>
+                    Please review the data before closing. Once closed, the ROS will proceed to the Incoming process.
+                </small>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-success btn-sm" id="btn_confirm_close_ros">
+                    <i class="fas fa-check-double"></i> Confirm Close ROS
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="<?= base_url('assets/plugins/datatables/jquery.dataTables.min.js') ?>"></script>
+<script src="<?= base_url('assets/plugins/datatables/dataTables.bootstrap.min.js') ?>"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
     $(document).ready(function() {
-
-        // ══════════════════════════════════════════════════════════════
         // DATATABLE — DRAFT (status = 0)
-        // ══════════════════════════════════════════════════════════════
         var tblDraft = $('#tbl_ros_draft').DataTable({
             processing: true,
             serverSide: true,
@@ -196,16 +182,11 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
             order: [
                 [1, 'desc']
             ],
-            pageLength: 25,
-            drawCallback: function(settings) {
-                // Update badge count
-                // $('#badge_draft').text(settings.json ? settings.json.recordsFiltered : 0);
-            }
+            pageLength: 25
         });
 
-        // ══════════════════════════════════════════════════════════════
+
         // DATATABLE — CLOSED (status = 1)
-        // ══════════════════════════════════════════════════════════════
         var tblClose = $('#tbl_ros_close').DataTable({
             processing: true,
             serverSide: true,
@@ -236,13 +217,9 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
             order: [
                 [1, 'desc']
             ],
-            pageLength: 25,
-            drawCallback: function(settings) {
-                // $('#badge_close').text(settings.json ? settings.json.recordsFiltered : 0);
-            }
+            pageLength: 25
         });
 
-        // Lazy init tab Closed — reload saat tab pertama kali dibuka
         var closeTabLoaded = false;
         $('#tab-close-btn').on('shown.bs.tab', function() {
             if (!closeTabLoaded) {
@@ -251,20 +228,18 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
             }
         });
 
-        // ══════════════════════════════════════════════════════════════
         // DELETE
-        // ══════════════════════════════════════════════════════════════
         $(document).on('click', '.del_ros', function() {
             var id = $(this).data('id');
             Swal.fire({
-                title: 'Hapus ROS?',
-                text: 'Data ROS ' + id + ' akan dihapus permanen.',
+                title: 'Delete ROS?',
+                text: 'ROS ' + id + ' will be permanently deleted.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Ya, Hapus!',
-                cancelButtonText: 'Batal'
+                confirmButtonText: 'Yes, Delete',
+                cancelButtonText: 'Cancel'
             }).then(function(result) {
                 if (result.isConfirmed) {
                     $.post(siteurl + 'new_ros/delete', {
@@ -272,21 +247,18 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                     }, function(res) {
                         var resp = (typeof res === 'string') ? JSON.parse(res) : res;
                         if (resp.status == 1) {
-                            Swal.fire('Terhapus!', 'Data ROS berhasil dihapus.', 'success');
+                            Swal.fire('Deleted!', 'ROS data has been deleted.', 'success');
                             tblDraft.ajax.reload();
                         } else {
-                            Swal.fire('Gagal!', 'Gagal menghapus data.', 'error');
+                            Swal.fire('Failed!', 'Failed to delete data.', 'error');
                         }
                     });
                 }
             });
         });
 
-        // ══════════════════════════════════════════════════════════════
         // CLOSE ROS — Buka Modal Preview
-        // ══════════════════════════════════════════════════════════════
         var currentCloseRosId = null;
-
         $(document).on('click', '.btn_close_ros', function() {
             var id = $(this).data('id');
             currentCloseRosId = id;
@@ -295,7 +267,7 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
             $('#modal_close_ros_body').html(
                 '<div class="text-center py-4">' +
                 '<div class="spinner-border text-primary"></div>' +
-                '<div class="mt-2 text-muted">Memuat data ROS...</div>' +
+                '<div class="mt-2 text-muted">Loading ROS data...</div>' +
                 '</div>'
             );
             $('#modalCloseROS').modal('show');
@@ -318,7 +290,7 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                 },
                 error: function() {
                     $('#modal_close_ros_body').html(
-                        '<div class="alert alert-danger">Gagal memuat data.</div>'
+                        '<div class="alert alert-danger">Failed to load data.</div>'
                     );
                 }
             });
@@ -329,13 +301,13 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
 
             Swal.fire({
                 title: 'Close ROS ' + currentCloseRosId + '?',
-                text: 'Setelah di-close, ROS akan masuk ke Incoming dan tidak bisa diedit lagi.',
+                text: 'Once closed, the ROS will proceed to Incoming and can no longer be edited.',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#198754',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: '<i class="fas fa-check-double"></i> Ya, Close!',
-                cancelButtonText: 'Batal'
+                confirmButtonText: '<i class="fas fa-check-double"></i> Yes, Close',
+                cancelButtonText: 'Cancel'
             }).then(function(result) {
                 if (!result.isConfirmed) return;
 
@@ -347,7 +319,7 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                     },
                     beforeSend: function() {
                         Swal.fire({
-                            title: 'Memproses...',
+                            title: 'Processing...',
                             allowOutsideClick: false,
                             didOpen: function() {
                                 Swal.showLoading();
@@ -358,41 +330,40 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                         Swal.close();
                         if (res.status == 1) {
                             $('#modalCloseROS').modal('hide');
-                            Swal.fire('Berhasil!', res.msg, 'success').then(function() {
+                            Swal.fire('Success!', res.msg, 'success').then(function() {
                                 tblDraft.ajax.reload();
                                 tblClose.ajax.reload();
                                 closeTabLoaded = true;
                             });
                         } else if (res.status == 2) {
-                            Swal.fire('Perhatian', res.msg, 'warning');
+                            Swal.fire('Warning', res.msg, 'warning');
                         } else if (res.status == 3) {
                             // COA tidak ditemukan di master
                             Swal.fire({
-                                title: 'Master COA Tidak Lengkap!',
+                                title: 'Master COA Incomplete!',
                                 html: '<div class="text-start">' +
-                                    '<p>Proses <b>Close ROS</b> dibatalkan karena nomor COA berikut belum terdaftar di Master COA:</p>' +
+                                    '<p>The <b>Close ROS</b> process has been cancelled because the following COA numbers are not registered in the Master COA:</p>' +
                                     '<div class="alert alert-danger fw-bold">' + res.msg.replace(/:\s*/, ':<br><code>').replace(/$/, '</code>') + '</div>' +
-                                    '<p class="mb-0 text-muted small">Silakan tambahkan nomor COA tersebut di menu <b>Master COA</b> terlebih dahulu, lalu ulangi proses ini.</p>' +
+                                    '<p class="mb-0 text-muted small">Please add the COA numbers in the <b>Master COA</b> menu first, then retry this process.</p>' +
                                     '</div>',
                                 icon: 'error',
-                                confirmButtonText: 'Mengerti',
+                                confirmButtonText: 'Understood',
                                 confirmButtonColor: '#dc3545',
                             });
                         } else {
-                            Swal.fire('Gagal!', res.msg, 'error');
+                            Swal.fire('Failed!', res.msg, 'error');
                         }
                     },
                     error: function() {
                         Swal.close();
-                        Swal.fire('Error', 'Gagal memproses close ROS.', 'error');
+                        Swal.fire('Error', 'Failed to process close ROS.', 'error');
                     }
                 });
             });
         });
 
-        // ══════════════════════════════════════════════════════════════
+
         // BUILD PREVIEW HTML (sama seperti tampilan View ROS)
-        // ══════════════════════════════════════════════════════════════
         function buildPreviewHtml(res) {
             var h = res.header;
             var materials = res.materials;
@@ -407,7 +378,6 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
             };
 
             var html = '';
-
             // ── Header Info ──
             html += '<div class="row mb-3">';
             html += '<div class="col-md-4"><strong>No. ROS:</strong> ' + h.id + '</div>';
@@ -416,15 +386,28 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
             html += '</div>';
 
             // ── Data PIB ──
-            html += '<div class="section-title-preview pib"><i class="fas fa-file-invoice"></i> Data PIB</div>';
+            html += '<div class="section-title-preview pib"><i class="fas fa-file-invoice"></i> PIB Data</div>';
+
+            html += '<div class="row mb-3">';
+            html += '<div class="col-md-3"><strong>No. Submission:</strong> ' + (h.no_pengajuan || '-') + '</div>';
+            html += '<div class="col-md-3"><strong>No. Billing:</strong> ' + (h.no_billing || '-') + '</div>';
+            html += '<div class="col-md-3"><strong>Tgl. Billing:</strong> ' + (h.tgl_billing ? h.tgl_billing : '-') + '</div>';
+            html += '<div class="col-md-3"><strong>Doc PIB:</strong> ';
+            if (h.file_original_name_pib) {
+                html += '<a href="' + siteurl + 'uploads/pib_ros/' + h.file_hash_name_pib + '" target="_blank"><i class="fas fa-paperclip"></i> ' + h.file_original_name_pib + '</a>';
+            } else {
+                html += '-';
+            }
+            html += '</div></div>';
+
             html += '<div class="row mb-2">';
-            html += '<div class="col-md-4"><strong>Nilai PO (U$):</strong> ' + fmt(h.nilai_po_usd, 4) + '</div>';
-            html += '<div class="col-md-4"><strong>Kurs PIB:</strong> ' + fmt(h.kurs_pib, 2) + '</div>';
-            html += '<div class="col-md-4"><strong>Nilai PO PIB (Rp):</strong> ' + fmt(h.nilai_po_pib_rp, 2) + '</div>';
+            html += '<div class="col-md-4"><strong>PO Value (U$):</strong> ' + fmt(h.nilai_po_usd, 4) + '</div>';
+            html += '<div class="col-md-4"><strong>PIB Exchange Rate:</strong> ' + fmt(h.kurs_pib, 2) + '</div>';
+            html += '<div class="col-md-4"><strong>PO PIB Value (Rp):</strong> ' + fmt(h.nilai_po_pib_rp, 2) + '</div>';
             html += '</div>';
             html += '<div class="row mb-3">';
-            html += '<div class="col-md-4"><strong>Total KG Kotor:</strong> ' + fmt(h.total_kg_kotor_pib, 4) + '</div>';
-            html += '<div class="col-md-4"><strong>Total KG Bersih:</strong> ' + fmt(h.total_kg_bersih_pib, 4) + '</div>';
+            html += '<div class="col-md-4"><strong>Total Gross KG:</strong> ' + fmt(h.total_kg_kotor_pib, 4) + '</div>';
+            html += '<div class="col-md-4"><strong>Total Net KG:</strong> ' + fmt(h.total_kg_bersih_pib, 4) + '</div>';
             html += '</div>';
 
             // ── F&C ──
@@ -435,7 +418,7 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                 ['BM', h.cost_bm],
                 ['BM Kite', h.cost_bm_kite],
                 ['BMT', h.cost_bmt],
-                ['Cukai', h.cost_cukai],
+                ['Excise Duty', h.cost_cukai],
                 ['PPN', h.cost_ppn],
                 ['PPnBM', h.cost_ppnbm],
                 ['PPH Import', h.cost_pph_import]
@@ -448,48 +431,57 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
             html += '</tbody></table></div></div>';
 
             // ── Biaya LS ──
-            html += '<div class="section-title-preview ls"><i class="fas fa-search-dollar"></i> Biaya LS</div>';
+            html += '<div class="section-title-preview ls"><i class="fas fa-search-dollar"></i> LS Cost (Surveyor)</div>';
             html += '<div class="row mb-3">';
-            html += '<div class="col-md-3"><strong>Biaya LS:</strong> ' + fmt(h.biaya_ls) + '</div>';
+            html += '<div class="col-md-3"><strong>No. Invoice LS:</strong> ' + (h.no_invoice_ls || '-') + '</div>';
+            html += '<div class="col-md-3"><strong>LS Cost:</strong> ' + fmt(h.biaya_ls) + '</div>';
             html += '<div class="col-md-3"><strong>PPN LS:</strong> ' + fmt(h.ppn_ls) + '</div>';
             html += '<div class="col-md-3"><strong>PPH LS:</strong> ' + fmt(h.pph_ls) + '</div>';
+            html += '</div>';
+            var dpp_ls = (parseFloat(h.biaya_ls) || 0) * (11 / 12);
+            var total_ls = dpp_ls + (parseFloat(h.ppn_ls) || 0) - (parseFloat(h.pph_ls) || 0);
+            html += '<div class="row mb-3">';
+            html += '<div class="col-md-3"><strong>DPP (LS × 11/12):</strong> ' + fmt(dpp_ls) + '</div>';
+            html += '<div class="col-md-3"><strong>Total Biaya LS:</strong> ' + fmt(total_ls) + '</div>';
             html += '</div>';
 
             // ── Insurance ──
             html += '<div class="section-title-preview insurance"><i class="fas fa-shield-alt"></i> Insurance</div>';
             html += '<div class="row mb-3">';
-            html += '<div class="col-md-4"><strong>Nilai Insurance:</strong> ' + fmt(h.insurance) + '</div>';
+            html += '<div class="col-md-3"><strong>No. Insurance:</strong> ' + (h.no_insurance || '-') + '</div>';
+            html += '<div class="col-md-3"><strong>Insurance Value:</strong> ' + fmt(h.insurance) + '</div>';
             html += '</div>';
 
             // ── Biaya Lain ──
             if (others && others.length > 0) {
-                html += '<div class="section-title-preview others"><i class="fas fa-coins"></i> Biaya Lain-lain</div>';
+                html += '<div class="section-title-preview others"><i class="fas fa-coins"></i> Other Costs</div>';
                 html += '<div class="row mb-3"><div class="col-md-6">';
                 html += '<table class="table table-bordered table-sm" style="font-size:12px;">';
-                html += '<thead class="table-light"><tr><th>No</th><th>Keterangan</th><th class="text-end">Nilai (Rp)</th></tr></thead><tbody>';
+                html += '<thead class="table-light"><tr><th>No</th><th>No. Ref</th><th>Description</th><th class="text-end">Amount (Rp)</th></tr></thead><tbody>';
                 $.each(others, function(i, ot) {
                     html += '<tr>';
                     html += '<td class="text-center">' + (i + 1) + '</td>';
+                    html += '<td>' + (ot.no_others || '-') + '</td>';
                     html += '<td>' + ot.keterangan + '</td>';
                     html += '<td class="text-end">' + fmt(ot.nilai) + '</td>';
                     html += '</tr>';
                 });
                 html += '<tr class="table-secondary">';
-                html += '<td colspan="2" class="text-end fw-bold">Total</td>';
+                html += '<td colspan="3" class="text-end fw-bold">Total</td>';
                 html += '<td class="text-end fw-bold">' + fmt(res.total_others_val) + '</td>';
                 html += '</tr>';
                 html += '</tbody></table></div></div>';
             }
 
             // ── Data PO & Kalkulasi ──
-            html += '<div class="section-title-preview data-po"><i class="fas fa-calculator"></i> Data PO &amp; Kalkulasi Nilai Inventory</div>';
+            html += '<div class="section-title-preview data-po"><i class="fas fa-calculator"></i> PO Data &amp; Inventory Value Calculation</div>';
             html += '<div class="table-responsive">';
             html += '<table class="table table-bordered table-sm" style="font-size:11px;">';
             html += '<thead class="table-light"><tr>';
             $.each([
-                'No', 'Nama di PO', 'Nama Alias', 'Kg Unit', 'Unit Price (U$)',
+                'No', 'PO Name', 'Alias Name', 'Kg Unit', 'Unit Price (U$)',
                 'Total Value (U$)', 'Total Value (Rp)', 'BM %', 'BM (Rp)',
-                'Prorate LS', 'Forwarding', 'Insurance', 'Biaya Lain',
+                'Prorate LS', 'Forwarding', 'Insurance', 'Other Costs',
                 'Total Inventory', 'Cost Book'
             ], function(i, t) {
                 html += '<th class="text-center">' + t + '</th>';
@@ -555,13 +547,13 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
 
             // ── Data Coil ──
             if (res.total_coil > 0) {
-                html += '<div class="section-title-preview coil-sec"><i class="fas fa-list"></i> Data Coil</div>';
+                html += '<div class="section-title-preview coil-sec"><i class="fas fa-list"></i> Coil Data</div>';
                 html += '<div class="table-responsive">';
                 html += '<table class="table table-bordered table-sm" style="font-size:11px;">';
                 html += '<thead class="table-light"><tr>';
                 $.each([
-                    'No', 'Nama Asli', 'Nama Alias', 'No. Coil',
-                    'Kode Internal', 'N.W. (Kg)', 'G.W. (Kg)', 'Length (M)'
+                    'No', 'Original Name', 'Alias Name', 'Coil No.',
+                    'Internal Code', 'N.W. (Kg)', 'G.W. (Kg)', 'Length (M)'
                 ], function(i, t) {
                     html += '<th class="text-center">' + t + '</th>';
                 });
@@ -603,7 +595,7 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
             return html;
         }
 
-    }); 
+    });
 </script>
 
 <script src="<?= base_url('assets/plugins/datatables/jquery.dataTables.min.js') ?>"></script>
@@ -651,14 +643,14 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
         $(document).on('click', '.del_ros', function() {
             var id = $(this).data('id');
             Swal.fire({
-                title: 'Hapus ROS?',
-                text: 'Data ROS ' + id + ' akan dihapus permanen.',
+                title: 'Delete ROS?',
+                text: 'ROS ' + id + ' will be permanently deleted.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Ya, Hapus!',
-                cancelButtonText: 'Batal'
+                confirmButtonText: 'Yes, Delete',
+                cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.post(siteurl + 'new_ros/delete', {
@@ -666,10 +658,10 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                     }, function(res) {
                         var resp = JSON.parse(res);
                         if (resp.status == 1) {
-                            Swal.fire('Terhapus!', 'Data ROS berhasil dihapus.', 'success');
+                            Swal.fire('Deleted!', 'ROS data has been deleted.', 'success');
                             table.ajax.reload();
                         } else {
-                            Swal.fire('Gagal!', 'Gagal menghapus data.', 'error');
+                            Swal.fire('Failed!', 'Failed to delete data.', 'error');
                         }
                     });
                 }

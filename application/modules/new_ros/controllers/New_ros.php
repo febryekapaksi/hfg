@@ -19,7 +19,7 @@ class New_ros extends Admin_Controller
     public function index()
     {
         $this->auth->restrict($this->viewPermission);
-        $this->template->title('New ROS');
+        $this->template->title('ROS List');
         $this->template->render('index');
     }
 
@@ -310,6 +310,44 @@ class New_ros extends Admin_Controller
             }
         }
 
+        // ── Upload Doc PIB ──
+        $file_original_name_pib = null;
+        $file_hash_name_pib     = null;
+
+        if (isset($_FILES['doc_pib']) && $_FILES['doc_pib']['error'] === UPLOAD_ERR_OK) {
+            $upload_path = FCPATH . 'uploads/pib_ros/';
+            if (!is_dir($upload_path)) {
+                mkdir($upload_path, 0755, true);
+            }
+
+            $config_pib = [
+                'upload_path'   => $upload_path,
+                'allowed_types' => 'pdf|jpg|jpeg|png|xlsx|xls|doc|docx',
+                'max_size'      => 10240,
+                'encrypt_name'  => TRUE,
+            ];
+            $this->load->library('upload', $config_pib);
+            $this->upload->initialize($config_pib);
+
+            if ($this->upload->do_upload('doc_pib')) {
+                $file_data              = $this->upload->data();
+                $file_original_name_pib = $file_data['client_name'];
+                $file_hash_name_pib     = $file_data['file_name'];
+            } else {
+                // JIKA UPLOAD GAGAL: Rollback database dan hentikan proses
+                $this->db->trans_rollback();
+
+                // Mengambil pesan error dari library CodeIgniter
+                $error_msg = $this->upload->display_errors('', '');
+
+                echo json_encode([
+                    'status' => 0,
+                    'msg'    => 'Upload file gagal: ' . $error_msg
+                ]);
+                return; // Berhenti di sini
+            }
+        }
+
         $is_new = ($post['id_ros'] == 'New');
 
         if ($is_new) {
@@ -342,8 +380,18 @@ class New_ros extends Admin_Controller
             'biaya_ls'           => $biaya_ls,
             'ppn_ls'             => (float) str_replace(',', '', $post['ppn_ls']),
             'pph_ls'             => (float) str_replace(',', '', $post['pph_ls']),
-            'insurance'          => $insurance,
+            'insurance'             => $insurance,
+            'no_pengajuan'          => $post['no_pengajuan'] ?? null,
+            'no_billing'            => $post['no_billing'] ?? null,
+            'tgl_billing'           => !empty($post['tgl_billing']) ? $post['tgl_billing'] : null,
+            'no_invoice_ls'         => $post['no_invoice_ls'] ?? null,
+            'no_insurance'          => $post['no_insurance'] ?? null,
         ];
+
+        if ($file_original_name_pib) {
+            $header_data['file_original_name_pib'] = $file_original_name_pib;
+            $header_data['file_hash_name_pib']     = $file_hash_name_pib;
+        }
 
         if ($is_new) {
             $header_data['id']         = $id_ros;
@@ -376,8 +424,10 @@ class New_ros extends Admin_Controller
                 $nilai_other = (float) str_replace(',', '', $nilai_raw);
 
                 if (!empty($ket) || $nilai_other > 0) {
+                    $no_others_raw = isset($post['others_no'][$idx]) ? $post['others_no'][$idx] : null;
                     $this->db->insert('tr_ros_others', [
                         'id_ros'     => $id_ros,
+                        'no_others'  => $no_others_raw,
                         'keterangan' => $ket,
                         'nilai'      => $nilai_other,
                         'created_by' => $this->auth->user_id(),
@@ -501,10 +551,10 @@ class New_ros extends Admin_Controller
 
         if ($this->db->trans_status() === false) {
             $this->db->trans_rollback();
-            echo json_encode(['status' => 0, 'msg' => 'Gagal menyimpan data ROS.']);
+            echo json_encode(['status' => 0, 'msg' => 'Failed to save ROS data.']);
         } else {
             $this->db->trans_commit();
-            echo json_encode(['status' => 1, 'msg' => 'Data ROS berhasil disimpan.', 'id' => $id_ros]);
+            echo json_encode(['status' => 1, 'msg' => 'ROS data saved successfully.', 'id' => $id_ros]);
         }
     }
 
@@ -541,7 +591,7 @@ class New_ros extends Admin_Controller
         $materials_coil = json_decode($materials_coil_json, true);
 
         if (empty($materials_coil)) {
-            show_error('Tidak ada data material.');
+            show_error('No material data available.');
             return;
         }
 
@@ -585,8 +635,8 @@ class New_ros extends Admin_Controller
 
         // ── Kolom widths ──
         $sheet->getColumnDimension('A')->setWidth(20);  // COIL NO.
-        $sheet->getColumnDimension('B')->setWidth(40);  // Nama Lain/Alias
-        $sheet->getColumnDimension('C')->setWidth(40);  // Nama Asli (nm_barang)
+        $sheet->getColumnDimension('B')->setWidth(40);  // Alias Name
+        $sheet->getColumnDimension('C')->setWidth(40);  // Original Name (nm_barang)
         $sheet->getColumnDimension('D')->setWidth(12);  // N.W.
         $sheet->getColumnDimension('E')->setWidth(12);  // G.W.
         $sheet->getColumnDimension('F')->setWidth(12);  // LENGTH
@@ -594,8 +644,8 @@ class New_ros extends Admin_Controller
 
         // ── Header Row ──
         $sheet->setCellValue('A1', 'COIL NO.');
-        $sheet->setCellValue('B1', 'Nama Lain/Alias');
-        $sheet->setCellValue('C1', 'Nama Asli');
+        $sheet->setCellValue('B1', 'Alias Name');
+        $sheet->setCellValue('C1', 'Original Name');
         $sheet->setCellValue('D1', "N.W.\n(KGS)");
         $sheet->setCellValue('E1', "G.W.\n(KGS)");
         $sheet->setCellValue('F1', "LENGTH\n(M)");
@@ -710,7 +760,7 @@ class New_ros extends Admin_Controller
             $objReader->setReadDataOnly(true);
             $objPHPExcel = $objReader->load($file_path);
         } catch (Exception $e) {
-            echo json_encode(['status' => 0, 'msg' => 'Gagal membaca file Excel: ' . $e->getMessage()]);
+            echo json_encode(['status' => 0, 'msg' => 'Failed to read Excel file: ' . $e->getMessage()]);
             return;
         }
 
@@ -804,7 +854,7 @@ class New_ros extends Admin_Controller
 
         echo json_encode([
             'status'        => 1,
-            'msg'           => 'Berhasil membaca ' . count($coils) . ' baris coil.',
+            'msg'           => 'Successfully read ' . count($coils) . ' coil rows.',
             'coils'         => $coils,
             'total'         => count($coils),
             'file_original' => $original_name,
@@ -817,14 +867,14 @@ class New_ros extends Admin_Controller
     {
         $id_ros = $this->input->post('id_ros');
         if (!$id_ros || $id_ros == 'New') {
-            echo json_encode(['status' => 0, 'msg' => 'Simpan ROS terlebih dahulu sebelum upload packing list.']);
+            echo json_encode(['status' => 0, 'msg' => 'Please save the ROS first before uploading the packing list.']);
             return;
         }
 
         // Cek ROS exists
         $header = $this->New_ros_model->get_header($id_ros);
         if (!$header) {
-            echo json_encode(['status' => 0, 'msg' => 'Data ROS tidak ditemukan.']);
+            echo json_encode(['status' => 0, 'msg' => 'ROS data not found.']);
             return;
         }
 
@@ -862,7 +912,7 @@ class New_ros extends Admin_Controller
             $objReader->setReadDataOnly(true); // baca cached value saja, tidak kalkulasi ulang
             $objPHPExcel = $objReader->load($file_path);
         } catch (Exception $e) {
-            echo json_encode(['status' => 0, 'msg' => 'Gagal membaca file Excel: ' . $e->getMessage()]);
+            echo json_encode(['status' => 0, 'msg' => 'Failed to read Excel file: ' . $e->getMessage()]);
             return;
         }
 
@@ -872,7 +922,7 @@ class New_ros extends Admin_Controller
         // Ambil materials untuk ROS ini
         $materials = $this->New_ros_model->get_materials($id_ros);
         if (empty($materials)) {
-            echo json_encode(['status' => 0, 'msg' => 'Tidak ada material di ROS ini. Load data PO dan simpan terlebih dahulu.']);
+            echo json_encode(['status' => 0, 'msg' => 'No materials found in this ROS. Please load PO data and save first.']);
             return;
         }
 
@@ -1012,7 +1062,7 @@ class New_ros extends Admin_Controller
 
         echo json_encode([
             'status'       => 1,
-            'msg'          => "Berhasil membaca {$rows_parsed} baris. {$rows_matched} matched, " . ($rows_parsed - $rows_matched) . " tidak match.",
+            'msg'          => "Successfully read {$rows_parsed} rows. {$rows_matched} matched, " . ($rows_parsed - $rows_matched) . " not matched.",
             'total_parsed' => $rows_parsed,
             'total_matched' => $rows_matched,
             'file'         => $original_name
@@ -1049,7 +1099,7 @@ class New_ros extends Admin_Controller
         ])->result_array();
 
         if (empty($temp_data)) {
-            echo json_encode(['status' => 0, 'msg' => 'Tidak ada data yang bisa dikonfirmasi.']);
+            echo json_encode(['status' => 0, 'msg' => 'No data available for confirmation.']);
             return;
         }
 
@@ -1096,10 +1146,10 @@ class New_ros extends Admin_Controller
 
         if ($this->db->trans_status() === false) {
             $this->db->trans_rollback();
-            echo json_encode(['status' => 0, 'msg' => 'Gagal menyimpan data coil.']);
+            echo json_encode(['status' => 0, 'msg' => 'Failed to save coil data.']);
         } else {
             $this->db->trans_commit();
-            echo json_encode(['status' => 1, 'msg' => "Berhasil menyimpan {$inserted} coil.", 'total' => $inserted]);
+            echo json_encode(['status' => 1, 'msg' => "Successfully saved {$inserted} coils.", 'total' => $inserted]);
         }
     }
 
@@ -1138,9 +1188,9 @@ class New_ros extends Admin_Controller
                 <tr>
                     <th class="text-center">No</th>
                     <th class="text-center">Material</th>
-                    <th class="text-center">Nama Alias</th>
-                    <th class="text-center">No. Coil</th>
-                    <th class="text-center">Kode Internal</th>
+                    <th class="text-center">Alias Name</th>
+                    <th class="text-center">Coil No.</th>
+                    <th class="text-center">Internal Code</th>
                     <th class="text-center">N.W. (Kg)</th>
                     <th class="text-center">G.W. (Kg)</th>
                     <th class="text-center">Length (M)</th>
@@ -1171,7 +1221,7 @@ class New_ros extends Admin_Controller
                 $no++;
             }
         } else {
-            $html .= '<tr><td colspan="9" class="text-center">Belum ada data coil. Upload packing list terlebih dahulu.</td></tr>';
+            $html .= '<tr><td colspan="9" class="text-center">No coil data available. Please upload the packing list first.</td></tr>';
         }
 
         $html .= '</tbody></table></div>';
@@ -1191,7 +1241,7 @@ class New_ros extends Admin_Controller
         $data_coil = $this->db->get()->result_array();
 
         if (empty($data_coil)) {
-            die("Data tidak ditemukan.");
+            die("Data not found.");
         }
 
         $data = ['results' => $data_coil];
@@ -1243,14 +1293,14 @@ class New_ros extends Admin_Controller
         $coil_count = $this->db->get()->num_rows();
 
         if ($coil_count == 0) {
-            echo json_encode(['status' => 0, 'msg' => 'Upload packing list terlebih dahulu sebelum finalize.']);
+            echo json_encode(['status' => 0, 'msg' => 'Please upload the packing list before finalizing.']);
             return;
         }
 
         // Ambil header ROS
         $header = $this->New_ros_model->get_header($id_ros);
         if (!$header) {
-            echo json_encode(['status' => 0, 'msg' => 'Data ROS tidak ditemukan.']);
+            echo json_encode(['status' => 0, 'msg' => 'ROS data not found.']);
             return;
         }
 
@@ -1270,7 +1320,7 @@ class New_ros extends Admin_Controller
 
         if ($this->db->trans_status() === false) {
             $this->db->trans_rollback();
-            echo json_encode(['status' => 0, 'msg' => 'Gagal finalize ROS.']);
+            echo json_encode(['status' => 0, 'msg' => 'Failed to finalize ROS.']);
             return;
         }
 
@@ -1328,9 +1378,9 @@ class New_ros extends Admin_Controller
         }
 
         if ($jurnal_error) {
-            echo json_encode(['status' => 2, 'msg' => 'ROS berhasil di-finalize, namun GL Interface gagal dibuat. Silakan repost via menu GL Interface.']);
+            echo json_encode(['status' => 2, 'msg' => 'ROS finalized successfully, but GL Interface creation failed. Please repost via the GL Interface menu.']);
         } else {
-            echo json_encode(['status' => 1, 'msg' => 'ROS berhasil di-finalize. Silakan proses di menu Incoming.']);
+            echo json_encode(['status' => 1, 'msg' => 'ROS finalized successfully. Please proceed in the Incoming menu.']);
         }
     }
 
@@ -1477,7 +1527,7 @@ class New_ros extends Admin_Controller
         )->row();
 
         if (empty($cabang)) {
-            throw new Exception('Data cabang tidak ditemukan untuk generate nomor JV!');
+            throw new Exception('Branch data not found for generating JV number!');
         }
 
         $nomor_urut = (int) $cabang->nomorJC + 1;
@@ -1514,7 +1564,7 @@ class New_ros extends Admin_Controller
         // Cek ROS exists & masih draft
         $header = $this->New_ros_model->get_header($id_ros);
         if (!$header || $header['status'] != '0') {
-            echo json_encode(['status' => 0, 'msg' => 'Data tidak ditemukan atau sudah tidak Draft.']);
+            echo json_encode(['status' => 0, 'msg' => 'Data not found or status is no longer Draft.']);
             return;
         }
 
@@ -1580,7 +1630,7 @@ class New_ros extends Admin_Controller
             if (!$coa_check['valid']) {
                 echo json_encode([
                     'status' => 3,
-                    'msg'    => 'Nomor COA berikut belum terdaftar di Master COA dan harus ditambahkan terlebih dahulu: '
+                    'msg'    => 'The following COA numbers are not registered in the Master COA and must be added first: '
                         . implode(', ', $coa_check['not_found']),
                 ]);
                 return;
@@ -1598,7 +1648,7 @@ class New_ros extends Admin_Controller
 
         if ($this->db->trans_status() === false) {
             $this->db->trans_rollback();
-            echo json_encode(['status' => 0, 'msg' => 'Gagal update status ROS.']);
+            echo json_encode(['status' => 0, 'msg' => 'Failed to update ROS status.']);
             return;
         }
         $this->db->trans_commit();
@@ -1663,18 +1713,18 @@ class New_ros extends Admin_Controller
                 );
                 ob_clean();
                 header('Content-Type: application/json');
-                echo json_encode(['status' => 1, 'msg' => 'ROS berhasil di-close dan Jurnal JV telah dibuat.']);
+                echo json_encode(['status' => 1, 'msg' => 'ROS closed successfully and JV journal has been created.']);
                 exit;
             } catch (Exception $e) {
                 ob_clean();
                 header('Content-Type: application/json');
-                echo json_encode(['status' => 2, 'msg' => 'ROS closed, tapi Jurnal error: ' . $e->getMessage()]);
+                echo json_encode(['status' => 2, 'msg' => 'ROS closed, but journal error: ' . $e->getMessage()]);
                 exit;
             }
         } else {
             ob_clean();
             header('Content-Type: application/json');
-            echo json_encode(['status' => 1, 'msg' => 'ROS berhasil di-close.']);
+            echo json_encode(['status' => 1, 'msg' => 'ROS closed successfully.']);
             exit;
         }
     }
@@ -1715,7 +1765,7 @@ class New_ros extends Admin_Controller
         // ── nama COA dari DBACC ──
         $coa_check = $this->_validate_and_get_coa_names($coa);
         if (!$coa_check['valid']) {
-            throw new Exception('COA tidak ditemukan di Master: ' . implode(', ', $coa_check['not_found']));
+            throw new Exception('COA not found in Master: ' . implode(', ', $coa_check['not_found']));
         }
         $coa_names = $coa_check['names'];
 
@@ -1813,7 +1863,7 @@ class New_ros extends Admin_Controller
 
         $header = $this->New_ros_model->get_header($id_ros);
         if (!$header) {
-            echo json_encode(['status' => 0, 'msg' => 'Data tidak ditemukan.']);
+            echo json_encode(['status' => 0, 'msg' => 'Data not found.']);
             return;
         }
 

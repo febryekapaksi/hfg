@@ -22,13 +22,13 @@ $ENABLE_DELETE  = has_permission('Closed_PO.Delete');
 			<thead>
 				<tr>
 					<th width="5">#</th>
-					<th>No PO</th>
-					<th>No PR</th>
-					<th>No Incoming</th>
-					<th>Tanggal PO</th>
+					<th>PO No.</th>
+					<th>PR No.</th>
+					<th>Incoming No.</th>
+					<th>PO Date</th>
 					<th>Vendor</th>
-					<th>Harga PO</th>
-					<th>Revisi</th>
+					<th>PO Amount</th>
+					<th>Revision</th>
 					<th>Close Reason</th>
 					<?php if ($ENABLE_MANAGE) : ?>
 						<th>Action</th>
@@ -108,7 +108,7 @@ $ENABLE_DELETE  = has_permission('Closed_PO.Delete');
 		<div class="modal-content">
 			<div class="modal-header">
 				<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-				<h4 class="modal-title" id="myModalLabel"><span class="fa fa-file-pdf-o"></span>&nbsp;Rekap Data Customer</h4>
+				<h4 class="modal-title" id="myModalLabel"><span class="fa fa-file-pdf-o"></span>&nbsp;Customer Data Summary</h4>
 			</div>
 			<div class="modal-body" id="MyModalBody">
 				...
@@ -126,7 +126,7 @@ $ENABLE_DELETE  = has_permission('Closed_PO.Delete');
 		<div class="modal-content">
 			<div class="modal-header">
 				<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-				<h4 class="modal-title" id="myModalLabel"><span class="fa fa-users"></span>&nbsp;Data Penawaran</h4>
+				<h4 class="modal-title" id="myModalLabel"><span class="fa fa-users"></span>&nbsp;Quotation Data</h4>
 			</div>
 			<div class="modal-body" id="ModalView">
 				...
@@ -261,7 +261,7 @@ $ENABLE_DELETE  = has_permission('Closed_PO.Delete');
 		})
 	});
 	$(document).on('click', '.add', function() {
-		$("#head_title").html("<i class='fa fa-list-alt'></i><b>Tambah Inventory</b>");
+		$("#head_title").html("<i class='fa fa-list-alt'></i><b>Add Inventory</b>");
 		$.ajax({
 			type: 'POST',
 			url: siteurl + 'penawaran/addHeader',
@@ -279,12 +279,12 @@ $ENABLE_DELETE  = has_permission('Closed_PO.Delete');
 		e.preventDefault()
 		var id = $(this).data('no_po');
 		Swal.fire({
-			title: "Anda Yakin?",
-			text: "PO. Akan Di Approve.",
+			title: "Are you sure?",
+			text: "PO will be approved.",
 			icon: "warning",
 			showCancelButton: true,
-			confirmButtonText: "Ya, Approve!",
-			cancelButtonText: "Batal"
+			confirmButtonText: "Yes, Approve!",
+			cancelButtonText: "Cancel"
 		}).then(function(result) {
 			if (result.isConfirmed) {
 				$.ajax({
@@ -294,14 +294,14 @@ $ENABLE_DELETE  = has_permission('Closed_PO.Delete');
 					data: { 'id': id },
 					success: function(result) {
 						if (result.status == '1') {
-							Swal.fire({ title: "Sukses", text: "P.R Approved.", icon: "success", timer: 1500, showConfirmButton: false })
+							Swal.fire({ title: "Success", text: "P.R Approved.", icon: "success", timer: 1500, showConfirmButton: false })
 								.then(function(){ window.location.reload(true); });
 						} else {
-							Swal.fire({ title: "Error", text: "Data error. Gagal Approve data", icon: "error", confirmButtonText: "OK" });
+							Swal.fire({ title: "Error", text: "Data error. Failed to approve data", icon: "error", confirmButtonText: "OK" });
 						}
 					},
 					error: function() {
-						Swal.fire({ title: "Error", text: "Data error. Gagal request Ajax", icon: "error", confirmButtonText: "OK" });
+						Swal.fire({ title: "Error", text: "Data error. Ajax request failed", icon: "error", confirmButtonText: "OK" });
 					}
 				});
 			}

@@ -30,7 +30,7 @@ $h = [
 $others_data    = $is_edit ? $others : [];
 $materials_data = $is_edit ? $materials : [];
 
-// List PO untuk edit mode (sudah di-filter by supplier di controller)
+// List PO untuk edit mode
 $list_po_data = isset($list_po) ? $list_po : [];
 ?>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
@@ -124,21 +124,19 @@ $list_po_data = isset($list_po) ? $list_po : [];
 </style>
 
 <div class="card">
-    <form id="frm-new-ros" method="post">
+    <form id="frm-new-ros" method="post" enctype="multipart/form-data">
         <input type="hidden" name="id_ros" id="id_ros" value="<?= $id_ros ?>">
         <input type="hidden" name="no_po" id="no_po" value="<?= $no_po_val ?>">
         <input type="hidden" name="no_surat" id="no_surat" value="<?= $is_edit ? $header['no_surat'] : '' ?>">
 
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between mb-2">
-                <h5 class="mb-0 fw-bold">Form New ROS — Kalkulasi Biaya Import Material</h5>
-                <span class="text-muted small">(*) wajib diisi</span>
+                <h5 class="mb-0 fw-bold">New ROS Form — Import Material Cost Calculation</h5>
+                <span class="text-muted small">(*) required</span>
             </div>
             <hr class="mt-2">
 
-            <!-- ═══════════════════════════════════════════════════════ -->
-            <!-- HEADER: Supplier → PO Selection                        -->
-            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- HEADER: Supplier → PO Selection -->
             <div class="row mb-3">
                 <div class="col-md-3">
                     <label>No. ROS</label>
@@ -147,7 +145,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                 <div class="col-md-4">
                     <label>Supplier <span class="text-danger">*</span></label>
                     <select name="id_supplier" id="id_supplier" class="form-control form-control-sm select2" required style="width:100%">
-                        <option value="">-- Pilih Supplier --</option>
+                        <option value="">-- Select Supplier --</option>
                         <?php foreach ($list_supplier as $s) : ?>
                             <option value="<?= $s['kode_supplier'] ?>" <?= ($h['id_supplier'] == $s['kode_supplier']) ? 'selected' : '' ?>><?= $s['nama'] ?></option>
                         <?php endforeach; ?>
@@ -157,7 +155,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                     <label>No. PO <span class="text-danger">*</span></label>
                     <div class="d-flex align-items-center gap-1">
                         <select id="select_po" class="form-control form-control-sm select2" required style="width:100%">
-                            <option value="">-- Pilih Supplier dulu --</option>
+                            <option value="">-- Select Supplier first --</option>
                             <?php if ($is_edit) : ?>
                                 <?php foreach ($list_po_data as $po) : ?>
                                     <option value="<?= $po['no_po'] ?>" <?= ($no_po_val == $po['no_po']) ? 'selected' : '' ?>>
@@ -173,23 +171,49 @@ $list_po_data = isset($list_po) ? $list_po : [];
                 </div>
             </div>
 
-            <!-- ═══════════════════════════════════════════════════════ -->
-            <!-- TAHAP 1: DATA PIB                                      -->
-            <!-- ═══════════════════════════════════════════════════════ -->
-            <div class="section-title pib"><i class="fas fa-file-invoice"></i> Tahap 1 — Data PIB</div>
+            <!-- TAHAP 1: DATA PIB -->
+            <div class="section-title pib"><i class="fas fa-file-invoice"></i> Step 1 — PIB Data</div>
 
             <div class="row mb-3">
+                <div class="col-md-3">
+                    <label>No. Submission</label>
+                    <input type="text" name="no_pengajuan" id="no_pengajuan" class="form-control form-control-sm"
+                        value="<?= $is_edit ? $header['no_pengajuan'] : '' ?>" placeholder="No. Submission">
+                </div>
+                <div class="col-md-3">
+                    <label>No. Billing</label>
+                    <input type="text" name="no_billing" id="no_billing" class="form-control form-control-sm"
+                        value="<?= $is_edit ? $header['no_billing'] : '' ?>" placeholder="No. Billing">
+                </div>
+                <div class="col-md-3">
+                    <label>Tgl. Billing</label>
+                    <input type="text" name="tgl_billing" id="tgl_billing" class="form-control form-control-sm" value="<?= $is_edit ? $header['tgl_billing'] : '' ?>" placeholder="Select Date..">
+                </div>
+                <div class="col-md-3">
+                    <label>Doc PIB</label>
+                    <input type="file" name="doc_pib" id="doc_pib" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx">
+                    <?php if ($is_edit && !empty($header['file_original_name_pib'])): ?>
+                        <small class="text-muted mt-1 d-block">
+                            <i class="fas fa-paperclip"></i>
+                            <a href="<?= base_url('uploads/pib_ros/' . $header['file_hash_name_pib']) ?>" target="_blank">
+                                <?= $header['file_original_name_pib'] ?>
+                            </a>
+                        </small>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="row mb-3">
                 <div class="col-md-4">
-                    <label>Nilai PO (U$) <small class="text-muted">CIF / C&F</small></label>
+                    <label>PO Value (U$) <small class="text-muted">CIF / C&F</small></label>
                     <input type="text" name="nilai_po_usd" id="nilai_po_usd" class="form-control form-control-sm auto_num" value="<?= $h['nilai_po_usd'] ?>">
                 </div>
                 <div class="col-md-4">
-                    <label>Kurs PIB <span class="text-danger">*</span></label>
+                    <label>PIB Exchange Rate <span class="text-danger">*</span></label>
                     <input type="text" name="kurs_pib" id="kurs_pib" class="form-control form-control-sm auto_num" value="<?= $h['kurs_pib'] ?>" required>
-                    <small class="text-muted"><i class="fas fa-info-circle"></i> Isi kurs lalu klik <b>Hitung Ulang</b> untuk update nilai Rp.</small>
+                    <small class="text-muted"><i class="fas fa-info-circle"></i> Enter the rate then click <b>Recalculate</b> to update Rp values.</small>
                 </div>
                 <div class="col-md-4">
-                    <label>Nilai PO PIB (Rp)</label>
+                    <label>PO PIB Value (Rp)</label>
                     <input type="text" name="nilai_po_pib_rp" id="nilai_po_pib_rp"
                         class="form-control form-control-sm auto_num readonly-field"
                         value="<?= $h['nilai_po_pib_rp'] ?>" readonly tabindex="-1">
@@ -197,14 +221,15 @@ $list_po_data = isset($list_po) ? $list_po : [];
             </div>
             <div class="row mb-3">
                 <div class="col-md-4">
-                    <label>Total KG Kotor PIB</label>
+                    <label>Total Gross KG PIB</label>
                     <input type="text" name="total_kg_kotor_pib" id="total_kg_kotor_pib" class="form-control form-control-sm auto_num" value="<?= $h['total_kg_kotor_pib'] ?>">
                 </div>
                 <div class="col-md-4">
-                    <label>Total KG Bersih PIB <span class="text-danger">*</span></label>
+                    <label>Total Net KG PIB <span class="text-danger">*</span></label>
                     <input type="text" name="total_kg_bersih_pib" id="total_kg_bersih_pib" class="form-control form-control-sm auto_num" value="<?= $h['total_kg_bersih_pib'] ?>" required>
                 </div>
             </div>
+
 
             <!-- F&C Estimation -->
             <h6 class="fw-bold mt-3">F&C Estimation</h6>
@@ -214,7 +239,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                         <thead class="table-light">
                             <tr>
                                 <th class="text-center" width="5%">No</th>
-                                <th class="text-center">Item Pembiayaan</th>
+                                <th class="text-center">Cost Item</th>
                                 <th class="text-center" width="40%">Cost (Rp)</th>
                             </tr>
                         </thead>
@@ -236,7 +261,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                             </tr>
                             <tr>
                                 <td class="text-center">4</td>
-                                <td>Cukai</td>
+                                <td>Excise Duty</td>
                                 <td><input type="text" name="cost_cukai" id="cost_cukai" class="form-control form-control-sm auto_num fc-cost" value="<?= $h['cost_cukai'] ?>"></td>
                             </tr>
                             <tr>
@@ -263,14 +288,18 @@ $list_po_data = isset($list_po) ? $list_po : [];
                 </div>
             </div>
 
-            <!-- ═══════════════════════════════════════════════════════ -->
-            <!-- TAHAP 2: BIAYA LS (Surveyor)                           -->
-            <!-- ═══════════════════════════════════════════════════════ -->
-            <div class="section-title ls"><i class="fas fa-search-dollar"></i> Tahap 2 — Biaya LS (Surveyor)</div>
+
+            <!-- TAHAP 2: BIAYA LS (Surveyor) -->
+            <div class="section-title ls"><i class="fas fa-search-dollar"></i> Step 2 — LS Cost (Surveyor)</div>
 
             <div class="row mb-3">
                 <div class="col-md-3">
-                    <label>Biaya LS</label>
+                    <label>No. Invoice LS</label>
+                    <input type="text" name="no_invoice_ls" id="no_invoice_ls" class="form-control form-control-sm"
+                        value="<?= $is_edit ? ($header['no_invoice_ls'] ?? '') : '' ?>" placeholder="No. Invoice LS">
+                </div>
+                <div class="col-md-3">
+                    <label>LS Cost</label>
                     <input type="text" name="biaya_ls" id="biaya_ls" class="form-control form-control-sm auto_num" value="<?= $h['biaya_ls'] ?>">
                 </div>
                 <div class="col-md-3">
@@ -282,16 +311,26 @@ $list_po_data = isset($list_po) ? $list_po : [];
                     <input type="text" name="pph_ls" id="pph_ls" class="form-control form-control-sm auto_num" value="<?= $h['pph_ls'] ?>">
                 </div>
             </div>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label>DPP <small class="text-muted">(LS Cost × 11/12)</small></label>
+                    <input type="text" id="dpp_ls" class="form-control form-control-sm readonly-field" readonly tabindex="-1" placeholder="0">
+                </div>
+                <div class="col-md-3">
+                    <label>Total Biaya LS <small class="text-muted">(DPP + PPN - PPH)</small></label>
+                    <input type="text" id="total_biaya_ls" class="form-control form-control-sm readonly-field" readonly tabindex="-1" placeholder="0">
+                </div>
+            </div>
 
             <!-- Tabel Prorate LS -->
-            <h6 class="fw-bold">Perhitungan Prorate LS</h6>
+            <h6 class="fw-bold">LS Prorate Calculation</h6>
             <div class="table-responsive mb-3">
                 <table class="table table-bordered table-sm" id="tbl_prorate_ls">
                     <thead class="table-light">
                         <tr>
-                            <th class="text-center">Nama Material</th>
+                            <th class="text-center">Material Name</th>
                             <th class="text-center" width="12%">Net Weight (Kg)</th>
-                            <th class="text-center" width="10%">LS (Ya/Tidak)</th>
+                            <th class="text-center" width="10%">LS (Yes/No)</th>
                             <th class="text-center" width="12%">KG LS</th>
                             <th class="text-center" width="15%">Prorate LS (Rp)</th>
                         </tr>
@@ -307,29 +346,33 @@ $list_po_data = isset($list_po) ? $list_po : [];
                 </table>
             </div>
 
-            <!-- ═══════════════════════════════════════════════════════ -->
-            <!-- TAHAP 3: INSURANCE                                     -->
-            <!-- ═══════════════════════════════════════════════════════ -->
-            <div class="section-title insurance"><i class="fas fa-shield-alt"></i> Tahap 3 — Insurance (jika ada)</div>
+
+            <!-- TAHAP 3: INSURANCE -->
+            <div class="section-title insurance"><i class="fas fa-shield-alt"></i> Step 3 — Insurance (if applicable)</div>
             <div class="row mb-3">
+                <div class="col-md-3">
+                    <label>No. Insurance</label>
+                    <input type="text" name="no_insurance" id="no_insurance" class="form-control form-control-sm"
+                        value="<?= $is_edit ? $header['no_insurance'] : '' ?>" placeholder="No. Insurance">
+                </div>
                 <div class="col-md-4">
-                    <label>Nilai Insurance</label>
+                    <label>Insurance Value</label>
                     <input type="text" name="insurance" id="insurance" class="form-control form-control-sm auto_num" value="<?= $h['insurance'] ?>">
                 </div>
             </div>
 
-            <!-- ═══════════════════════════════════════════════════════ -->
-            <!-- TAHAP 4: OTHERS COST                                   -->
-            <!-- ═══════════════════════════════════════════════════════ -->
-            <div class="section-title others"><i class="fas fa-coins"></i> Tahap 4 — Biaya Lain-lain (jika ada)</div>
+
+            <!-- TAHAP 4: OTHERS COST -->
+            <div class="section-title others"><i class="fas fa-coins"></i> Step 4 — Other Costs (if applicable)</div>
             <div class="row mb-3">
                 <div class="col-md-8">
                     <table class="table table-bordered table-sm" id="tbl_others">
                         <thead class="table-light">
                             <tr>
                                 <th class="text-center" width="5%">No</th>
-                                <th class="text-center">Keterangan</th>
-                                <th class="text-center" width="30%">Nilai (Rp)</th>
+                                <th class="text-center" width="15%">No. Ref</th>
+                                <th class="text-center">Description</th>
+                                <th class="text-center" width="30%">Amount (Rp)</th>
                                 <th class="text-center" width="8%">Act</th>
                             </tr>
                         </thead>
@@ -338,6 +381,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                                 <?php foreach ($others_data as $idx => $ot) : ?>
                                     <tr>
                                         <td class="text-center others-no"><?= $idx + 1 ?></td>
+                                        <td><input type="text" name="others_no[]" class="form-control form-control-sm" placeholder="No." value="<?= $ot['no_others'] ?? '' ?>"></td>
                                         <td><input type="text" name="others_keterangan[]" class="form-control form-control-sm" value="<?= $ot['keterangan'] ?>"></td>
                                         <td><input type="text" name="others_nilai[]" class="form-control form-control-sm auto_num others-nilai" value="<?= $ot['nilai'] ?>"></td>
                                         <td class="text-center"><button type="button" class="btn btn-sm btn-danger btn-remove-others"><i class="fa fa-trash"></i></button></td>
@@ -348,12 +392,13 @@ $list_po_data = isset($list_po) ? $list_po : [];
                         <tfoot>
                             <tr>
                                 <td></td>
-                                <td><input type="text" id="new_others_ket" class="form-control form-control-sm" placeholder="Keterangan biaya"></td>
+                                <td><input type="text" id="new_others_no" class="form-control form-control-sm" placeholder="No. Ref"></td>
+                                <td><input type="text" id="new_others_ket" class="form-control form-control-sm" placeholder="Cost description"></td>
                                 <td><input type="text" id="new_others_nilai" class="form-control form-control-sm auto_num" placeholder="0"></td>
                                 <td class="text-center"><button type="button" class="btn btn-sm btn-success" id="btn_add_others"><i class="fa fa-plus"></i></button></td>
                             </tr>
                             <tr class="table-secondary">
-                                <td colspan="2" class="text-end fw-bold">Total Biaya Lain</td>
+                                <td colspan="3" class="text-end fw-bold">Total Other Costs</td>
                                 <td class="text-end fw-bold" id="total_others">0</td>
                                 <td></td>
                             </tr>
@@ -363,23 +408,21 @@ $list_po_data = isset($list_po) ? $list_po : [];
             </div>
         </div>
 
-        <!-- ═══════════════════════════════════════════════════════════ -->
-        <!-- DATA PO & KALKULASI                                        -->
-        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- DATA PO & KALKULASI -->
         <div class="card-body" id="po_section_wrapper">
             <div id="po_loading_overlay" style="display:none; position:absolute; top:0; left:0; right:0; bottom:0;
                  background:rgba(255,255,255,0.85); z-index:10; align-items:center; justify-content:center; border-radius:4px;">
                 <div class="text-center">
                     <div class="spinner-border text-primary mb-2" style="width:2.5rem;height:2.5rem;"></div>
-                    <div class="fw-bold text-primary">Memuat data PO...</div>
+                    <div class="fw-bold text-primary">Loading PO data...</div>
                 </div>
             </div>
 
-            <div class="section-title data-po"><i class="fas fa-calculator"></i> Data PO &amp; Kalkulasi Nilai Inventory</div>
+            <div class="section-title data-po"><i class="fas fa-calculator"></i> PO Data &amp; Inventory Value Calculation</div>
 
             <div class="mb-2">
-                <button type="button" class="btn btn-info btn-sm" id="btn_recalculate"><i class="fas fa-calculator"></i> Hitung Ulang</button>
-                <button type="button" class="btn btn-secondary btn-sm" id="btn_download_template"><i class="fas fa-download"></i> Download Template Excel</button>
+                <button type="button" class="btn btn-info btn-sm" id="btn_recalculate"><i class="fas fa-calculator"></i> Recalculate</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn_download_template"><i class="fas fa-download"></i> Download Excel Template</button>
             </div>
 
             <div class="table-responsive">
@@ -387,8 +430,8 @@ $list_po_data = isset($list_po) ? $list_po : [];
                     <thead class="table-light">
                         <tr>
                             <th class="text-center" width="3%">No</th>
-                            <th class="text-center" style="min-width:150px">Nama di PO</th>
-                            <th class="text-center" style="min-width:150px">Nama PO (Alias)</th>
+                            <th class="text-center" style="min-width:150px">PO Name</th>
+                            <th class="text-center" style="min-width:150px">PO Name (Alias)</th>
                             <th class="text-center" width="8%">Kg Unit</th>
                             <th class="text-center" width="8%">Unit Price (U$)</th>
                             <th class="text-center" width="8%">Total Value (U$)</th>
@@ -398,15 +441,15 @@ $list_po_data = isset($list_po) ? $list_po : [];
                             <th class="text-center" style="min-width:110px">Prorate LS</th>
                             <th class="text-center" style="min-width:110px">Forwarding Cost</th>
                             <th class="text-center" style="min-width:110px">Pro Rate Insurance</th>
-                            <th class="text-center" style="min-width:110px">Pro Rate Biaya Lain</th>
-                            <th class="text-center" style="min-width:130px">Total Nilai Inventory</th>
+                            <th class="text-center" style="min-width:110px">Pro Rate Other Costs</th>
+                            <th class="text-center" style="min-width:130px">Total Inventory Value</th>
                             <th class="text-center" style="min-width:100px">Cost Book</th>
                         </tr>
                     </thead>
                     <tbody id="data_po_body">
                         <tr id="tr_empty_po">
                             <td colspan="16" class="text-center text-muted py-3">
-                                <i class="fas fa-info-circle me-1"></i>Pilih Supplier dan No. PO untuk memuat data material.
+                                <i class="fas fa-info-circle me-1"></i>Select Supplier and PO Number to load material data.
                             </td>
                         </tr>
                     </tbody>
@@ -427,7 +470,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                             <td></td>
                         </tr>
                         <tr class="summary-row" style="background-color:#e8f5e9;">
-                            <td colspan="5" class="text-end">Nilai PIB (Rp)</td>
+                            <td colspan="5" class="text-end">PIB Value (Rp)</td>
                             <td class="text-end" id="foot_nilai_pib_usd">-</td>
                             <td class="text-end" id="foot_nilai_pib_rp">0</td>
                             <td></td>
@@ -439,7 +482,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                             <td colspan="2"></td>
                         </tr>
                         <tr class="selisih-row">
-                            <td colspan="5" class="text-end">Selisih</td>
+                            <td colspan="5" class="text-end">Variance</td>
                             <td class="text-end" id="selisih_usd">0</td>
                             <td class="text-end" id="selisih_rp">0</td>
                             <td></td>
@@ -455,12 +498,10 @@ $list_po_data = isset($list_po) ? $list_po : [];
             </div>
         </div>
 
-        <!-- ═══════════════════════════════════════════════════════════ -->
-        <!-- TAHAP 5: UPLOAD PACKING LIST                               -->
-        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- TAHAP 5: UPLOAD PACKING LIST -->
         <div class="card-body">
-            <div class="section-title coil-sec"><i class="fas fa-file-excel"></i> Tahap 5 — Upload Packing List (Data Coil)</div>
-            <p class="text-muted small">Upload file Excel packing list untuk merinci coil per material. Format: Coil No | Nama Lain/Alias | Nama Asli | N.W. (Kg) | G.W. (Kg) | Length (M) | BPM</p>
+            <div class="section-title coil-sec"><i class="fas fa-file-excel"></i> Step 5 — Upload Packing List (Coil Data)</div>
+            <p class="text-muted small">Upload the Excel packing list to detail coils per material. Format: Coil No | Alias Name | Original Name | N.W. (Kg) | G.W. (Kg) | Length (M) | BPM</p>
 
             <div class="row mb-3">
                 <div class="col-md-5">
@@ -479,16 +520,16 @@ $list_po_data = isset($list_po) ? $list_po : [];
 
             <!-- ── Tabel Coil (terpisah dari Data PO) ── -->
             <div id="coil_section" style="<?= ($is_edit && !empty($materials_data)) ? '' : 'display:none;' ?>">
-                <h6 class="fw-bold mb-2"><i class="fas fa-list text-info me-1"></i> Detail Coil per Material</h6>
+                <h6 class="fw-bold mb-2"><i class="fas fa-list text-info me-1"></i> Coil Detail per Material</h6>
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm" id="tbl_coils">
                         <thead class="table-light">
                             <tr>
                                 <th class="text-center" width="4%">No</th>
-                                <th class="text-center">Nama Asli</th>
-                                <th class="text-center">Nama Alias</th>
-                                <th class="text-center">No. Coil</th>
-                                <th class="text-center">Kode Internal</th>
+                                <th class="text-center">Original Name</th>
+                                <th class="text-center">Alias Name</th>
+                                <th class="text-center">Coil No.</th>
+                                <th class="text-center">Internal Code</th>
                                 <th class="text-center">N.W. (Kg)</th>
                                 <th class="text-center">G.W. (Kg)</th>
                                 <th class="text-center">Length (M)</th>
@@ -497,7 +538,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                         </thead>
                         <tbody id="coil_result_body">
                             <tr id="tr_empty_coil">
-                                <td colspan="8" class="text-center text-muted py-2">Belum ada data coil.</td>
+                                <td colspan="8" class="text-center text-muted py-2">No coil data yet.</td>
                             </tr>
                         </tbody>
                         <tfoot>
@@ -517,11 +558,8 @@ $list_po_data = isset($list_po) ? $list_po : [];
         </div>
 
         <div class="card-footer text-end">
-            <a href="<?= base_url('new_ros') ?>" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Kembali</a>
-            <button type="button" class="btn btn-success" id="btn_save"><i class="fas fa-save"></i> Simpan</button>
-            <?php if ($is_edit) : ?>
-                <!-- <button type="button" class="btn btn-info" id="btn_finalize"><i class="fas fa-check-double"></i> Selesai &amp; Kirim ke Incoming</button> -->
-            <?php endif; ?>
+            <a href="<?= base_url('new_ros') ?>" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+            <button type="button" class="btn btn-success" id="btn_save"><i class="fas fa-save"></i> Save</button>
         </div>
     </form>
 </div>
@@ -531,13 +569,13 @@ $list_po_data = isset($list_po) ? $list_po : [];
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header bg-info text-white">
-                <h5 class="modal-title"><i class="fas fa-search"></i> Review Data Packing List</h5>
+                <h5 class="modal-title"><i class="fas fa-search"></i> Review Packing List Data</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="modal_body_review" style="max-height:70vh; overflow-y:auto;"></div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" id="btn_cancel_upload" data-bs-dismiss="modal"><i class="fas fa-times"></i> Batal</button>
-                <button type="button" class="btn btn-success btn-sm" id="btn_confirm_upload"><i class="fas fa-check"></i> Konfirmasi &amp; Simpan</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn_cancel_upload" data-bs-dismiss="modal"><i class="fas fa-times"></i> Cancel</button>
+                <button type="button" class="btn btn-success btn-sm" id="btn_confirm_upload"><i class="fas fa-check"></i> Confirm &amp; Save</button>
             </div>
         </div>
     </div>
@@ -546,15 +584,17 @@ $list_po_data = isset($list_po) ? $list_po : [];
 <!-- Select2 -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <!-- autoNumeric -->
 <script src="<?= base_url('assets/js/autoNumeric.js') ?>"></script>
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script type="text/javascript">
-    // ═══════════════════════════════════════════════════════════════
     // GLOBAL STATE
-    // ═══════════════════════════════════════════════════════════════
     var materialsData = <?= json_encode($materials_data) ?>;
     var FORWARDING_RATE = <?= isset($forwarding_rate) ? $forwarding_rate : 0 ?>;
     var poLoadingActive = false;
@@ -564,14 +604,21 @@ $list_po_data = isset($list_po) ? $list_po : [];
 
         // ── Init Select2 & autoNumeric ──
         $('#id_supplier').select2({
-            placeholder: '-- Pilih Supplier --',
+            placeholder: '-- Select Supplier --',
             allowClear: true,
             width: '100%'
         });
         $('#select_po').select2({
-            placeholder: '-- Pilih Supplier dulu --',
+            placeholder: '-- Select Supplier first --',
             allowClear: true,
             width: '100%'
+        });
+        flatpickr("#tgl_billing", {
+            dateFormat: "Y-m-d",
+            allowInput: false,
+            onChange: function(selectedDates, dateStr, instance) {
+                $('#tgl_billing').trigger('change');
+            }
         });
         $('.auto_num').autoNumeric('init');
 
@@ -601,14 +648,12 @@ $list_po_data = isset($list_po) ? $list_po : [];
             });
         }
 
-        // ═══════════════════════════════════════════════════════════
+
         // Nilai PO PIB (Rp) = Nilai PO USD × Kurs PIB (auto)
-        // ═══════════════════════════════════════════════════════════
         function calcNilaiPibRp() {
             var usd = getAutoVal('#nilai_po_usd');
             var kurs = getAutoVal('#kurs_pib');
             var hasil = usd * kurs;
-            // Set ke field readonly via autoNumeric jika sudah init
             var $field = $('#nilai_po_pib_rp');
             if ($field.data('autoNumeric')) {
                 $field.autoNumeric('set', hasil.toFixed(2));
@@ -621,9 +666,8 @@ $list_po_data = isset($list_po) ? $list_po : [];
             calcNilaiPibRp();
         });
 
-        // ═══════════════════════════════════════════════════════════
+
         // SUPPLIER → Populate PO dropdown
-        // ═══════════════════════════════════════════════════════════
         $('#id_supplier').on('change', function() {
             if (isInit) return;
             var id_supplier = $(this).val();
@@ -631,13 +675,13 @@ $list_po_data = isset($list_po) ? $list_po : [];
 
             $selectPo.empty().append('<option value="">-- Pilih PO --</option>').trigger('change');
             $('#no_po').val('');
-            $('#data_po_body').html('<tr id="tr_empty_po"><td colspan="16" class="text-center text-muted py-3"><i class="fas fa-info-circle me-1"></i>Pilih Supplier dan No. PO untuk memuat data material.</td></tr>');
+            $('#data_po_body').html('<tr id="tr_empty_po"><td colspan="16" class="text-center text-muted py-3"><i class="fas fa-info-circle me-1"></i>Select Supplier and PO Number to load material data.</td></tr>');
             materialsData = [];
             renderProrateLS();
             recalculate();
 
             if (!id_supplier) {
-                $selectPo.empty().append('<option value="">-- Pilih Supplier dulu --</option>').trigger('change');
+                $selectPo.empty().append('<option value="">-- Select Supplier first --</option>').trigger('change');
                 return;
             }
 
@@ -652,7 +696,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                 dataType: 'json',
                 success: function(res) {
                     $('#po_spinner').hide();
-                    $selectPo.empty().append('<option value="">-- Pilih PO --</option>');
+                    $selectPo.empty().append('<option value="">-- Select PO --</option>');
                     if (res.status == 1 && res.data.length > 0) {
                         $.each(res.data, function(i, po) {
                             var label = po.no_surat ? po.no_surat : po.no_po;
@@ -692,7 +736,6 @@ $list_po_data = isset($list_po) ? $list_po : [];
         function loadPOMaterials(no_po) {
             var kurs = getAutoVal('#kurs_pib'); // boleh 0, kalkulasi Rp akan 0 dulu
 
-            // Tampilkan overlay loading
             $('#po_loading_overlay').css('display', 'flex');
 
             $.ajax({
@@ -727,7 +770,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                         calcProrateLS();
                         recalculate();
                     } else {
-                        Swal.fire('Info', 'Tidak ada material ditemukan untuk PO ini.', 'info');
+                        Swal.fire('Info', 'No materials found for this PO.', 'info');
                         materialsData = [];
                         renderProrateLS();
                         renderDataPO();
@@ -735,27 +778,25 @@ $list_po_data = isset($list_po) ? $list_po : [];
                 },
                 error: function() {
                     $('#po_loading_overlay').hide();
-                    Swal.fire('Error', 'Gagal memuat data PO.', 'error');
+                    Swal.fire('Error', 'Failed to load PO data.', 'error');
                 }
             });
         }
 
-        // Tombol Hitung Ulang tetap tersedia
         $('#btn_recalculate').on('click', function() {
             calcProrateLS();
             recalculate();
             Swal.fire({
                 icon: 'success',
-                title: 'Selesai',
-                text: 'Kalkulasi telah diperbarui.',
+                title: 'Done',
+                text: 'Calculation has been updated.',
                 timer: 1500,
                 showConfirmButton: false
             });
         });
 
-        // ═══════════════════════════════════════════════════════════
+
         // TAHAP 1: F&C Total
-        // ═══════════════════════════════════════════════════════════
         function calcFCTotal() {
             var total = 0;
             $('.fc-cost').each(function() {
@@ -767,9 +808,8 @@ $list_po_data = isset($list_po) ? $list_po : [];
         $(document).on('keyup blur', '.fc-cost', calcFCTotal);
         calcFCTotal();
 
-        // ═══════════════════════════════════════════════════════════
+
         // TAHAP 2: Prorate LS
-        // ═══════════════════════════════════════════════════════════
         function calcProrateLS() {
             var biaya_ls = getAutoVal('#biaya_ls');
             var total_kg_ls = 0;
@@ -810,6 +850,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
             calcProrateLS();
             recalculate();
         });
+
         $(document).on('keyup blur change', '.ls-net-weight', function() {
             var idx = $(this).data('idx');
             var val = getAutoVal($(this));
@@ -819,14 +860,32 @@ $list_po_data = isset($list_po) ? $list_po : [];
             calcProrateLS();
             recalculate();
         });
-        $(document).on('keyup blur', '#biaya_ls', function() {
+
+        function calcTotalBiayaLS() {
+            var dpp = getAutoVal('#biaya_ls') * (11 / 12);
+            var ppn = getAutoVal('#ppn_ls');
+            var pph = getAutoVal('#pph_ls');
+            var total = dpp + ppn - pph;
+
+            $('#dpp_ls').val(dpp.toLocaleString('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }));
+            $('#total_biaya_ls').val(total.toLocaleString('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }));
+        }
+
+        $(document).on('keyup blur change', '#biaya_ls, #ppn_ls, #pph_ls', function() {
+            calcTotalBiayaLS();
             calcProrateLS();
             recalculate();
         });
+        calcTotalBiayaLS();
 
-        // ═══════════════════════════════════════════════════════════
+
         // TAHAP 4: Others
-        // ═══════════════════════════════════════════════════════════
         function calcOthersTotal() {
             var total = 0;
             $('.others-nilai').each(function() {
@@ -844,40 +903,51 @@ $list_po_data = isset($list_po) ? $list_po : [];
         }
 
         $(document).on('click', '#btn_add_others', function() {
+            var no_ref = $.trim($('#new_others_no').val());
             var ket = $.trim($('#new_others_ket').val());
-            var nilai = parseFloat(String($('#new_others_nilai').data('autoNumeric') ? $('#new_others_nilai').autoNumeric('get') : $('#new_others_nilai').val()).replace(/,/g, '')) || 0;
+            var nilai = parseFloat(String($('#new_others_nilai').data('autoNumeric') ?
+                $('#new_others_nilai').autoNumeric('get') :
+                $('#new_others_nilai').val()).replace(/,/g, '')) || 0;
+
             if (!ket && nilai <= 0) {
-                Swal.fire('Perhatian', 'Isi keterangan atau nilai biaya.', 'warning');
+                Swal.fire('Notice', 'Please fill in the description or amount.', 'warning');
                 return;
             }
             var no = $('#others_body tr').length + 1;
             $('#others_body').append(
-                '<tr><td class="text-center others-no">' + no + '</td>' +
+                '<tr>' +
+                '<td class="text-center others-no">' + no + '</td>' +
+                '<td><input type="text" name="others_no[]" class="form-control form-control-sm" value="' + no_ref + '" placeholder="No. Ref"></td>' +
                 '<td><input type="text" name="others_keterangan[]" class="form-control form-control-sm" value="' + ket + '"></td>' +
                 '<td><input type="text" name="others_nilai[]" class="form-control form-control-sm auto_num others-nilai" value="' + nilai + '"></td>' +
-                '<td class="text-center"><button type="button" class="btn btn-sm btn-danger btn-remove-others"><i class="fa fa-trash"></i></button></td></tr>'
+                '<td class="text-center"><button type="button" class="btn btn-sm btn-danger btn-remove-others"><i class="fa fa-trash"></i></button></td>' +
+                '</tr>'
             );
+            $('#new_others_no').val('');
             $('#new_others_ket').val('');
-            $('#new_others_nilai').data('autoNumeric') ? $('#new_others_nilai').autoNumeric('set', '') : $('#new_others_nilai').val('');
+            $('#new_others_nilai').data('autoNumeric') ?
+                $('#new_others_nilai').autoNumeric('set', '') :
+                $('#new_others_nilai').val('');
             initAutoNum();
             calcOthersTotal();
             recalculate();
         });
+
         $(document).on('click', '.btn-remove-others', function() {
             $(this).closest('tr').remove();
             renumberOthers();
             calcOthersTotal();
             recalculate();
         });
+
         $(document).on('keyup blur', '.others-nilai', function() {
             calcOthersTotal();
             recalculate();
         });
         calcOthersTotal();
 
-        // ═══════════════════════════════════════════════════════════
+
         // RENDER PRORATE LS TABLE
-        // ═══════════════════════════════════════════════════════════
         function renderProrateLS() {
             var html = '';
             $.each(materialsData, function(i, m) {
@@ -886,23 +956,22 @@ $list_po_data = isset($list_po) ? $list_po : [];
                 html += '<td>' + (m.nm_alias || m.nm_barang) + '</td>';
                 html += '<td><input type="text" class="form-control form-control-sm text-end auto_num ls-net-weight" data-idx="' + i + '" value="' + m.kg_unit + '"></td>';
                 html += '<td class="text-center"><select class="form-control form-control-sm ls-select" data-idx="' + i + '">';
-                html += '<option value="YA"' + (ls === 'YA' ? ' selected' : '') + '>YA</option>';
-                html += '<option value="TIDAK"' + (ls === 'TIDAK' ? ' selected' : '') + '>TIDAK</option>';
+                html += '<option value="YA"' + (ls === 'YA' ? ' selected' : '') + '>Yes</option>';
+                html += '<option value="TIDAK"' + (ls === 'TIDAK' ? ' selected' : '') + '>No</option>';
                 html += '</select></td>';
                 html += '<td class="text-end ls-kg">0</td>';
                 html += '<td class="text-end ls-prorate">0</td>';
                 html += '</tr>';
             });
-            $('#prorate_ls_body').html(html || '<tr><td colspan="5" class="text-center text-muted">Belum ada material.</td></tr>');
+            $('#prorate_ls_body').html(html || '<tr><td colspan="5" class="text-center text-muted">No materials yet.</td></tr>');
             initAutoNum();
         }
 
-        // ═══════════════════════════════════════════════════════════
+
         // RENDER DATA PO TABLE (tanpa coil rows)
-        // ═══════════════════════════════════════════════════════════
         function renderDataPO() {
             if (!materialsData || materialsData.length === 0) {
-                $('#data_po_body').html('<tr id="tr_empty_po"><td colspan="16" class="text-center text-muted py-3"><i class="fas fa-info-circle me-1"></i>Pilih Supplier dan No. PO untuk memuat data material.</td></tr>');
+                $('#data_po_body').html('<tr id="tr_empty_po"><td colspan="16" class="text-center text-muted py-3"><i class="fas fa-info-circle me-1"></i>Select Supplier and PO Number to load material data.</td></tr>');
                 return;
             }
             var html = '';
@@ -933,9 +1002,8 @@ $list_po_data = isset($list_po) ? $list_po : [];
             $('#data_po_body').html(html);
         }
 
-        // ═══════════════════════════════════════════════════════════
+
         // RENDER TABEL COIL (terpisah)
-        // ═══════════════════════════════════════════════════════════
         function renderCoilTable() {
             var html = '';
             var no = 1;
@@ -988,7 +1056,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
             });
 
             if (!hasCoil) {
-                $('#coil_result_body').html('<tr id="tr_empty_coil"><td colspan="8" class="text-center text-muted py-2">Belum ada data coil.</td></tr>');
+                $('#coil_result_body').html('<tr id="tr_empty_coil"><td colspan="8" class="text-center text-muted py-2">No coil data yet.</td></tr>');
                 $('#total_coil_count').text('0');
                 $('#total_nw').text('0');
                 $('#total_gw').text('0');
@@ -1004,9 +1072,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
             $('#coil_count_text').text(total);
         }
 
-        // ═══════════════════════════════════════════════════════════
         // RECALCULATE ALL
-        // ═══════════════════════════════════════════════════════════
         function recalculate() {
             var kurs = getAutoVal('#kurs_pib');
             var biaya_ls = getAutoVal('#biaya_ls');
@@ -1132,20 +1198,19 @@ $list_po_data = isset($list_po) ? $list_po : [];
             recalculate();
         });
 
-        // ═══════════════════════════════════════════════════════════
-        // DOWNLOAD TEMPLATE EXCEL (dengan dialog pilih jumlah coil)
-        // ═══════════════════════════════════════════════════════════
+
+        // DOWNLOAD TEMPLATE EXCEL
         $('#btn_download_template').on('click', function() {
             if (!materialsData || materialsData.length === 0) {
-                Swal.fire('Perhatian', 'Pilih PO terlebih dahulu untuk memuat data material.', 'warning');
+                Swal.fire('Notice', 'Please select a PO first to load material data.', 'warning');
                 return;
             }
 
             // Bangun form dialog untuk input jumlah coil per material
             var inputsHtml = '<div style="text-align:left;">';
-            inputsHtml += '<p class="mb-2 text-muted small">Tentukan jumlah baris coil yang akan disiapkan per material di template Excel.</p>';
+            inputsHtml += '<p class="mb-2 text-muted small">Specify the number of coil rows to prepare per material in the Excel template.</p>';
             inputsHtml += '<table class="table table-sm table-bordered" style="font-size:13px;">';
-            inputsHtml += '<thead class="table-light"><tr><th>Nama Alias</th><th>Nama Barang</th><th class="text-center" width="100px">Jumlah Coil</th></tr></thead><tbody>';
+            inputsHtml += '<thead class="table-light"><tr><th>Alias Name</th><th>Item Name</th><th class="text-center" width="100px">Coil Count</th></tr></thead><tbody>';
             $.each(materialsData, function(i, m) {
                 var nm_alias = m.nm_alias || '-';
                 var nm_barang = m.nm_barang || m.nm_erp || '-';
@@ -1158,12 +1223,12 @@ $list_po_data = isset($list_po) ? $list_po : [];
             inputsHtml += '</tbody></table></div>';
 
             Swal.fire({
-                title: '<i class="fas fa-file-excel text-success me-1"></i> Jumlah Coil per Material',
+                title: '<i class="fas fa-file-excel text-success me-1"></i> Coil Count per Material',
                 html: inputsHtml,
                 width: '600px',
                 showCancelButton: true,
                 confirmButtonText: '<i class="fas fa-download"></i> Download',
-                cancelButtonText: 'Batal',
+                cancelButtonText: 'Cancel',
                 preConfirm: function() {
                     var coilCounts = [];
                     $.each(materialsData, function(i, m) {
@@ -1179,7 +1244,6 @@ $list_po_data = isset($list_po) ? $list_po : [];
                 }
             }).then(function(result) {
                 if (result.isConfirmed && result.value) {
-                    // Submit via hidden form POST
                     var form = $('<form>', {
                         method: 'POST',
                         action: siteurl + 'new_ros/download_template'
@@ -1194,17 +1258,16 @@ $list_po_data = isset($list_po) ? $list_po : [];
             });
         });
 
-        // ═══════════════════════════════════════════════════════════
+
         // UPLOAD PACKING LIST → Parse → Review Modal
-        // ═══════════════════════════════════════════════════════════
         $('#btn_upload_pl').on('click', function() {
             var fileInput = document.getElementById('file_packing_list');
             if (!fileInput.files || fileInput.files.length === 0) {
-                Swal.fire('Perhatian', 'Pilih file Excel packing list.', 'warning');
+                Swal.fire('Notice', 'Please select an Excel packing list file.', 'warning');
                 return;
             }
             if (!materialsData || materialsData.length === 0) {
-                Swal.fire('Perhatian', 'Pilih PO terlebih dahulu sebelum upload packing list.', 'warning');
+                Swal.fire('Notice', 'Please select a PO first before uploading the packing list.', 'warning');
                 return;
             }
 
@@ -1239,14 +1302,14 @@ $list_po_data = isset($list_po) ? $list_po : [];
                     if (res.status == 1 && res.coils.length > 0) {
                         showUploadReview(res);
                     } else if (res.status == 1) {
-                        Swal.fire('Info', 'Tidak ada data coil yang terbaca dari file.', 'info');
+                        Swal.fire('Info', 'No coil data could be read from the file.', 'info');
                     } else {
-                        Swal.fire('Gagal', res.msg, 'error');
+                        Swal.fire('Failed', res.msg, 'error');
                     }
                 },
                 error: function() {
                     Swal.close();
-                    Swal.fire('Error', 'Gagal upload file.', 'error');
+                    Swal.fire('Error', 'Failed to upload file.', 'error');
                 }
             });
         });
@@ -1281,8 +1344,8 @@ $list_po_data = isset($list_po) ? $list_po : [];
             var isMatched = Math.abs(totalExcelNW - totalPoKg) < 0.01;
             var alertClass = isMatched ? 'alert-success' : 'alert-danger';
             var matchStatusText = isMatched ?
-                '<span class="badge bg-success" style="font-size: 13px;"><i class="fas fa-check-circle"></i> Cocok (Match)</span>' :
-                '<span class="badge bg-danger" style="font-size: 13px;"><i class="fas fa-times-circle"></i> Tidak Cocok</span>';
+                '<span class="badge bg-success" style="font-size: 13px;"><i class="fas fa-check-circle"></i> Match</span>' :
+                '<span class="badge bg-danger" style="font-size: 13px;"><i class="fas fa-times-circle"></i> Not Match</span>';
 
             var summaryHtml = '<div class="alert ' + alertClass + ' p-3 mb-3 d-flex justify-content-between align-items-center" style="font-size:14px; border-radius:6px;">' +
                 '<div>' +
@@ -1294,15 +1357,15 @@ $list_po_data = isset($list_po) ? $list_po : [];
                 '</div>';
 
             if (!isMatched) {
-                summaryHtml += '<div class="alert alert-warning p-2 mb-3" style="font-size:12px;"><i class="fas fa-exclamation-triangle"></i> Peringatan: Total Net Weight Excel harus sama dengan Total Kg Unit PO agar dapat disimpan. Silakan sesuaikan kolom Net Weight di tabel Prorate LS atau periksa kembali file Excel Anda.</div>';
+                summaryHtml += '<div class="alert alert-warning p-2 mb-3" style="font-size:12px;"><i class="fas fa-exclamation-triangle"></i> Warning: Total Net Weight from Excel must match Total Kg Unit PO to be saved. Please adjust the Net Weight column in the LS Prorate table or recheck your Excel file.</div>';
             }
 
             var html = summaryHtml;
             html += '<p class="mb-2"><small class="text-muted">' + res.msg + '</small></p>';
             html += '<div class="table-responsive"><table class="table table-bordered table-sm" style="font-size:11px;">';
             html += '<thead class="table-light"><tr>' +
-                '<th>No</th><th>No. Coil</th><th>Nama Alias</th><th>Nama Asli</th>' +
-                '<th>Match Material</th><th>Kode Internal</th>' +
+                '<th>No</th><th>Coil No.</th><th>Alias Name</th><th>Original Name</th>' +
+                '<th>Match Material</th><th>Internal Code</th>' +
                 '<th>N.W.</th><th>G.W.</th><th>Length</th><th>Status</th>' +
                 '</tr></thead><tbody>';
 
@@ -1406,9 +1469,9 @@ $list_po_data = isset($list_po) ? $list_po : [];
             if (added > 0) {
                 renderCoilTable();
                 recalculate();
-                Swal.fire('Berhasil', added + ' coil berhasil ditambahkan.', 'success');
+                Swal.fire('Success', added + ' coils have been added.', 'success');
             } else {
-                Swal.fire('Info', 'Tidak ada coil yang match.', 'info');
+                Swal.fire('Info', 'No matching coils found.', 'info');
             }
         });
 
@@ -1417,38 +1480,36 @@ $list_po_data = isset($list_po) ? $list_po : [];
             $('#modalReviewUpload').modal('hide');
         });
 
-        // ═══════════════════════════════════════════════════════════
         // SAVE
-        // ═══════════════════════════════════════════════════════════
         $('#btn_save').on('click', function() {
             var supplier = $('#id_supplier').val();
             var no_po = $('#no_po').val();
             var kurs = getAutoVal('#kurs_pib');
 
             if (!supplier) {
-                Swal.fire('Perhatian', 'Pilih Supplier terlebih dahulu.', 'warning');
+                Swal.fire('Notice', 'Please select a Supplier first.', 'warning');
                 return;
             }
             if (!no_po) {
-                Swal.fire('Perhatian', 'Pilih No. PO terlebih dahulu.', 'warning');
+                Swal.fire('Notice', 'Please select a PO Number first.', 'warning');
                 return;
             }
             if (!kurs) {
-                Swal.fire('Perhatian', 'Isi Kurs PIB terlebih dahulu.', 'warning');
+                Swal.fire('Notice', 'Please fill in the PIB Exchange Rate first.', 'warning');
                 return;
             }
             if ($('#data_po_body tr[data-idx]').length === 0) {
-                Swal.fire('Perhatian', 'Belum ada data material dari PO.', 'warning');
+                Swal.fire('Notice', 'No material data from PO yet.', 'warning');
                 return;
             }
 
             Swal.fire({
-                title: 'Simpan ROS?',
-                text: 'Data akan disimpan.',
+                title: 'Save ROS?',
+                text: 'Data will be saved.',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Ya, Simpan',
-                cancelButtonText: 'Batal'
+                confirmButtonText: 'Yes, Save',
+                cancelButtonText: 'Cancel'
             }).then(function(result) {
                 if (!result.isConfirmed) return;
 
@@ -1467,7 +1528,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                     dataType: 'json',
                     beforeSend: function() {
                         Swal.fire({
-                            title: 'Menyimpan...',
+                            title: 'Saving...',
                             allowOutsideClick: false,
                             didOpen: function() {
                                 Swal.showLoading();
@@ -1479,7 +1540,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                         if (res.status == 1) {
                             Swal.fire({
                                     icon: 'success',
-                                    title: 'Berhasil',
+                                    title: 'Success',
                                     text: res.msg,
                                     confirmButtonText: 'OK'
                                 })
@@ -1487,20 +1548,18 @@ $list_po_data = isset($list_po) ? $list_po : [];
                                     window.location.href = baseurl + 'new_ros';
                                 });
                         } else {
-                            Swal.fire('Gagal', res.msg || 'Terjadi kesalahan.', 'error');
+                            Swal.fire('Failed', res.msg || 'An error occurred.', 'error');
                         }
                     },
                     error: function() {
                         Swal.close();
-                        Swal.fire('Error', 'Gagal menyimpan data.', 'error');
+                        Swal.fire('Error', 'Failed to save data.', 'error');
                     }
                 });
             });
         });
 
-        // ═══════════════════════════════════════════════════════════
         // INIT: Edit mode — render data yang sudah ada
-        // ═══════════════════════════════════════════════════════════
         if (materialsData && materialsData.length > 0) {
             renderProrateLS();
             renderDataPO();
@@ -1512,7 +1571,6 @@ $list_po_data = isset($list_po) ? $list_po : [];
         }
         isInit = false;
 
-        // Load coil dari DB pada edit mode
         function loadCoilDataEdit() {
             var id_ros = $('#id_ros').val();
             if (!id_ros || id_ros === 'New') return;
@@ -1544,34 +1602,5 @@ $list_po_data = isset($list_po) ? $list_po : [];
             }, 'json');
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // FINALIZE
-        // ═══════════════════════════════════════════════════════════
-        // $('#btn_finalize').on('click', function() {
-        //     var id_ros = $('#id_ros').val();
-        //     Swal.fire({
-        //         title: 'Finalize ROS?',
-        //         text: 'Setelah finalize, data tidak bisa diubah dan akan masuk ke proses Incoming.',
-        //         icon: 'question',
-        //         showCancelButton: true,
-        //         confirmButtonText: 'Ya, Selesai',
-        //         cancelButtonText: 'Batal'
-        //     }).then(function(result) {
-        //         if (!result.isConfirmed) return;
-        //         $.post(siteurl + 'new_ros/finalize', {
-        //             id_ros: id_ros
-        //         }, function(res) {
-        //             var resp = (typeof res === 'string') ? JSON.parse(res) : res;
-        //             if (resp.status == 1) {
-        //                 Swal.fire('Berhasil', resp.msg, 'success').then(function() {
-        //                     window.location.href = baseurl + 'new_ros';
-        //                 });
-        //             } else {
-        //                 Swal.fire('Gagal', resp.msg, 'error');
-        //             }
-        //         });
-        //     });
-        // });
-
-    }); // end ready
+    });
 </script>

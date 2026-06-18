@@ -3,7 +3,7 @@
         <div class="card-header bg-white">
             <div class="row g-3 align-items-end">
                 <div class="col-md-3">
-                    <label for="tgl_butuh" class="form-label mb-1"><b>Tanggal Dibutuhkan</b></label>
+                    <label for="tgl_butuh" class="form-label mb-1"><b>Required Date</b></label>
                     <?php
                     $tgl_now = date('Y-m-d');
                     $tgl_next_month = date('Y-m-' . '20', strtotime('+1 month', strtotime($tgl_now)));
@@ -12,13 +12,13 @@
                         'name' => 'tgl_butuh',
                         'class' => 'form-control text-center tgl changeSaveDate',
                         'readonly' => 'readonly',
-                        'placeholder' => 'Tanggal Dibutuhkan'
+                        'placeholder' => 'Required Date'
                     ], $tgl_next_month);
                     ?>
                 </div>
 
                 <div class="col-md-2" hidden>
-                    <label class="form-label mb-1"><b>Tingkat PR</b></label>
+                    <label class="form-label mb-1"><b>PR Priority</b></label>
                     <select name="tingkat_pr" class="form-control tingkat_pr">
                         <option value="1">Normal</option>
                         <option value="2">Urgent</option>
@@ -45,17 +45,17 @@
                             <th class="text-center">Id Material</th>
                             <th class="text-center">HS Code</th>
                             <th class="text-center" style="min-width: 200px;">Material</th>
-                            <th class="text-center" style="min-width: 200px;">Nama Lain</th>
+                            <th class="text-center" style="min-width: 200px;">Alias Name</th>
                             <th class="text-center">Category</th>
                             <th class="text-center">Qty Stock</th>
                             <th class="text-center">Min Stock</th>
                             <th class="text-center">Max Stock</th>
                             <th class="text-center">Pending PO</th>
-                            <th class="text-center">Kebutuhan Forecast</th>
+                            <th class="text-center">Forecast Demand</th>
                             <th class="text-center">Propose Request(Qty)</th>
                             <!-- <th class="text-center">Packing Unit</th> -->
-                            <th class="text-center">Kuota Internal</th>
-                            <th class="text-center">Keterangan</th>
+                            <th class="text-center">Internal Quota</th>
+                            <th class="text-center">Remarks</th>
 
                         </tr>
                         <!-- <tr>
@@ -76,7 +76,7 @@
                     <i class="fa fa-cart-plus me-1"></i> Purchase Request
                 </button>
                 <button type="button" class="btn btn-dark" onclick="window.history.back(); return false;">
-                    <i class="fa fa-reply"></i> Batal
+                    <i class="fa fa-reply"></i> Cancel
                 </button>
             </div>
         </div>
@@ -145,7 +145,7 @@
                 error: function(xhr, status, error) {
                     swal({
                         title: "Save Failed!",
-                        text: "Terjadi kesalahan koneksi ke server.",
+                        text: "A connection error occurred with the server.",
                         type: "warning",
                         timer: 4000
                     });
@@ -159,7 +159,7 @@
 
             swal({
                 title: "Are you sure?",
-                text: "Membuat semua Propose Material !!!",
+                text: "Create all Propose Material requests!",
                 type: "warning",
                 showCancelButton: true,
                 confirmButtonClass: "btn-danger",
@@ -346,6 +346,7 @@
             stateSave: true,
             autoWidth: true,
             destroy: true,
+            searchDelay: 750,
             responsive: true,
             aaSorting: [
                 [2, "asc"]
@@ -365,7 +366,6 @@
                 type: "POST",
                 cache: false,
                 error: function() {
-                    // ✅ FIX: gunakan table yang benar, bukan my-grid
                     $('#example1 tbody').remove();
                     $('#example1').append("<tbody class='my-grid-error'><tr><td colspan='15' class='text-center'>No data found in the server</td></tr></tbody>");
                 }

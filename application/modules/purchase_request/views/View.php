@@ -95,12 +95,12 @@ foreach ($results['header'] as $header) {
 
 											$check_po_created = $this->db->select('IF(SUM(qty) IS NULL, 0, SUM(qty)) AS ttl_qty_po')->get_where('dt_trans_po', ['idpr' => $value['id'], 'tipe' => ''])->row();
 
-											$status = "<div class='badge bg-red'>PO Not Created</div>";
+											$status = "<div class='badge bg-danger'>PO Not Created</div>";
 											if ($check_po_created->ttl_qty_po > 0) {
 												if($check_po_created->ttl_qty_po >= $value['propose_purchase']) {
-													$status = '<div class="badge bg-green">PO Created</div>';
+													$status = '<div class="badge bg-success">PO Created</div>';
 												}else{
-													$status = '<div class="badge bg-yellow">Partial</div>';
+													$status = '<div class="badge bg-warning">Partial</div>';
 												}
 											}
 

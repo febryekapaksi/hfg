@@ -2,14 +2,14 @@
     <div class="card-body">
         <table id="table-incoming-open" class="table table-bordered table-striped dt-responsive" width="100%">
             <thead>
-                <tr>
+               <tr>
                     <th>No</th>
-                    <th>No. ROS</th>
-                    <th>No. PO / Surat</th>
+                    <th>ROS No.</th>
+                    <th>PO / Letter No.</th>
                     <th>Supplier</th>
-                    <th>Kurs PIB</th>
+                    <th>PIB Rate</th>
                     <th>Status</th>
-                    <th>Aksi</th>
+                    <th>Action</th>
                 </tr>
             </thead>
         </table>
@@ -65,12 +65,12 @@
             var no_ros = $(this).data('id');
 
             Swal.fire({
-                title: 'Ajukan Draft?',
-                html: 'Data ROS <b>' + no_ros + '</b> akan diajukan ke Finalize Incoming.',
+                title: 'Submit Draft?',
+                html: 'ROS <b>' + no_ros + '</b> will be submitted to Finalize Incoming.',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Ya, Ajukan!',
-                cancelButtonText: 'Batal',
+                confirmButtonText: 'Yes, Submit!',
+                cancelButtonText: 'Cancel',
                 confirmButtonColor: '#28a745',
                 cancelButtonColor: '#dc3545'
             }).then(function(result) {
@@ -86,18 +86,18 @@
                     success: function(r) {
                         if (r.status == 1) {
                             Swal.fire({
-                                title: 'Berhasil!',
-                                text: r.pesan ?? 'Draft berhasil diajukan.',
+                                title: 'Success!',
+                                text: r.pesan ?? 'Draft submitted successfully.',
                                 icon: 'success',
-                                timer: 1800,
+                                timer: 1500,
                                 showConfirmButton: false
                             }).then(function() {
                                 tableOpen.ajax.reload(null, false);
                             });
                         } else {
                             Swal.fire({
-                                title: 'Gagal',
-                                text: r.pesan ?? 'Gagal mengajukan draft.',
+                                title: 'Failed',
+                                text: r.pesan ?? 'Failed to submit draft.',
                                 icon: 'error'
                             });
                         }
@@ -105,7 +105,7 @@
                     error: function() {
                         Swal.fire({
                             title: 'Error',
-                            text: 'Terjadi kesalahan sistem. Hubungi IT.',
+                            text: 'A system error occurred. Please contact IT.',
                             icon: 'error'
                         });
                     }

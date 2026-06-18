@@ -33,13 +33,13 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                             <thead>
                                 <tr>
                                     <th>No</th>
-                                    <th>No. ROS</th>
-                                    <th>No. PO / Surat</th>
+                                    <th>ROS No.</th>
+                                    <th>PO / Letter No.</th>
                                     <th>Supplier</th>
-                                    <th>Tgl Diajukan</th>
-                                    <th>Diajukan Oleh</th>
+                                    <th>Submitted Date</th>
+                                    <th>Submitted By</th>
                                     <th>Status</th>
-                                    <th>Aksi</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                         </table>
@@ -55,14 +55,14 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                             <thead>
                                 <tr>
                                     <th>No</th>
-                                    <th>No. Transaksi</th>
-                                    <th>No. ROS</th>
-                                    <th>No. PO / Surat</th>
+                                    <th>Transaction No.</th>
+                                    <th>ROS No.</th>
+                                    <th>PO / Letter No.</th>
                                     <th>Supplier</th>
-                                    <th>Tgl Finalize</th>
-                                    <th>Kode Incoming</th>
+                                    <th>Finalize Date</th>
+                                    <th>Incoming Code</th>
                                     <th>Status</th>
-                                    <th>Aksi</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                         </table>
@@ -80,7 +80,7 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
         <div class="modal-content">
             <div class="modal-header bg-warning">
                 <h5 class="modal-title" id="modalFinalizeLabel">
-                    <i class="fa fa-check-circle"></i> Konfirmasi Finalize Incoming — ROS: <span id="modal-no-ros"></span>
+                    <i class="fa fa-check-circle"></i> Confirm Finalize Incoming — ROS: <span id="modal-no-ros"></span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -106,9 +106,9 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                     </div>
                     <div class="col-md-6">
                         <div class="mb-2">
-                            <label class="fw-bold">Tanggal Incoming</label>
+                            <label class="fw-bold">Incoming Date</label>
                             <input type="text" id="modal-tanggal" class="form-control"
-                                placeholder="Pilih tanggal" autocomplete="off" readonly>
+                                placeholder="Select date" autocomplete="off" readonly>
                         </div>
                     </div>
                 </div>
@@ -121,7 +121,7 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                         <div class="input-group">
                             <span class="input-group-text"><i class="fa fa-search"></i></span>
                             <input type="text" class="form-control" id="search-modal-coil"
-                                placeholder="Cari material / no coil...">
+                                placeholder="Search material / coil no...">
                         </div>
                     </div>
                 </div>
@@ -134,15 +134,15 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                                 <th class="text-center" rowspan="2" style="vertical-align:middle;" width="3%">No</th>
                                 <th class="text-center" rowspan="2" style="vertical-align:middle;" width="18%">Material</th>
                                 <th class="text-center" rowspan="2" style="vertical-align:middle;" width="6%">Unit</th>
-                                <th class="text-center" colspan="4" style="background-color:#69c79d !important;">Data ROS (Packing List)</th>
-                                <th class="text-center" colspan="2" style="background-color:#f3b44e !important;">Status QC</th>
-                                <th class="text-center" rowspan="2" style="vertical-align:middle; background-color:#c8e6c9 !important;" width="10%">Gudang Tujuan</th>
+                                <th class="text-center" colspan="4" style="background-color:#69c79d !important;">ROS Data (Packing List)</th>
+                                <th class="text-center" colspan="2" style="background-color:#f3b44e !important;">QC Status</th>
+                                <th class="text-center" rowspan="2" style="vertical-align:middle; background-color:#c8e6c9 !important;" width="10%">Destination Warehouse</th>
                             </tr>
                             <tr>
-                                <th class="text-center" style="background-color:#69c79d !important;">No. Coil</th>
-                                <th class="text-center" style="background-color:#69c79d !important;">Berat Kotor</th>
-                                <th class="text-center" style="background-color:#69c79d !important;">Berat Bersih</th>
-                                <th class="text-center" style="background-color:#69c79d !important;">Panjang</th>
+                                <th class="text-center" style="background-color:#69c79d !important;">Coil No.</th>
+                                <th class="text-center" style="background-color:#69c79d !important;">Gross Weight</th>
+                                <th class="text-center" style="background-color:#69c79d !important;">Net Weight</th>
+                                <th class="text-center" style="background-color:#69c79d !important;">Length</th>
                                 <th class="text-center" style="background-color:#f3b44e !important;" width="5%">OK</th>
                                 <th class="text-center" style="background-color:#f3b44e !important;" width="5%">Reject</th>
                             </tr>
@@ -150,7 +150,7 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                         <tbody id="modal-body-coil">
                             <tr>
                                 <td colspan="10" class="text-center">
-                                    <i class="fa fa-spinner fa-spin"></i> Memuat data...
+                                    <i class="fa fa-spinner fa-spin"></i> Loading data...
                                 </td>
                             </tr>
                         </tbody>
@@ -160,10 +160,10 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fa fa-times"></i> Batal
+                    <i class="fa fa-times"></i> Cancel
                 </button>
                 <button type="button" class="btn btn-success" id="btn-confirm-finalize">
-                    <i class="fa fa-check-circle"></i> Ya, Finalize Sekarang!
+                    <i class="fa fa-check-circle"></i> Yes, Finalize Now!
                 </button>
             </div>
         </div>
@@ -283,7 +283,7 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
             $('#search-modal-coil').val('');
             $('#modal-body-coil').html(
                 '<tr><td colspan="10" class="text-center">' +
-                '<i class="fa fa-spinner fa-spin"></i> Memuat data...</td></tr>'
+                '<i class="fa fa-spinner fa-spin"></i> Loading data...</td></tr>'
             );
             $('#btn-confirm-finalize').data('ros', no_ros);
 
@@ -301,7 +301,7 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                     if (!res || res.status === 0) {
                         $('#modal-body-coil').html(
                             '<tr><td colspan="10" class="text-center text-danger">' +
-                            (res.pesan || 'Gagal memuat data.') + '</td></tr>'
+                            (res.pesan || 'Failed to load data.') + '</td></tr>'
                         );
                         return;
                     }
@@ -358,7 +358,7 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                 },
                 error: function() {
                     $('#modal-body-coil').html(
-                        '<tr><td colspan="11" class="text-center text-danger">Gagal koneksi ke server.</td></tr>'
+                        '<tr><td colspan="11" class="text-center text-danger">Failed to connect to server.</td></tr>'
                     );
                 }
             });
@@ -418,7 +418,7 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
             if (Object.keys(matchedGroups).length === 0) {
                 $('#modal-body-coil').append(
                     '<tr id="no-result-modal-coil"><td colspan="10" class="text-center text-muted py-3">' +
-                    '<i class="fa fa-search"></i> Tidak ditemukan hasil untuk "<b>' + keyword + '</b>"</td></tr>'
+                    '<i class="fa fa-search"></i> No results found for "<b>' + keyword + '</b>"</td></tr>'
                 );
             }
         });
@@ -430,8 +430,8 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
 
             if (!tanggal) {
                 Swal.fire({
-                    title: 'Peringatan',
-                    text: 'Tanggal incoming wajib diisi!',
+                    title: 'Warning',
+                    text: 'Incoming date is required!',
                     icon: 'warning'
                 });
                 return;
@@ -449,18 +449,18 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
             bootstrap.Modal.getInstance(document.getElementById('modalFinalize')).hide();
 
             Swal.fire({
-                title: 'Proses Finalize?',
-                html: '<b>ROS: ' + no_ros + '</b><br>Stok dan jurnal akuntansi akan diproses. Tidak dapat dibatalkan!',
+                title: 'Process Finalize?',
+                html: '<b>ROS: ' + no_ros + '</b><br>Stock and accounting journals will be processed. This cannot be undone!',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Ya, Finalize!',
-                cancelButtonText: 'Batal',
+                confirmButtonText: 'Yes, Finalize!',
+                cancelButtonText: 'Cancel',
                 confirmButtonColor: '#28a745'
             }).then(function(result) {
                 if (!result.isConfirmed) return;
 
                 Swal.fire({
-                    title: 'Memproses...',
+                    title: 'Processing...',
                     allowOutsideClick: false,
                     didOpen: function() {
                         Swal.showLoading();
@@ -480,7 +480,7 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                         Swal.close();
                         if (r.status == 1) {
                             Swal.fire({
-                                title: 'Berhasil!',
+                                title: 'Success!',
                                 text: r.pesan,
                                 icon: 'success',
                                 timer: 1800,
@@ -491,7 +491,7 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                             });
                         } else if (r.status == 2) {
                             Swal.fire({
-                                    title: 'Perhatian',
+                                    title: 'Attention',
                                     text: r.pesan,
                                     icon: 'warning'
                                 })
@@ -501,19 +501,19 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                                 });
                         } else if (r.status == 3) {
                             Swal.fire({
-                                title: 'Master COA Tidak Lengkap!',
+                                title: 'Master COA Incomplete!',
                                 html: '<div class="text-start">' +
-                                    '<p>Proses <b>Finalize</b> dibatalkan karena nomor COA berikut belum terdaftar di Master COA:</p>' +
+                                    '<p>The <b>Finalize</b> process has been cancelled because the following COA numbers are not registered in the Master COA:</p>' +
                                     '<div class="alert alert-danger fw-bold">' + r.pesan.replace(/:\s*/, ':<br><code>').replace(/$/, '</code>') + '</div>' +
-                                    '<p class="mb-0 text-muted small">Silakan tambahkan nomor COA tersebut di menu <b>Master COA</b> terlebih dahulu.</p>' +
+                                    '<p class="mb-0 text-muted small">Please add the COA numbers in the <b>Master COA</b> menu first.</p>' +
                                     '</div>',
                                 icon: 'error',
-                                confirmButtonText: 'Mengerti',
+                                confirmButtonText: 'Understood',
                                 confirmButtonColor: '#dc3545',
                             });
                         } else {
                             Swal.fire({
-                                title: 'Gagal',
+                                title: 'Failed',
                                 text: r.pesan,
                                 icon: 'error'
                             });
@@ -521,7 +521,7 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                     },
                     error: function() {
                         Swal.close();
-                        Swal.fire('Error', 'Gagal memproses finalize.', 'error');
+                        Swal.fire('Error', 'Failed to process finalize.', 'error');
                     }
                 });
             });
@@ -532,20 +532,20 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
             var no_ros = $(this).data('id');
 
             Swal.fire({
-                title: 'Kembalikan ke Incoming?',
-                html: '<p>Data ROS <b>' + no_ros + '</b> akan dikembalikan untuk diedit ulang.</p>' +
+                title: 'Return to Incoming?',
+                html: '<p>ROS <b>' + no_ros + '</b> will be returned for re-editing.</p>' +
                     '<div class="text-start">' +
-                    '<textarea id="swal-revision-note" class="form-control" rows="3" placeholder="Jelaskan alasan revisi..."></textarea>' +
+                    '<textarea id="swal-revision-note" class="form-control" rows="3" placeholder="Describe the revision reason..."></textarea>' +
                     '</div>',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: '<i class="fa fa-undo"></i> Ya, Kembalikan!',
-                cancelButtonText: 'Batal',
+                confirmButtonText: '<i class="fa fa-undo"></i> Yes, Return!',
+                cancelButtonText: 'Cancel',
                 confirmButtonColor: '#dc3545',
                 preConfirm: function() {
                     var note = document.getElementById('swal-revision-note').value.trim();
                     if (!note) {
-                        Swal.showValidationMessage('Keterangan revisi wajib diisi!');
+                        Swal.showValidationMessage('Revision note is required!');
                         return false;
                     }
                     return note;
@@ -564,7 +564,7 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                     success: function(r) {
                         if (r.status == 1) {
                             Swal.fire({
-                                title: 'Berhasil!',
+                                title: 'Success!',
                                 text: r.pesan,
                                 icon: 'success',
                                 timer: 1800,
@@ -574,7 +574,7 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                             });
                         } else {
                             Swal.fire({
-                                title: 'Gagal',
+                                title: 'Failed',
                                 text: r.pesan,
                                 icon: 'error'
                             });

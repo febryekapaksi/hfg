@@ -44,12 +44,12 @@ $ENABLE_MANAGE = has_permission('Gl_interface.Manage');
     <div class="card-body">
         <!-- FILTER ROW -->
         <div class="filter-row">
-            <input type="text" id="filterSearch" class="form-control" style="width:300px;" placeholder="Cari nomor / keterangan...">
+            <input type="text" id="filterSearch" class="form-control" style="width:300px;" placeholder="Search number / description...">
             <select id="filterJenis" class="form-control" style="width:200px;">
-                <option value="">-- Semua Tipe Transaksi --</option>
+                <option value="">-- All Transaction Types --</option>
             </select>
             <select id="filterStatus" class="form-control" style="width:180px;">
-                <option value="">-- Semua Status --</option>
+                <option value="">-- All Status --</option>
                 <option value="pending">Pending</option>
                 <option value="posted">Posted</option>
                 <option value="error">Error</option>
@@ -60,11 +60,11 @@ $ENABLE_MANAGE = has_permission('Gl_interface.Manage');
         <table id="tblGlInterface" class="table table-bordered table-striped" width="100%">
             <thead>
                 <tr class="bg-blue">
-                    <th class="text-center">Nomor</th>
-                    <th class="text-center">Tanggal</th>
-                    <th class="text-center">Jenis</th>
-                    <th class="text-center">Tipe Transaksi</th>
-                    <th class="text-center">Keterangan</th>
+                    <th class="text-center">Number</th>
+                    <th class="text-center">Date</th>
+                    <th class="text-center">Type</th>
+                    <th class="text-center">Transaction Type</th>
+                    <th class="text-center">Description</th>
                     <th class="text-center">Total Debet</th>
                     <th class="text-center">Total Kredit</th>
                     <th class="text-center">Status</th>
@@ -182,7 +182,7 @@ $ENABLE_MANAGE = has_permission('Gl_interface.Manage');
                     data: 'id',
                     className: 'text-center',
                     render: function(data) {
-                        return '<a href="<?= base_url("gl_interface/view/") ?>' + data + '" class="btn btn-sm btn-info" title="Lihat Detail"><i class="fa fa-eye"></i></a>';
+                        return '<a href="<?= base_url("gl_interface/view/") ?>' + data + '" class="btn btn-sm btn-info" title="View Detail"><i class="fa fa-eye"></i></a>';
                     }
                 }
             ]

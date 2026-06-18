@@ -25,7 +25,7 @@ $tgl_dibutuhkan = (!empty($header[0]['tgl_dibutuhkan'])) ? date('d F Y', strtoti
 				<input type="text" class="form-control" value="<?= $header[0]['no_pr']; ?>" readonly>
 			</div>
 			<div class="col-md-6">
-				<label>Tgl Dibutuhkan</label>
+				<label>Required Date</label>
 				<input type="text" class="form-control" value="<?= $tgl_dibutuhkan; ?>" readonly>
 			</div>
 		</div>
@@ -36,7 +36,7 @@ $tgl_dibutuhkan = (!empty($header[0]['tgl_dibutuhkan'])) ? date('d F Y', strtoti
 				<input type="text" class="form-control" value="<?= $header[0]['name_customer']; ?>" readonly>
 			</div>
 			<div class="col-md-6">
-				<label>Tingkat PR</label>
+				<label>PR Priority</label>
 				<input type="text" class="form-control" value="<?= ($header[0]['tingkat_pr'] == 2) ? 'Urgent' : 'Normal' ?>" readonly>
 			</div>
 		</div>
@@ -48,10 +48,10 @@ $tgl_dibutuhkan = (!empty($header[0]['tgl_dibutuhkan'])) ? date('d F Y', strtoti
 						<th class="text-center">#</th>
 						<th class="text-center">Material Name</th>
 						<?php if ($pembeda == 'SO') { ?>
-							<th class="text-center">Estimasi (Kg)</th>
+							<th class="text-center">Estimation (Kg)</th>
 							<th class="text-center">Stock Free (Kg)</th>
 							<th class="text-center">Use Stock (Kg)</th>
-							<th class="text-center">Sisa Stock Free (Kg)</th>
+							<th class="text-center">Remaining Free Stock (Kg)</th>
 						<?php } ?>
 						<th class="text-center">Min Stock</th>
 						<th class="text-center">Max Stock</th>
@@ -109,7 +109,7 @@ $tgl_dibutuhkan = (!empty($header[0]['tgl_dibutuhkan'])) ? date('d F Y', strtoti
 
 		<div class="form-group row">
 			<div class="text-center">
-				<button type="button" class="btn btn-secondary" id="back"><i class="fa fa-reply"></i> Kembali</button>
+				<button type="button" class="btn btn-secondary" id="back"><i class="fa fa-reply"></i> Back</button>
 			</div>
 		</div>
 	</form>

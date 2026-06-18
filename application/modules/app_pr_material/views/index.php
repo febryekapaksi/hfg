@@ -35,10 +35,10 @@
                 <thead class="table-light">
                     <tr>
                         <th style="width:60px;" class="text-center">#</th>
-                        <th>Asal Permintaan</th>
-                        <th>No. Req/No SO</th>
-                        <th class="text-center">No. PR</th>
-                        <th>Untuk Kebutuhan</th>
+                        <th>Request Origin</th>
+                        <th>Req No./SO No.</th>
+                        <th class="text-center">PR No.</th>
+                        <th>Purpose</th>
                         <th>Request By</th>
                         <th>Request Date</th>
                         <th>Status</th>

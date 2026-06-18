@@ -29,9 +29,9 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 			<thead>
 				<tr>
 					<th class="text-center" width="5">#</th>
-					<th class="text-center">Asal Permintaan</th>
-					<th class="text-center">Nomor Request</th>
-					<th class="text-center">Untuk Kebutuhan</th>
+					<th class="text-center">Request Origin</th>
+					<th class="text-center">Request Number</th>
+					<th class="text-center">Purpose</th>
 					<th class="text-center">Request By</th>
 					<th class="text-center">Request Date</th>
 					<th class="text-center">Status</th>
@@ -50,7 +50,7 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 					if ($get_user) {
 						$nama_user = $get_user->nm_lengkap;
 					} else {
-						$nama_user = "User tidak ditemukan";
+						$nama_user = "User not found";
 					}
 
 					$ttl_detail_pr = 0;
@@ -66,23 +66,43 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 						$ttl_detail_pr += $item_detail_pr_depart->qty;
 					}
 
-					$get_ttl_detail_po = $this->db->query("
-							SELECT
-								a.qty
-							FROM
-								dt_trans_po a
-								JOIN tr_purchase_order b ON b.no_po = a.no_po
-							WHERE
-								CASE
-									WHEN (a.tipe IS NOT NULL AND a.tipe <> '') 
-										THEN a.idpr IN (SELECT aa.id FROM rutin_non_planning_detail aa WHERE aa.no_pengajuan = '" . $record->no_pengajuan . "')
-									ELSE
-										a.idpr IN (SELECT aa.id FROM material_planning_base_on_produksi_detail aa WHERE aa.so_number = '" . $record->no_pengajuan . "')
-								END;
-						")
-						->result();
-					foreach ($get_ttl_detail_po as $item_ttl_detail_po) {
-						$ttl_detail_po += $item_ttl_detail_po->qty;
+					// --- PROSES AMBIL DATA PO BERDASARKAN TIPE PR ---
+					if ($record->pr_non_depart == '1') {
+						// 1. Jika PR Material / Stok
+						$get_ttl_detail_po = $this->db->query("
+                SELECT SUM(a.qty) AS total_qty
+                FROM dt_trans_po a
+                WHERE a.idpr IN (
+                    SELECT aa.id 
+                    FROM material_planning_base_on_produksi_detail aa 
+                    WHERE aa.so_number = '" . $record->no_pengajuan . "'
+                )
+            ")->row();
+						$ttl_detail_po = ($get_ttl_detail_po) ? $get_ttl_detail_po->total_qty : 0;
+					} else if ($record->pr_depart == '1') {
+						// 2. Jika PR Departemen / Rutin
+						$get_ttl_detail_po = $this->db->query("
+                SELECT SUM(a.qty) AS total_qty
+                FROM dt_trans_po a
+                WHERE a.idpr IN (
+                    SELECT aa.id 
+                    FROM rutin_non_planning_detail aa 
+                    WHERE aa.no_pengajuan = '" . $record->no_pengajuan . "'
+                )
+            ")->row();
+						$ttl_detail_po = ($get_ttl_detail_po) ? $get_ttl_detail_po->total_qty : 0;
+					} else if ($record->pr_asset == '1') {
+						// 3. Jika PR Asset
+						$get_ttl_detail_po = $this->db->query("
+                SELECT SUM(a.qty) AS total_qty
+                FROM dt_trans_po a
+                WHERE a.idpr IN (
+                    SELECT aa.id 
+                    FROM tran_pr_header aa 
+                    WHERE aa.id = '" . $record->no_pengajuan . "'
+                )
+            ")->row();
+						$ttl_detail_po = ($get_ttl_detail_po) ? $get_ttl_detail_po->total_qty : 0;
 					}
 
 					if ($record->pr_non_depart == '1') {
@@ -92,6 +112,7 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 					$all_pr_po = 1;
 					$po_stat = 0;
 
+					// --- PENENTUAN STATUS ---
 					$status = '<div class="badge bg-danger">Outstanding</div>';
 					$stat = 3;
 					if ($ttl_detail_po > 0) {
@@ -125,9 +146,9 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 					if (isset($status_filter)) {
 						if ($status_filter == $stat) {
 							echo '
-								<tr>
-									<td class="text-center">' . $no . '</td>
-									';
+                    <tr>
+                        <td class="text-center">' . $no . '</td>
+                        ';
 
 							if ($record->pr_non_depart == '1') {
 								echo '<td>' . strtoupper('PR PRODUCT / ' . $record->no_pr) . '</td>';
@@ -138,13 +159,13 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 							}
 
 							echo '
-									<td class="text-center">' . strtoupper($record->no_pr) . '</td>
-									<td>' . strtoupper($record->project) . '</td>
-									<td class="text-center">' . ucwords(strtolower($nama_user)) . ucwords(strtolower($record->booking_by_name)) . '</td>
-									<td class="text-center">' . date('d-M-Y', strtotime($record->booking_date)) . '</td>
-									<td class="text-center">' . $status . '</td>
-									<td class="text-center">
-										';
+                        <td class="text-center">' . strtoupper($record->no_pr) . '</td>
+                        <td>' . strtoupper($record->project) . '</td>
+                        <td class="text-center">' . ucwords(strtolower($nama_user)) . ucwords(strtolower($record->booking_by_name)) . '</td>
+                        <td class="text-center">' . date('d-M-Y', strtotime($record->booking_date)) . '</td>
+                        <td class="text-center">' . $status . '</td>
+                        <td class="text-center">
+                            ';
 
 							if ($record->pr_asset == '1') {
 								$no_planning = '';
@@ -159,16 +180,16 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 							}
 
 							echo '
-										<a href="' . $link_print . '" class="btn btn-sm btn-primary" target="_blank"><i class="fa fa-print"></i></a>
-									</td>
-								</tr>
-							';
+                            <a href="' . $link_print . '" class="btn btn-sm btn-primary" target="_blank"><i class="fa fa-print"></i></a>
+                        </td>
+                    </tr>
+                ';
 						}
 					} else {
 						echo '
-							<tr>
-								<td class="text-center">' . $no . '</td>
-								';
+                <tr>
+                    <td class="text-center">' . $no . '</td>
+                    ';
 
 						if ($record->pr_non_depart == '1') {
 							echo '<td>' . strtoupper('PR MATERIAL / ' . $record->no_pr) . '</td>';
@@ -179,13 +200,13 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 						}
 
 						echo '
-								<td class="text-center">' . strtoupper($record->no_pr) . '</td>
-								<td>' . strtoupper($record->project) . '</td>
-								<td class="text-center">' . ucwords(strtolower($nama_user)) . ucwords(strtolower($record->booking_by_name)) . '</td>
-								<td class="text-center">' . date('d-M-Y', strtotime($record->booking_date)) . '</td>
-								<td class="text-center">' . $status . '</td>
-								<td class="text-center">
-									';
+                    <td class="text-center">' . strtoupper($record->no_pr) . '</td>
+                    <td>' . strtoupper($record->project) . '</td>
+                    <td class="text-center">' . ucwords(strtolower($nama_user)) . ucwords(strtolower($record->booking_by_name)) . '</td>
+                    <td class="text-center">' . date('d-M-Y', strtotime($record->booking_date)) . '</td>
+                    <td class="text-center">' . $status . '</td>
+                    <td class="text-center">
+                        ';
 
 						if ($record->pr_asset == '1') {
 							$no_planning = '';
@@ -200,12 +221,11 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 						}
 
 						echo '
-									<a href="' . $link_print . '" class="btn btn-sm btn-primary" target="_blank"><i class="fa fa-print"></i></a>
-								</td>
-							</tr>
-						';
+                        <a href="' . $link_print . '" class="btn btn-sm btn-primary" target="_blank"><i class="fa fa-print"></i></a>
+                    </td>
+                </tr>
+            ';
 					}
-
 
 					$no++;
 				endforeach;
@@ -237,22 +257,22 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 </div>
 
 <div class="modal fade" id="dialog-popup" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="myModalLabel"><i class="fa fa-list"></i> Detail PR</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="ModalView">
-                ...
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
-                    <i class="fa fa-times"></i> Close
-                </button>
-            </div>
-        </div>
-    </div>
+	<div class="modal-dialog modal-xl">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="myModalLabel"><i class="fa fa-list"></i> Detail PR</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body" id="ModalView">
+				...
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+					<i class="fa fa-times"></i> Close
+				</button>
+			</div>
+		</div>
+	</div>
 </div>
 
 <!-- DataTables -->
@@ -296,7 +316,7 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 
 	$(document).on('click', '.view', function() {
 		var id = $(this).data('no_pr');
-		var url_target = siteurl + 'purchase_request/View/' + id; 
+		var url_target = siteurl + 'purchase_request/View/' + id;
 
 		if ($(this).hasClass('view_depart')) {
 			url_target = siteurl + 'purchase_request/view_depart/' + id;
@@ -311,11 +331,11 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 				'id': id
 			},
 			success: function(data) {
-				$("#dialog-popup").modal('show'); 
+				$("#dialog-popup").modal('show');
 				$("#ModalView").html(data);
 			},
 			error: function(xhr, status, error) {
-				alert("Terjadi kesalahan: " + error);
+				alert("An error occurred: " + error);
 			}
 		});
 	});
@@ -357,13 +377,13 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 		var so_number = $(this).data('so_number');
 		// alert(id);
 		swal({
-				title: "Anda Yakin?",
-				text: "PR ini akan di approve !",
+				title: "Are you sure?",
+				text: "This PR will be approved!",
 				type: "warning",
 				showCancelButton: true,
 				confirmButtonClass: "btn-info",
-				confirmButtonText: "Ya",
-				cancelButtonText: "Batal",
+				confirmButtonText: "Yes",
+				cancelButtonText: "Cancel",
 				closeOnConfirm: false
 			},
 			function() {
@@ -377,8 +397,8 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 					success: function(result) {
 						if (result.status == '1') {
 							swal({
-									title: "Sukses",
-									text: "PR telah di approve !",
+									title: "Success",
+									text: "PR has been approved!",
 									type: "success"
 								},
 								function() {
@@ -387,7 +407,7 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 						} else {
 							swal({
 								title: "Error",
-								text: "PR gagal di approve !",
+								text: "Failed to approve PR!",
 								type: "error"
 							})
 
@@ -396,7 +416,7 @@ $ENABLE_DELETE  = has_permission('List_Outstanding_PR.Delete');
 					error: function() {
 						swal({
 							title: "Error",
-							text: "PR gagal di approval !",
+							text: "Failed to approve PR!",
 							type: "error"
 						})
 					}
