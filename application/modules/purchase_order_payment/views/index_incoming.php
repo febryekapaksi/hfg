@@ -6,9 +6,18 @@ $ENABLE_DELETE  = has_permission('Purchase_Order.Delete');
 
 ?>
 <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.min.css">
+<!-- SweetAlert2 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+<!-- Flatpickr -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style type="text/css">
 	thead input {
 		width: 100%;
+	}
+
+	.swal2-container {
+		z-index: 9999;
 	}
 </style>
 
@@ -32,7 +41,7 @@ $ENABLE_DELETE  = has_permission('Purchase_Order.Delete');
 
 <!-- awal untuk modal dialog -->
 <!-- Modal -->
-<div class="modal modal-default fade" id="dialog-popup" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+<div class="modal modal-default fade" id="dialog-popup" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 	<div class="modal-dialog modal-lg">
 		<div class="modal-content">
 			<form action="" method="post" id="frm-data">
@@ -60,6 +69,8 @@ $ENABLE_DELETE  = has_permission('Purchase_Order.Delete');
 <script src="<?= base_url('assets/js/autoNumeric.js') ?>"></script>
 <script src="https://cdn.datatables.net/2.0.7/js/dataTables.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 <!-- page script -->
 <script>
 	$(document).on('click', '.checkbx', function() {
@@ -85,7 +96,12 @@ $ENABLE_DELETE  = has_permission('Purchase_Order.Delete');
 				$('.dic').html(result);
 			},
 			error: function(result) {
-				Swal.fire({ title: 'Error !', text: 'Please try again later !', icon: 'error', confirmButtonText: 'OK' });
+				Swal.fire({
+					title: 'Error !',
+					text: 'Please try again later !',
+					icon: 'error',
+					confirmButtonText: 'OK'
+				});
 			}
 		});
 	});
@@ -119,7 +135,12 @@ $ENABLE_DELETE  = has_permission('Purchase_Order.Delete');
 				$('#dialog-popup').modal('show');
 			},
 			error: function(result) {
-				Swal.fire({ title: 'Error !', text: 'Please try again later !', icon: 'error', confirmButtonText: 'OK' });
+				Swal.fire({
+					title: 'Error !',
+					text: 'Please try again later !',
+					icon: 'error',
+					confirmButtonText: 'OK'
+				});
 			}
 		});
 	});
@@ -142,7 +163,12 @@ $ENABLE_DELETE  = has_permission('Purchase_Order.Delete');
 				$('#dialog-popup').modal('show');
 			},
 			error: function(result) {
-				Swal.fire({ title: 'Error !', text: 'Please try again later !', icon: 'error', confirmButtonText: 'OK' });
+				Swal.fire({
+					title: 'Error !',
+					text: 'Please try again later !',
+					icon: 'error',
+					confirmButtonText: 'OK'
+				});
 			}
 		});
 	});
@@ -176,7 +202,12 @@ $ENABLE_DELETE  = has_permission('Purchase_Order.Delete');
 				$('#dialog-popup').modal('show');
 			},
 			error: function(result) {
-				Swal.fire({ title: 'Error !', text: 'Please try again later !', icon: 'error', confirmButtonText: 'OK' });
+				Swal.fire({
+					title: 'Error !',
+					text: 'Please try again later !',
+					icon: 'error',
+					confirmButtonText: 'OK'
+				});
 			}
 		});
 	});
@@ -200,7 +231,12 @@ $ENABLE_DELETE  = has_permission('Purchase_Order.Delete');
 				$('#dialog-popup').modal('show');
 			},
 			error: function(result) {
-				Swal.fire({ title: 'Error !', text: 'Please try again later !', icon: 'error', confirmButtonText: 'OK' });
+				Swal.fire({
+					title: 'Error !',
+					text: 'Please try again later !',
+					icon: 'error',
+					confirmButtonText: 'OK'
+				});
 			}
 		});
 	});
@@ -230,11 +266,16 @@ $ENABLE_DELETE  = has_permission('Purchase_Order.Delete');
 
 		// Validasi: kurs wajib diisi jika currency bukan IDR
 		var currency = $('#frm-data').find('input[name="currency"]').val();
-		var kurs     = $('#frm-data').find('input[name="kurs"]').val();
-		var kursVal  = parseFloat((kurs || '0').replace(/,/g, ''));
+		var kurs = $('#frm-data').find('input[name="kurs"]').val();
+		var kursVal = parseFloat((kurs || '0').replace(/,/g, ''));
 
 		if (currency && currency.toUpperCase() !== 'IDR' && (kursVal <= 0 || kurs === '')) {
-			Swal.fire({ title: 'Peringatan!', text: 'Kurs wajib diisi dan harus lebih dari 0 jika currency bukan IDR!', icon: 'warning', confirmButtonText: 'OK' });
+			Swal.fire({
+				title: 'Peringatan!',
+				text: 'Kurs wajib diisi dan harus lebih dari 0 jika currency bukan IDR!',
+				icon: 'warning',
+				confirmButtonText: 'OK'
+			});
 			return false;
 		}
 
@@ -258,17 +299,50 @@ $ENABLE_DELETE  = has_permission('Purchase_Order.Delete');
 					contentType: false,
 					success: function(result) {
 						if (result.status == 1) {
-							Swal.fire({ title: 'Success !', text: 'PO Invoice has been saved !', icon: 'success', timer: 1500, showConfirmButton: false })
-								.then(function(){ location.reload(); });
+							Swal.fire({
+									title: 'Success !',
+									text: 'PO Invoice has been saved !',
+									icon: 'success',
+									timer: 1500,
+									showConfirmButton: false
+								})
+								.then(function() {
+									location.reload();
+								});
 						} else {
-							Swal.fire({ title: 'Failed !', text: 'PO Invoice has not been saved !', icon: 'error', confirmButtonText: 'OK' });
+							Swal.fire({
+								title: 'Failed !',
+								text: 'PO Invoice has not been saved !',
+								icon: 'error',
+								confirmButtonText: 'OK'
+							});
 						}
 					},
 					error: function(result) {
-						Swal.fire({ title: 'Error !', text: 'Please try again later !', icon: 'error', confirmButtonText: 'OK' });
+						Swal.fire({
+							title: 'Error !',
+							text: 'Please try again later !',
+							icon: 'error',
+							confirmButtonText: 'OK'
+						});
 					}
 				});
 			}
+		});
+	});
+
+	$(document).on('shown.bs.modal', '#dialog-popup', function() {
+		$('#dialog-popup input[name="invoice_date"]').flatpickr({
+			dateFormat: "Y-m-d",
+			allowInput: false
+		});
+		$('#dialog-popup input[name="invoice_date_real"]').flatpickr({
+			dateFormat: "Y-m-d",
+			allowInput: false
+		});
+		$('#dialog-popup input[name="tanggal_faktur_pajak"]').flatpickr({
+			dateFormat: "Y-m-d",
+			allowInput: false
 		});
 	});
 </script>

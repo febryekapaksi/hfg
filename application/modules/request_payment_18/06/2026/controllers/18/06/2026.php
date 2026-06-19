@@ -1,8 +1,4 @@
-<?php
-
-use FontLib\Table\Type\post;
-
-if (!defined('BASEPATH')) exit('No direct script access allowed');
+<?php if (!defined('BASEPATH')) exit('No direct script access allowed');
 
 /*
  * @author Harboens
@@ -43,10 +39,6 @@ class Request_payment extends Admin_Controller
 	{
 		$data = $this->Request_payment_model->GetListDataPaymentList();
 		$list_tgl_pengajuan_pembayaran = $this->Request_payment_model->get_payment_paid();
-		// echo '<pre>';
-		// print_r($data);
-		// echo '</pre>';
-		// die();
 
 		$this->template->set('data', $data);
 		$this->template->set('list_tgl_pengajuan_pembayaran', $list_tgl_pengajuan_pembayaran);
@@ -57,14 +49,13 @@ class Request_payment extends Admin_Controller
 	public function save_request()
 	{
 		$status	= $this->input->post("status");
-
 		$this->db->trans_begin();
 		if (!empty($status)) {
 			foreach ($status as $val) {
 				// print_r($this->input->post("tanggal_" . $val));
 				// exit;
 
-				$config['upload_path'] = './uploads/expense/';
+				$config['upload_path'] = './assets/expense/';
 				$config['allowed_types'] = '*';
 				$config['remove_spaces'] = TRUE;
 				$config['encrypt_name'] = TRUE;
@@ -100,7 +91,6 @@ class Request_payment extends Admin_Controller
 					'total_pph' => str_replace(',', '', $this->input->post('nilai_pph_' . $val)),
 					'link_doc' => $filenames
 				);
-
 				$idreq = $this->All_model->dataSave('request_payment', $data);
 				if ($tipe == 'transportasi') {
 					$this->All_model->dataUpdate('tr_transport_req', array('status' => 2), array('no_doc' => $no_doc));
@@ -241,7 +231,7 @@ class Request_payment extends Admin_Controller
 		}
 
 		/* Transportasi */
-		if (isset($type) && $type == 'transport') {
+		if (isset($type) && $type == 'transportasi') {
 			$data 			= $this->db->get_where('tr_transport_req', ['id' => $id])->row();
 			$data_detail	= $this->db->get_where('tr_transport', ['no_req' => $data->no_doc])->result();
 		}
@@ -324,7 +314,7 @@ class Request_payment extends Admin_Controller
 		}
 
 		/* Transportasi */
-		if (isset($type) && $type == 'transport') {
+		if (isset($type) && $type == 'transportasi') {
 			$data 			= $this->db->get_where('tr_transport_req', ['id' => $id])->row();
 			$data_detail	= $this->db->get_where('tr_transport', ['no_req' => $data->no_doc])->result();
 		}
@@ -617,6 +607,7 @@ class Request_payment extends Admin_Controller
 		if ($Data['tipe'] == 'direct_payment') {
 			$header 	= $this->db->get_where('request_payment', ['no_doc' => $Data['no_doc'], 'tipe' => $Data['tipe']])->row_array();
 		}
+		// $Id 		= $this->_getIdPayment(str_replace('/', '-', $Data['date']));
 
 		$no_coa_bank = explode(' - ', $header['bank_name']);
 		$no_coa_bank = $no_coa_bank[0];
@@ -629,11 +620,17 @@ class Request_payment extends Admin_Controller
 
 		$Id = $this->Request_payment_model->generate_id_payment($kode_bank);
 
+		// $detail = 
 		$ArrDetail 			= [];
+		// $idDetail 			= $this->_getIdDetail($Id);
+
+		// print_r($this->Request_payment_model->generate_id_detail());
+		// exit;
 
 		$n = 0;
 		foreach ($Data['item'] as $detail) {
 			$n++;
+			// $idDetail++;
 			$id_detail = $this->Request_payment_model->generate_id_detail($n);
 
 			if ($Data['tipe'] == 'expense') {
@@ -726,7 +723,7 @@ class Request_payment extends Admin_Controller
 				$Harga[] 		= $nilai;
 			}
 
-			if ($Data['tipe'] == 'transport') {
+			if ($Data['tipe'] == 'transportasi') {
 				$dtl 				= $this->db->get_where('tr_transport', ['id' => $detail['id']])->row();
 				$ArrDetail[] 		= [
 					'id' 			=> $id_detail,
@@ -841,7 +838,6 @@ class Request_payment extends Admin_Controller
 
 		$header['jumlah'] 	= array_sum($Harga);
 		$header['status'] 	= '1';
-		// $header['tgl_bayar'] = $header['tanggal'];
 
 		$this->db->trans_rollback();
 		$this->db->trans_begin();
@@ -858,11 +854,17 @@ class Request_payment extends Admin_Controller
 					print_r($this->db->error()['message']);
 					exit;
 				}
+				// print_r($this->db->last_query());
+				// exit;
 			}
 		}
 
 		/* Details */
 		if ($ArrDetail) {
+
+			// print_r($ArrDetail);
+			// exit;
+
 			if ($Data['tipe'] == 'expense') {
 
 				$this->db->insert_batch('payment_approve_details', $ArrDetail);
@@ -894,6 +896,7 @@ class Request_payment extends Admin_Controller
 
 			}
 
+
 			if ($Data['tipe'] == 'kasbon') {
 				$this->db->insert_batch('payment_approve_details', $ArrDetail);
 				$this->db->update_batch('tr_kasbon', $updateDetail, 'id');
@@ -913,7 +916,7 @@ class Request_payment extends Admin_Controller
 				}
 			}
 
-			if ($Data['tipe'] == 'transport') {
+			if ($Data['tipe'] == 'transportasi') {
 				$this->db->insert_batch('payment_approve_details', $ArrDetail);
 				$this->db->update_batch('tr_transport', $updateDetail, 'id');
 
@@ -1031,7 +1034,7 @@ class Request_payment extends Admin_Controller
 						'app_checker' => null
 					]);
 
-					if ($post['tipe'] == "transport") {
+					if ($post['tipe'] == "transportasi") {
 						$this->db->update('tr_transport_req', ['sts_reject' => 0, 'sts_reject_manage' => 0], ['no_doc' => $post['no_doc']]);
 						$this->db->update('tr_transport', ['req_payment' => 1], ['id' => $item['id']]);
 					}
@@ -1087,7 +1090,7 @@ class Request_payment extends Admin_Controller
 		$payment_date = date("Y-m-d");
 		$det_Jurnaltes1 = array();
 		$ix = 0;
-		$config['upload_path'] = './uploads/expense/';
+		$config['upload_path'] = './assets/expense/';
 		$config['allowed_types'] = '*';
 		$config['remove_spaces'] = TRUE;
 		$config['encrypt_name'] = TRUE;
@@ -1127,7 +1130,7 @@ class Request_payment extends Admin_Controller
 
 					$this->All_model->dataUpdate('payment_approve', $data, array('id' => $val));
 
-					if ($tipe[$keys] == 'transport') {
+					if ($tipe[$keys] == 'transportasi') {
 						$coa = '';
 						$rec = $this->db->query("select * from " . DBACC . ".master_oto_jurnal_detail where kode_master_jurnal='" . $jenis_jurnal . "' and menu='" . $tipe[$keys] . "'")->row();
 						if (!empty($rec)) {
@@ -1398,91 +1401,88 @@ class Request_payment extends Admin_Controller
 	public function payment_jurnal_list()
 	{
 		$results = $this->Request_payment_model->GetListDataJurnal();
-
 		$this->template->set('results', $results);
 		$this->template->title('Payment Jurnal');
 		$this->template->render('list_jurnal');
 	}
 	public function view_jurnal($id)
 	{
-		$data = $this->db->query("select * from tr_jurnal where no_transaksi='" . $id . "' order by no_jurnal")->result();
+		$data = $this->db->query("select * from jurnal where nomor='" . $id . "' order by kredit,debet,no_perkiraan")->result();
 		$data_coa = $this->All_model->GetCoaCombo();
-		$no_transaksi = $id;
-		// $results = $this->Request_payment_model->GetListDataPayment('status=1');
+		$results = $this->Request_payment_model->GetListDataPayment('status=1');
 		$this->template->set('data', $data);
 		$this->template->set('datacoa', $data_coa);
-		$this->template->set('no_transaksi', $no_transaksi);
-
-		// $this->template->set('results', $results);
+		$this->template->set('results', $results);
 		$this->template->set('status', 'view');
 		$this->template->title('Payment Jurnal');
 		$this->template->render('form_jurnal');
 	}
 	public function edit_jurnal($id)
 	{
-		$data = $this->db->query("select * from tr_jurnal where no_transaksi='" . $id . "' order by no_jurnal")->result();
+		$data = $this->db->query("select * from jurnal where nomor='" . $id . "' order by kredit,debet,no_perkiraan")->result();
 		$data_coa = $this->All_model->GetCoaCombo();
-		$no_transaksi = $id;
-		// $results = $this->Request_payment_model->GetListDataPayment('status=1');
+		$results = $this->Request_payment_model->GetListDataPayment('status=1');
 		$this->template->set('data', $data);
 		$this->template->set('datacoa', $data_coa);
-		$this->template->set('no_transaksi', $no_transaksi);
 		$this->template->set('status', 'edit');
 		$this->template->title('Payment Jurnal');
 		$this->template->render('form_jurnal');
 	}
 	public function jurnal_save()
 	{
-		$id 			= $this->input->post("id");
-		$no_perkiraan 	= $this->input->post("no_perkiraan");
-		$keterangan 	= $this->input->post("keterangan");
-		$debit 			= $this->input->post("debit");
-		$kredit 		= $this->input->post("kredit");
-		$tanggal		= $this->input->post('tgl_jurnal');
-		$tipe			= $this->input->post('tipe');
+		$id = $this->input->post("id");
+		$no_perkiraan = $this->input->post("no_perkiraan");
+		$keterangan = $this->input->post("keterangan");
+		$debet = $this->input->post("debet");
+		$kredit = $this->input->post("kredit");
 
+		$tanggal		= $this->input->post('tanggal');
+		$tipe			= $this->input->post('tipe');
+		$no_reff        = $this->input->post('no_reff');
+		$no_request		= $this->input->post('no_request');
+		$jenis_jurnal	= $this->input->post('jenis_jurnal');
+		$nocust         = $this->input->post('nocust');
 		$total			= 0;
-		$Nomor_JV 		= $this->Jurnal_model->get_no_buk('101');
-		$no_transaksi 	= $this->input->post("no_transaksi");
-		$tgl_jurnal  	= date('Y-m-d');
+		$total_po		= $this->input->post('total_po');
+		$Bln 			= substr($tanggal, 5, 2);
+		$Thn 			= substr($tanggal, 0, 4);
+		$Nomor_JV = $this->Jurnal_model->get_no_buk('101');
+		$session = $this->session->userdata('app_session');
+		$data_session	= $this->session->userdata;
 
 		$this->db->trans_begin();
 		for ($i = 0; $i < count($id); $i++) {
 			$dataheader =  array(
-				'sts' => "1",
-				'coa' => $no_perkiraan[$i],
+				'stspos' => "1",
+				'no_perkiraan' => $no_perkiraan[$i],
 				'keterangan' => $keterangan[$i],
-				'debit' => $debit[$i],
+				'debet' => $debet[$i],
 				'kredit' => $kredit[$i]
 			);
-			$total = ($total + $debit[$i]);
-
-			$this->All_model->DataUpdate('tr_jurnal', $dataheader, array('id' => $id[$i]));
+			$total = ($total + $debet[$i]);
+			$this->All_model->DataUpdate('jurnal', $dataheader, array('id' => $id[$i]));
 
 			$datadetail = array(
-				'tipe'        	=> $tipe[$i],
+				'tipe'        	=> $tipe,
 				'nomor'       	=> $Nomor_JV,
-				'tanggal'     	=> $tanggal[$i],
-				'no_reff'     	=> $no_transaksi,
+				'tanggal'     	=> $tanggal,
+				'no_reff'     	=> $no_reff,
 				'no_perkiraan'	=> $no_perkiraan[$i],
 				'keterangan' 	=> $keterangan[$i],
-				'debet' 		=> $debit[$i],
-				'kredit' 		=> $kredit[$i],
-				'created_on'	=> date('Y-m-d H:i:s'),
-				'created_by'	=> $this->auth->user_id()
+				'debet' 		=> $debet[$i],
+				'kredit' 		=> $kredit[$i]
 			);
-
 			$this->db->insert(DBACC . '.jurnal', $datadetail);
 		}
 
-		$keterangan	= 'Payment ' . $no_transaksi;
+		$keterangan	= 'Payment';
 		$dataJVhead = array(
 			'nomor' 	    	=> $Nomor_JV,
-			'tgl'	         	=> $tgl_jurnal,
+			'tgl'	         	=> $tanggal,
 			'jml'	            => $total,
 			'kdcab'				=> '101',
 			'jenis_reff'	    => 'BUK',
-			'no_reff' 		    => $no_transaksi,
+			'no_reff' 		    => $no_reff,
 			'jenis_ap'			=> 'V',
 			'note'				=> $keterangan,
 			'user_id'			=> $this->auth->user_name(),
@@ -2551,10 +2551,9 @@ class Request_payment extends Admin_Controller
 
 		if (!empty($get_added)) {
 			foreach ($get_added as $item) {
-				$key = preg_replace('/[^A-Za-z0-9_-]/', '_', $item->no_doc);
-				$tanggal_pembayaran = $post['tanggal_pembayaran_' . $key] ?? null;
-				$kategori           = $post['kategori_' . $key] ?? null;
-				$nilai_pengajuan    = $post['nilai_pengajuan_' . $key] ?? null;
+				$tanggal_pembayaran = $post['tanggal_pembayaran_' . $item->no_doc];
+				$kategori = $post['kategori_' . $item->no_doc];
+				$nilai_pengajuan = $post['nilai_pengajuan_' . $item->no_doc];
 
 				if ($item->tipe == 'Kasbon') {
 
@@ -2569,7 +2568,7 @@ class Request_payment extends Admin_Controller
 						'tgl_doc' => $get_kasbon->tgl_doc,
 						'keperluan' => $get_kasbon->keperluan,
 						'tipe' => 'kasbon',
-						'jumlah' => $nilai_pengajuan,
+						'jumlah' => $get_kasbon->jumlah_kasbon,
 						'status' => 0,
 						'tanggal' => $tanggal_pembayaran,
 						'created_by' => $this->auth->user_name(),
@@ -2616,7 +2615,7 @@ class Request_payment extends Admin_Controller
 				}
 
 				if ($item->tipe == 'Transport') {
-					$this->db->select('a.no_doc, a.tgl_doc, a.nama, a.jumlah_kasbon, a.keterangan, b.bank_id, b.accnumber, b.accname, b.id');
+					$this->db->select('a.no_doc, a.tgl_doc, a.nama, a.jumlah_kasbon, a.keterangan, b.bank_id, b.accnumber, b.accname, b.id, b.jumlah_expense');
 					$this->db->from('tr_transport a');
 					$this->db->join('tr_transport_req b', 'b.no_doc = a.no_req', 'left');
 					$this->db->where('a.no_req', $item->no_doc);
@@ -2628,7 +2627,7 @@ class Request_payment extends Admin_Controller
 						'tgl_doc' => $get_transport->tgl_doc,
 						'keperluan' => $get_transport->keterangan,
 						'tipe' => 'transport',
-						'jumlah' => $nilai_pengajuan,
+						'jumlah' => $get_transport->jumlah_expense,
 						'status' => 0,
 						'tanggal' => $tanggal_pembayaran,
 						'created_by' => $this->auth->user_name(),
@@ -2646,6 +2645,61 @@ class Request_payment extends Admin_Controller
 				}
 
 				if ($item->tipe == 'Periodik') {
+					$this->db->select('a.*, SUM(b.nilai) as nilai_pengajuan, b.bank_id, b.accnumber, b.accname, c.nm_lengkap as nama');
+					$this->db->from('tr_pengajuan_rutin a');
+					$this->db->join('tr_pengajuan_rutin_detail b', 'b.no_doc = a.no_doc');
+					$this->db->join('users c', 'c.id_user = a.created_by');
+					$this->db->where('a.no_doc', $item->no_doc);
+					$this->db->group_by('a.no_doc');
+					$get_periodik = $this->db->get()->row();
+
+					$arr_insert[] = [
+						'no_doc' => $item->no_doc,
+						'nama' => $get_periodik->nama,
+						'tgl_doc' => $get_periodik->tanggal_doc,
+						'keperluan' => $get_periodik->keterangan,
+						'tipe' => 'periodik',
+						'jumlah' => $nilai_pengajuan,
+						'status' => 0,
+						'tanggal' => $tanggal_pembayaran,
+						'created_by' => $this->auth->user_name(),
+						'created_on' => date('Y-m-d H:i:s'),
+						'bank_id' => $get_periodik->bank_id,
+						'accnumber' => $get_periodik->accnumber,
+						'accname' => $get_periodik->accname,
+						'ids' => $get_periodik->id,
+						'currency' => 'IDR',
+						'admin_bank' => 0,
+						'total_pph' => 0
+					];
+
+					$this->db->update('tr_pengajuan_rutin', ['status' => 2], ['no_doc' => $item->no_doc]);
+				}
+
+				if ($item->tipe == 'Cash') {
+					$this->db->select('a.*');
+					$this->db->from('tr_pr_non_po a');
+					$this->db->where('a.no_non_po', $item->no_doc);
+					$get_data_non_po = $this->db->get()->row();
+
+					$arr_insert[] = [
+						'no_doc' => $item->no_doc,
+						'nama' => $get_data_non_po->nm_pic,
+						'tgl_doc' => date('Y-m-d', strtotime($get_data_non_po->created_date)),
+						'keperluan' => 'PR Cash - ' . $get_data_non_po->no_pr . ' - ' . ucfirst($get_data_non_po->jenis_pr),
+						'tipe' => 'Cash',
+						'jumlah' => $get_data_non_po->total_pr,
+						'status' => 0,
+						'tanggal' => $tanggal_pembayaran,
+						'created_by' => $this->auth->user_name(),
+						'created_on' => date('Y-m-d H:i:s'),
+						'ids' => $get_data_non_po->id,
+						'currency' => 'IDR',
+						'admin_bank' => 0,
+						'total_pph' => 0
+					];
+
+					$this->db->update('tr_pr_non_po', ['sts' => '2'], ['no_non_po' => $item->no_doc]);
 				}
 			}
 		}
@@ -2672,7 +2726,7 @@ class Request_payment extends Admin_Controller
 		} else {
 			$this->db->trans_commit();
 
-			// $this->Request_payment_model->copy_to_payment();
+			$this->Request_payment_model->copy_to_payment();
 
 			$valid = 1;
 			$msg = 'Data has been processed !';
@@ -2816,5 +2870,31 @@ class Request_payment extends Admin_Controller
 		];
 
 		$this->load->view('download_excel', $data);
+	}
+
+	public function print_cash($id)
+	{
+		$get_data_cash = $this->db->get_where('tr_pr_non_po', ['id' => $id])->row();
+		$get_v_req_payment = $this->db->get_where('v_request_payment', ['id' => $id])->row();
+
+		if ($get_data_cash->jenis_pr == 'pr departemen') {
+			$this->db->select('CONCAT("assets/pr/", a.document) as doc_file, a.no_pr as no_doc');
+			$this->db->from('rutin_non_planning_header a');
+			$this->db->where('a.no_pr', $get_data_cash->no_pr);
+			$get_doc_pr = $this->db->get()->row();
+		} else {
+			$this->db->select('CONCAT("assets/pr/", a.dokument_pendukung) as doc_file, a.no_pr as no_doc');
+			$this->db->from('tran_pr_header a');
+			$this->db->where('a.no_pr', $get_data_cash->no_pr);
+			$get_doc_pr = $this->db->get()->row();
+		}
+
+		$data = [
+			'data_pr' => $get_data_cash,
+			'v_req_payment' => $get_v_req_payment,
+			'doc_pr' => $get_doc_pr
+		];
+
+		$this->load->view('print_cash', $data);
 	}
 }

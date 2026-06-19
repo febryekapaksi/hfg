@@ -52,9 +52,7 @@ class Request_payment extends Admin_Controller
 		$this->db->trans_begin();
 		if (!empty($status)) {
 			foreach ($status as $val) {
-				// print_r($this->input->post("tanggal_" . $val));
-				// exit;
-
+				
 				$config['upload_path'] = './assets/expense/';
 				$config['allowed_types'] = '*';
 				$config['remove_spaces'] = TRUE;
@@ -254,16 +252,6 @@ class Request_payment extends Admin_Controller
 			$data_detail	= $this->db->get_where('tr_direct_payment', ['no_doc' => $get_id->no_doc])->result();
 		}
 
-		// $data_budget 	= $this->All_model->GetComboBudget('', 'EXPENSE', date('Y'));
-		// $data_pc 		= $this->All_model->GetPettyCashCombo();
-
-		// $this->template->set('data_pc', $data_pc);
-		// $this->template->set('data_budget', $data_budget);
-		// $this->template->set('data_detail', $data_detail);
-		// $this->template->set('status', $this->status);
-		// $this->template->set('data', $data);
-		// $this->template->set('stsview', 'view');
-
 		$get_req_payment = $this->db->get_where('request_payment', ['id' => $id_exp])->row_array();
 
 		$list_coa = [];
@@ -337,16 +325,6 @@ class Request_payment extends Admin_Controller
 			$data_detail	= $this->db->get_where('tr_direct_payment', ['no_doc' => $get_id->no_doc])->result();
 		}
 
-		// $data_budget 	= $this->All_model->GetComboBudget('', 'EXPENSE', date('Y'));
-		// $data_pc 		= $this->All_model->GetPettyCashCombo();
-
-		// $this->template->set('data_pc', $data_pc);
-		// $this->template->set('data_budget', $data_budget);
-		// $this->template->set('data_detail', $data_detail);
-		// $this->template->set('status', $this->status);
-		// $this->template->set('data', $data);
-		// $this->template->set('stsview', 'view');
-
 		$get_req_payment = $this->db->get_where('request_payment', ['id' => $id_exp])->row_array();
 
 		$list_coa = [];
@@ -366,35 +344,6 @@ class Request_payment extends Admin_Controller
 		]);
 		$this->template->render('detail_approve_checker');
 	}
-
-
-	/* public function save_approval()
-	{
-		$status	= $this->input->post("status");
-		$this->db->trans_begin();
-		if (!empty($status)) {
-			foreach ($status as $val) {
-				$data =  array(
-					'status' => 1,
-					'approved_by' => $this->auth->user_name(),
-					'approved_on' => date("Y-m-d h:i:s"),
-				);
-				$this->All_model->dataUpdate('request_payment', $data, array('id' => $val));
-			}
-		}
-		if ($this->db->trans_status() === FALSE) {
-			$this->db->trans_rollback();
-			$result = false;
-		} else {
-			$this->db->trans_commit();
-			$result = true;
-		}
-		$param = array(
-			'save' => $result
-		);
-		echo json_encode($param);
-	} */
-
 
 	/* 
 	Update by Hikmat A.R (16/08)

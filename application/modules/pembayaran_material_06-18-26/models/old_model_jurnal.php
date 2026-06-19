@@ -195,7 +195,7 @@ class Jurnal_model extends CI_Model
 
 	function get_Nomor_Jurnal_BUK($Cabang='',$Tgl_Inv='',$tipe='KAS'){
 		$nocab			= 'A';
-		$kdcab			= 'HSJ';
+		$kdcab			= 'YOG';
 		$prefix			= '';
 		$bulan_Proses	= date('Y',strtotime($Tgl_Inv));
 		$Urut			= 1;
@@ -487,7 +487,7 @@ class Jurnal_model extends CI_Model
 	{
 		$db2=$this->load->database('accounting', TRUE);
 		//$no_cab		= '101';
-		$ambil 	= "SELECT nocab,subcab,nobuk from ".DBACC.".pastibisa_tb_cabang where cabang='$cabang' order by id";
+		$ambil 	= "SELECT nocab,subcab,nobuk from ".DBACC.".pastibisa_tb_cabang where nocab='$cabang' order by id";
 		$q 		= $this->db->query($ambil);
 
 		if ($q->num_rows() > 0) {

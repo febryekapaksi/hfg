@@ -10,9 +10,9 @@ class Pembayaran_material_model extends BF_Model
 	{
 		parent::__construct();
 
-		// $this->consultant = $this->load->database('consultant', true);
+		$this->consultant = $this->load->database('consultant', true);
 		$this->accounting = $this->load->database('accounting', true);
-		// $this->hris = $this->load->database('hris', true);
+		$this->hris = $this->load->database('hris', true);
 	}
 	public function get_data_json_request_payment_header($sqlwhere = '')
 	{

@@ -46,19 +46,19 @@ $ENABLE_DELETE  = has_permission('Payment.Delete');
 					if (!empty($results)) {
 						$numb = 0;
 						foreach ($results as $record) {
-							$numb++;
-
+							$numb++; 
+							
 							$readonly = ($record->status > 1) ? 'readonly' : null;
 							$disabled = ($record->status > 1) ? 'disabled' : null;
 
 							$tipe = $record->tipe;
-							if ($tipe == 'expense') {
+							if($tipe == 'expense') {
 								$get_expense = $this->db->select('exp_inv_po')->get_where('tr_expense', ['no_doc' => $record->no_doc])->row();
-								if ($get_expense->exp_inv_po == '1') {
+								if($get_expense->exp_inv_po == '1') {
 									$tipe = 'Pembayaran PO';
 								}
 							}
-					?>
+							?>
 							<tr>
 								<td><input type="checkbox" name="status[]" class="status_check" id="status<?= $numb ?>" value="<?= $record->id ?>"></td>
 								<td><?= $numb; ?></td>
@@ -87,23 +87,23 @@ $ENABLE_DELETE  = has_permission('Payment.Delete');
 									<td class="exclass"><input type="text" name="bank_nilai[]" class="form-control bank_nilai divide" id="bank_nilai<?= $numb ?>" value="<?= $record->jumlah ?>" data-no="<?= $numb ?>" <?= $readonly ?>></td>
 									<td class="exclass"><input type="text" name="bank_admin[]" class="form-control divide" id="bank_admin<?= $numb ?>" value="<?= $record->admin_bank ?>" <?= $readonly ?>></td>
 									<td class="exclass">
-										<?php
-										if ($record->status > 1) {
-											echo '<div class="badge bg-green">Paid</div>';
-										} else {
-											echo '<div class="badge bg-red">Unpaid</div>';
-										}
+										<?php 
+											if($record->status > 1){
+												echo '<div class="badge bg-green">Paid</div>';
+											}else{
+												echo '<div class="badge bg-red">Unpaid</div>';
+											}
 										?>
 									</td>
 									<td class="exclass">
-										<?php
-										if ($record->status > 1) {
-											if (file_exists('uploads/expense/' . $record->doc_file) && $record->doc_file !== '') {
-												echo '<a href="' . base_url('uploads/expense/' . $record->doc_file) . '" class="btn btn-sm btn-info"><i class="fa fa-download"></i></a>';
+										<?php 
+											if($record->status > 1){
+												if(file_exists('assets/expense/'.$record->doc_file) && $record->doc_file !== ''){
+													echo '<a href="'.base_url('assets/expense/' . $record->doc_file).'" class="btn btn-sm btn-info"><i class="fa fa-download"></i></a>';
+												}
+											}else{
+												echo '<input type="file" name="doc_file_'.$record->id.'" id="doc_file'.$numb.'" '.$disabled.'/>';
 											}
-										} else {
-											echo '<input type="file" name="doc_file_' . $record->id . '" id="doc_file' . $numb . '" ' . $disabled . '/>';
-										}
 										?>
 									</td>
 								<?php endif; ?>
@@ -197,19 +197,19 @@ $ENABLE_DELETE  = has_permission('Payment.Delete');
 		}
 	});
 
-	$(document).on("keyup", ".bank_nilai", function() {
+	$(document).on("keyup", ".bank_nilai", function(){
 		var no = $(this).data("no");
 		var bank_nilai = $(this).val();
-		if (bank_nilai == "" || bank_nilai == undefined) {
+		if(bank_nilai == "" || bank_nilai == undefined){
 			var bank_nilai = 0;
-		} else {
+		}else{
 			bank_nilai = bank_nilai.split(",").join("");
 			bank_nilai = parseFloat(bank_nilai);
 		}
 
-		if (bank_nilai > 0) {
+		if(bank_nilai > 0){
 			$("#doc_file" + no).prop("required", true);
-		} else {
+		}else{
 			$("#doc_file" + no).prop("required", false);
 		}
 	});

@@ -1,164 +1,164 @@
-<?php
-// $req_payment_po = ($total_incoming - $total_dp);
-// if ($req_payment_po < 1) {
-//     $req_payment_po = 0;
-// }
-?>
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
 <input type="hidden" name="tipe_req" value="inc">
-<input type="hidden" name="no_po" id="" value="<?= implode(',', $results['no_po']) ?>" class="form-control form-control-sm">
-<input type="hidden" name="no_incoming" id="" value="<?= implode(',', $results['no_incoming']) ?>" class="form-control form-control-sm">
-<!-- <input type="hidden" name="tipe_incoming" value="<?= $tipe_incoming ?>"> -->
-<div class="col-md-12">
-    <div class="form-group row mb-2">
-        <div class="col-md-6">
-            <label for="">Nama Supplier</label>
-            <input type="hidden" name="kode_supplier" value="<?= $results['kode_supplier'] ?>">
-            <input type="text" name="nama_supplier" id="" class="form-control form-control-sm nama_supplier" value="<?= $results['nm_supplier'] ?>" readonly>
-        </div>
-        <div class="col-md-6">
-            <label for="">Nomor Incoming</label>
-            <input type="text" name="nomor_po" id="" class="form-control form-control-sm nomor_po" value="<?= $results['incoming_no'] ?>" readonly>
-        </div>
+<input type="hidden" name="no_po" value="<?= implode(',', $results['no_po']) ?>">
+<input type="hidden" name="no_incoming" value="<?= implode(',', $results['no_incoming']) ?>">
+
+<div class="row g-3">
+
+    <!-- Info Supplier & Incoming -->
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Nama Supplier</label>
+        <input type="hidden" name="kode_supplier" value="<?= $results['kode_supplier'] ?>">
+        <input type="text" name="nama_supplier" class="form-control form-control-sm"
+            value="<?= $results['nm_supplier'] ?>" readonly>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Nomor Incoming</label>
+        <input type="text" name="nomor_po" class="form-control form-control-sm"
+            value="<?= $results['incoming_no'] ?>" readonly>
     </div>
 
-    <div class="form-group row mb-2">
-        <div class="col-md-6">
-            <label for="">Nomor Invoice</label>
-            <input type="text" name="nomor_invoice" id="" class="form-control form-control-sm nomor_invoice" required>
-        </div>
-        <div class="col-md-6">
-            <label for="">Nomor Faktur Pajak</label>
-            <input type="text" name="nomor_faktur_pajak" id="" class="form-control form-control-sm nomor_faktur_pajak">
-        </div>
+    <!-- Nomor Invoice & Faktur -->
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Nomor Invoice <span class="text-danger">*</span></label>
+        <input type="text" name="nomor_invoice" class="form-control form-control-sm" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Nomor Faktur Pajak</label>
+        <input type="text" name="nomor_faktur_pajak" class="form-control form-control-sm">
     </div>
 
-    <div class="form-group row mb-2">
-        <div class="col-md-4">
-            <label for="">Receive Invoice Date</label>
-            <input type="date" name="invoice_date" id="" class="form-control form-control-sm" required>
-        </div>
-        <div class="col-md-4">
-            <label for="">Invoice Date</label>
-            <input type="date" name="invoice_date_real" id="" class="form-control form-control-sm invoice_date_real">
-        </div>
-        <div class="col-md-4">
-            <label for="">Tanggal Faktur Pajak</label>
-            <input type="date" name="tanggal_faktur_pajak" id="" class="form-control form-control-sm tanggal_faktur_pajak">
-        </div>
+    <!-- Tanggal -->
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">Receive Invoice Date <span class="text-danger">*</span></label>
+        <input type="text" name="invoice_date" class="form-control form-control-sm flatpickr-input"
+            placeholder="Pilih tanggal..." required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">Invoice Date</label>
+        <input type="text" name="invoice_date_real" class="form-control form-control-sm flatpickr-input"
+            placeholder="Pilih tanggal...">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">Tanggal Faktur Pajak</label>
+        <input type="text" name="tanggal_faktur_pajak" class="form-control form-control-sm flatpickr-input"
+            placeholder="Pilih tanggal...">
     </div>
 
-    <hr>
-    <div class="mb-2"><b>Informasi Pembayaran</b></div>
-    <div class="form-group row mb-2">
-        <div class="col-md-6">
-            <label for="">Currency</label>
-            <input type="text" name="currency" id="" class="form-control form-control-sm currency" value="<?= $results['currency'] ?>" readonly>
-        </div>
-        <div class="col-md-6">
-            <label for="">Kurs</label>
-            <input type="text" name="kurs" id="" value="1" class="form-control form-control-sm text-right auto_num">
-        </div>
+    <!-- Divider Pembayaran -->
+    <div class="col-12">
+        <hr class="my-1">
+        <p class="fw-bold mb-2">Informasi Pembayaran</p>
     </div>
 
-    <div class="form-group row mb-2">
-        <div class="col-md-6">
-            <label for="">Nilai Disc</label>
-            <input type="text" name="nilai_disc" id="" class="form-control form-control-sm text-right nilai_disc auto_num" value="<?= number_format($results['nilai_disc'], 2) ?>" readonly>
-        </div>
-        <div class="col-md-6">
-            <label for="">Nilai PPN</label>
-            <input type="text" name="nilai_ppn" id="" class="form-control form-control-sm text-right nilai_ppn auto_num" value="<?= number_format($results['nilai_ppn'], 2) ?>" readonly>
-        </div>
+    <!-- Currency & Kurs -->
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Currency</label>
+        <input type="text" name="currency" class="form-control form-control-sm"
+            value="<?= $results['currency'] ?>" readonly>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Kurs</label>
+        <input type="text" name="kurs" value="1" class="form-control form-control-sm text-end auto_num">
     </div>
 
-    <div class="form-group row mb-2">
-        <div class="col-md-6">
-            <label for="">Value DP</label>
-            <input type="text" name="value_dp" id="" class="form-control form-control-sm text-right value_dp" value="<?= number_format($results['value_dp'], 2) ?>" readonly>
-        </div>
-        <div class="col-md-6">
-            <label for="">Total Incoming</label>
-            <input type="text" name="total_pembelian" id="" class="form-control form-control-sm text-right total_pembelian" value="<?= number_format($results['total_invoice'], 2) ?>" readonly>
-        </div>
+    <!-- Nilai -->
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Nilai Disc</label>
+        <input type="text" name="nilai_disc" class="form-control form-control-sm text-end auto_num nilai_disc"
+            value="<?= number_format($results['nilai_disc'], 2) ?>" readonly>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Nilai PPN</label>
+        <input type="text" name="nilai_ppn" class="form-control form-control-sm text-end auto_num nilai_ppn"
+            value="<?= number_format($results['nilai_ppn'], 2) ?>" readonly>
     </div>
 
-    <div class="form-group row mb-2">
-        <div class="col-md-6">
-            <label for="">Total Invoice</label>
-            <input type="text" name="total_invoice" id="" class="form-control form-control-sm text-right total_invoice auto_num" value="<?= number_format($results['total_invoice'], 2) ?>" required>
-        </div>
-        <div class="col-md-6">
-            <label for="">Request Payment PO</label>
-            <input type="text" name="req_payment_po" id="" class="form-control form-control-sm text-right req_payment_po auto_num" required>
-        </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Value DP</label>
+        <input type="text" name="value_dp" class="form-control form-control-sm text-end value_dp"
+            value="<?= number_format($results['value_dp'], 2) ?>" readonly>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Total Incoming</label>
+        <input type="text" name="total_pembelian" class="form-control form-control-sm text-end total_pembelian"
+            value="<?= number_format($results['total_invoice'], 2) ?>" readonly>
     </div>
 
-    <div class="form-group row mb-2">
-        <div class="col-md-6">
-            <label for="">Upload Invoice</label>
-            <div class="d-flex flex-column gap-2">
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <input type="file" name="upload_invoice" id="photo" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
-
-                    <button type="button" class="btn btn-outline-warning" id="btnPickInv">
-                        <i class="ti ti-upload me-1"></i> Choose File
-                    </button>
-
-                    <span class="text-muted" id="InvFileName">No file chosen</span>
-
-                    <button type="button" class="btn btn-icon-delete" id="btnClearInv" style="display:none;">
-                        <i class="ti ti-trash"></i>
-                    </button>
-                </div>
-                <small class="text-muted">
-                    Allowed: PDF/JPG/PNG. Max size 2MB.
-                </small>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <label for="">Notes</label>
-            <textarea name="notes" class="form-control form-control-sm notes"></textarea>
-        </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Total Invoice <span class="text-danger">*</span></label>
+        <input type="text" name="total_invoice" class="form-control form-control-sm text-end auto_num total_invoice"
+            value="<?= number_format($results['total_invoice'], 2) ?>" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Request Payment PO <span class="text-danger">*</span></label>
+        <input type="text" name="req_payment_po" class="form-control form-control-sm text-end auto_num req_payment_po" required>
     </div>
 
-    <div class="form-group row mb-2">
-        <div class="col-md-4">
-            <label for="">Bank</label>
-            <input type="text" name="bank" id="" class="form-control form-control-sm" placeholder="- Bank -">
+    <!-- Upload & Notes -->
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Upload Invoice</label>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <input type="file" name="upload_invoice" id="photo" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
+            <button type="button" class="btn btn-sm btn-outline-warning" id="btnPickInv">
+                <i class="ti ti-upload me-1"></i> Choose File
+            </button>
+            <span class="text-muted small" id="InvFileName">No file chosen</span>
+            <button type="button" class="btn btn-sm btn-outline-danger" id="btnClearInv" style="display:none;">
+                <i class="ti ti-trash"></i>
+            </button>
         </div>
-        <div class="col-md-4">
-            <label for="">No. Bank</label>
-            <input type="text" name="no_bank" id="" class="form-control form-control-sm" placeholder="- No. Bank -">
-        </div>
-        <div class="col-md-4">
-            <label for="">Nama</label>
-            <input type="text" name="nm_acc_bank" id="" class="form-control form-control-sm" placeholder="- Nama Acc Bank -">
-        </div>
+        <small class="text-muted">PDF/JPG/PNG. Max 2MB.</small>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Notes</label>
+        <textarea name="notes" class="form-control form-control-sm" rows="3"></textarea>
     </div>
 
-    <?php
-    foreach ($results['no_incoming'] as $id_incoming) {
-    ?>
-        <div class="col-md-12">
-            <hr>
-            <div class="mb-2"><b>Detail Incoming : <?= $id_incoming ?></b></div>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th class="text-center">No</th>
-                        <th class="text-center">Nomor PO</th>
-                        <th class="text-center">Produk</th>
-                        <th class="text-center">Qty PO</th>
-                        <th class="text-center">Qty Incoming</th>
-                        <th class="text-center">Harga Satuan</th>
-                        <th class="text-center">Total Harga</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
+    <!-- Divider Info Bank -->
+    <div class="col-12">
+        <hr class="my-1">
+        <p class="fw-bold mb-2">Informasi Bank</p>
+    </div>
 
-                    $get_detail_inc = $this->db->query("
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">Bank</label>
+        <input type="text" name="bank" class="form-control form-control-sm" placeholder="Nama Bank">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">No. Rekening</label>
+        <input type="text" name="no_bank" class="form-control form-control-sm" placeholder="Nomor Rekening">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">Nama Pemilik</label>
+        <input type="text" name="nm_acc_bank" class="form-control form-control-sm" placeholder="Nama Pemilik Rekening">
+    </div>
+
+</div>
+
+<?php
+foreach ($results['no_incoming'] as $id_incoming) {
+?>
+    <div class="col-md-12">
+        <hr>
+        <div class="mb-2"><b>Detail Incoming : <?= $id_incoming ?></b></div>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th class="text-center">No</th>
+                    <th class="text-center">Nomor PO</th>
+                    <th class="text-center">Produk</th>
+                    <th class="text-center">Qty PO</th>
+                    <th class="text-center">Qty Incoming</th>
+                    <th class="text-center">Harga Satuan</th>
+                    <th class="text-center">Total Harga</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+
+                $get_detail_inc = $this->db->query("
                         SELECT
                             e.qty_oke as qty_order,   
                             b.qty as qty_po,
@@ -227,47 +227,47 @@
                             a.kode_trans = '" . $id_incoming . "' AND e.category = 'incoming asset'
                         GROUP BY a.id
                      ")->result();
-                    if (!$get_detail_inc) {
-                        print_r($this->db->error($get_detail_inc));
-                        exit;
-                    }
+                if (!$get_detail_inc) {
+                    print_r($this->db->error($get_detail_inc));
+                    exit;
+                }
 
-                    $grand_total = 0;
+                $grand_total = 0;
 
-                    $no = 1;
-                    foreach ($get_detail_inc as $item) {
-                        echo '<tr>';
-                        echo '<td class="text-center">' . $no . '</td>';
-                        echo '<td class="text-center">' . $item->no_surat . '</td>';
-                        echo '<td class="text-center">' . $item->nm_material . '</td>';
-                        echo '<td class="text-center">' . number_format($item->qty_po) . '</td>';
-                        echo '<td class="text-center">' . number_format($item->qty_order) . '</td>';
-                        echo '<td class="text-right">' . number_format($item->hargasatuan, 2) . '</td>';
-                        echo '<td class="text-right">' . number_format($item->qty_order * $item->hargasatuan, 2) . '</td>';
-                        echo '</tr>';
-                        $no++;
+                $no = 1;
+                foreach ($get_detail_inc as $item) {
+                    echo '<tr>';
+                    echo '<td class="text-center">' . $no . '</td>';
+                    echo '<td class="text-center">' . $item->no_surat . '</td>';
+                    echo '<td class="text-center">' . $item->nm_material . '</td>';
+                    echo '<td class="text-center">' . number_format($item->qty_po) . '</td>';
+                    echo '<td class="text-center">' . number_format($item->qty_order) . '</td>';
+                    echo '<td class="text-right">' . number_format($item->hargasatuan, 2) . '</td>';
+                    echo '<td class="text-right">' . number_format($item->qty_order * $item->hargasatuan, 2) . '</td>';
+                    echo '</tr>';
+                    $no++;
 
-                        $grand_total += ($item->qty_order * $item->hargasatuan);
-                    }
-                    ?>
-                </tbody>
-                <tbody>
-                    <tr>
-                        <td colspan="6" align="right">
-                            <b>Grand Total</b>
-                        </td>
-                        <td align="right">
-                            <b>
-                                <?= number_format($grand_total, 2) ?>
-                            </b>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    <?php
-    }
-    ?>
+                    $grand_total += ($item->qty_order * $item->hargasatuan);
+                }
+                ?>
+            </tbody>
+            <tbody>
+                <tr>
+                    <td colspan="6" align="right">
+                        <b>Grand Total</b>
+                    </td>
+                    <td align="right">
+                        <b>
+                            <?= number_format($grand_total, 2) ?>
+                        </b>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+<?php
+}
+?>
 
 </div>
 

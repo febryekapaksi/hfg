@@ -5,128 +5,138 @@ $ENABLE_DELETE  = has_permission('Request_Payment.Delete');
 $ENABLE_VIEW    = has_permission('Request_Payment.View');
 ?>
 
+<link rel="stylesheet" href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.min.css" integrity="sha512-yVvxUQV0QESBt1SyZbNJMAwyKvFTLMyXSyBHDO4BG5t7k/Lw34tyqlSDlKIrIENIzCl+RVUNjmCPG+V/GMesRw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
 <style>
-	.table-container {
+	.table-responsive-container {
 		max-height: 500px;
-		/* Example height for the table container (adjust as needed) */
 		overflow-y: auto;
-		/* Enable vertical scrolling */
-	}
-
-	/* Style for the table */
-	.table-container table {
-		width: 100%;
-		border-collapse: collapse !important;
-	}
-
-	/* Style for the table header */
-
-	/* Style for table cells */
-	.table-container th,
-	.table-container td {
-		padding: 8px;
-		border: 1px solid #ddd;
-		text-align: left;
 	}
 
 	.sticky-header th {
 		position: sticky !important;
 		top: 0 !important;
-		/* Stick to the top of the container */
-		z-index: 1;
-		/* Ensure it appears above tbody content */
-		background-color: #3c8dbc;
-		/* Header background color */
-		color: white;
+		z-index: 10;
+		background-color: #198754 !important;
+		color: white !important;
 		font-weight: bold;
+		vertical-align: middle;
+	}
+
+	.chosen-container-single .chosen-single {
+		height: 38px !important;
+		line-height: 32px !important;
+		background: #fff !important;
+		border: 1px solid #dee2e6 !important;
+		border-radius: 0.375rem !important;
+	}
+
+	.swal2-container {
+		z-index: 99999 !important;
 	}
 </style>
-<!-- <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script> -->
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.min.css" integrity="sha512-yVvxUQV0QESBt1SyZbNJMAwyKvFTLMyXSyBHDO4BG5t7k/Lw34tyqlSDlKIrIENIzCl+RVUNjmCPG+V/GMesRw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<link rel="stylesheet" href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.min.css">
-<div id="alert_edit" class="alert alert-success alert-dismissable" style="padding: 15px; display: none;"></div>
 
+<div id="alert_edit" class="alert alert-success alert-dismissible fade show" role="alert" style="display: none;"></div>
 
-<form action="<?= $this->uri->uri_string() ?>" id="frm_data" name="frm_data" class="form-horizontal" enctype="multipart/form-data">
-	<div class="box">
-		<div class="box-header text-right">
-			<a href="<?= base_url('request_payment/download_excel_request_payment') ?>" class="btn btn-sm btn-success"><i class="fa fa-download"></i> Excel</a>
-			<button type="button" class="btn btn-sm btn-danger" onclick="reset_data();"><i class="fa fa-refresh"></i> Reset</button>
+<form action="<?= $this->uri->uri_string() ?>" id="frm_data" name="frm_data" class="needs-validation" enctype="multipart/form-data" novalidate>
+	<div class="card shadow-sm border-0 mb-4">
+		<div class="card-header bg-transparent border-0 d-flex justify-content-end gap-2 pt-3 pe-3">
+			<a href="<?= base_url('request_payment/download_excel_request_payment') ?>" class="btn btn-sm btn-success">
+				<i class="fa fa-download me-1"></i> Excel
+			</a>
+			<button type="button" class="btn btn-sm btn-outline-danger" onclick="reset_data();">
+				<i class="fa fa-refresh me-1"></i> Reset
+			</button>
 		</div>
-		<div class="box-body">
 
+		<div class="card-body">
 			<input type="hidden" name="" class="actived_tab" value="transport">
-			<!-- <ul class="nav nav-tabs" role="tablist">
-				<li role="presentation" class="transport_tab tab_pin active"><a href="javascript:void();" onclick="change_tab('transport')">Transportasi</a></li>
-				<li role="presentation" class="kasbon_tab tab_pin"><a href="javascript:void();" onclick="change_tab('kasbon')">Kasbon</a></li>
-				<li role="presentation" class="expense_tab tab_pin"><a href="javascript:void();" onclick="change_tab('expense')">Expense</a></li>
-				<li role="presentation" class="periodik_tab tab_pin"><a href="javascript:void();" onclick="change_tab('periodik')">Periodik</a></li>
-				<li role="presentation" class="pembayaran_po_tab tab_pin"><a href="javascript:void();" onclick="change_tab('pembayaran_po')">Pembayaran PO</a></li>
-				<li role="presentation" class="pembayaran_direct_payment tab_pin"><a href="javascript:void();" onclick="change_tab('direct_payment')">Direct Payment</a></li>
-			</ul> -->
-			<div class=" col-md-12" style="margin-top: 10px;">
-				<table id="table_req_payment" class="table table-bordered">
-					<thead class="sticky-header">
+
+			<div class="table-responsive table-responsive-container mb-4">
+				<table id="table_req_payment" class="table table-striped table-hover table-bordered align-middle w-100 mb-0">
+					<thead class="sticky-header text-center">
 						<tr>
-							<th class="text-center">No.</th>
-							<th class="text-center">No. Dokumen</th>
-							<th class="text-center">Request By</th>
-							<th class="text-center">Tanggal</th>
-							<th class="text-center">Keperluan</th>
-							<th class="text-center">Kategori</th>
-							<th class="text-center">Nilai Pengajuan</th>
-							<th class="text-center">Tanggal Pembayaran</th>
-							<th class="text-center">Action</th>
+							<th style="width: 5%">No.</th>
+							<th>No. Dokumen</th>
+							<th>Request By</th>
+							<th>Tanggal</th>
+							<th>Keperluan</th>
+							<th>Kategori</th>
+							<th>Nilai Pengajuan</th>
+							<th style="width: 15%">Tanggal Pembayaran</th>
+							<th style="width: 10%">Action</th>
 						</tr>
 					</thead>
-					<tbody></tbody>
+					<tbody>
+					</tbody>
 				</table>
-				<!-- <div class="pull-left"> -->
-				<div class="col-md-6">
+			</div>
+
+			<div class="row g-3 align-items-end">
+				<div class="col-12 col-md-6">
 					<div class="form-group">
-						<label for="">Reject Reason</label>
-						<textarea name="reject_reason" id="reject_reason" class="form-control form-control-sm"></textarea>
+						<label for="reject_reason" class="form-label fw-semibold small text-muted">Reject Reason</label>
+						<textarea name="reject_reason" id="reject_reason" class="form-control" rows="2" placeholder="Tulis alasan jika menolak pengajuan..."></textarea>
 					</div>
 				</div>
-				<!-- </div> -->
-				<div class="pull-right">
-					<!-- <button type="button" id="btnxls" class="btn btn-default">Export Excel</button>  -->
-					<button type="button" class="btn btn-sm btn-danger" onclick="reject_req_payment()"><i class="fa fa-close"></i> Reject</button>
-					<button type="submit" name="save" class="btn btn-success btn-sm" id="submit"><i class="fa fa-save">&nbsp;</i>Update</button>
+				<div class="col-12 col-md-6 text-end d-flex justify-content-md-end justify-content-start gap-2">
+					<button type="button" class="btn btn-danger" onclick="reject_req_payment()">
+						<i class="fa fa-close me-1"></i> Reject
+					</button>
+					<button type="submit" name="save" class="btn btn-primary" id="submit">
+						<i class="fa fa-save me-1"></i> Update
+					</button>
 				</div>
 			</div>
+
 		</div>
-		<!-- /.box-body -->
 	</div>
 </form>
+
 <script src="<?= base_url('assets/js/autoNumeric.js') ?>"></script>
 <script src="https://cdn.datatables.net/2.2.2/js/dataTables.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.jquery.min.js" integrity="sha512-rMGGF4wg1R73ehtnxXBt5mbUfN9JUJwbk21KMlnLZDJh7BkPmeovBuddZCENJddHYYMkCh9hPFnPmS9sspki8g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-
 <script type="text/javascript">
-	DataTables();
-	load_all_party();
-
-	// change_tab('transport');
+	$(document).ready(function() {
+		DataTables();
+		load_all_party();
+	});
 
 	function load_all_party() {
-		$(".divide").autoNumeric('init');
+		if (typeof $.fn.autoNumeric !== 'undefined') {
+			$(".divide").autoNumeric('init');
+		}
+
 		$(".select2").select2({
 			width: '100%'
 		});
-		$('.vendor').chosen();
-		$('.tipe').chosen();
-
-		$(".tanggal").datepicker({
-			todayHighlight: true,
-			format: "yyyy-mm-dd",
-			showInputs: true,
-			autoclose: true
+		$('.vendor').chosen({
+			width: '100%'
 		});
+		$('.tipe').chosen({
+			width: '100%'
+		});
+
+		initFlatpickr();
+	}
+
+	function initFlatpickr() {
+		if ($(".tanggal").length > 0) {
+			$(".tanggal").flatpickr({
+				altInput: true,
+				altFormat: "d M Y",
+				dateFormat: "Y-m-d",
+				allowInput: false
+			});
+		}
 	}
 
 	function cektotal() {
@@ -135,68 +145,22 @@ $ENABLE_VIEW    = has_permission('Request_Payment.View');
 			if (this.checked) {
 				var ids = $(this).val();
 				total_req += Number($("#jumlah_" + ids).val());
-
 			}
 		});
 		$("#total_req").autoNumeric('set', total_req);
 	}
 
-	var url_save = siteurl + 'request_payment/save_request/';
-
-
-	function change_tab(tab) {
-		$('.tab_pin').removeClass('active');
-
-		$('.' + tab + '_tab').addClass('active');
-		$('.actived_tab').val(tab);
-
-		$.ajax({
-			type: 'POST',
-			url: siteurl + active_controller + 'change_tab',
-			data: {
-				'tab': tab
-			},
-			cache: false,
-			success: function(result) {
-				$('.list_req_payment').html(result);
-				load_all_party();
-			},
-			error: function() {
-				Swal.fire({
-					title: 'Error !',
-					text: 'Please try again later !',
-					icon: 'error',
-					showConfirmButton: false,
-					showCancelButton: false,
-					allowEscapeKey: false,
-					allowOutsideClick: false,
-					timer: 3000
-				});
-			}
-		});
-	}
-
 	function hitung_net_payment(no) {
-		var nilai_pengajuan = $('.nilai_pengajuan_' + no).val();
-		if (nilai_pengajuan !== '') {
-			nilai_pengajuan = nilai_pengajuan.split(',').join('');
-			nilai_pengajuan = parseFloat(nilai_pengajuan);
-		}
+		var nilai_pengajuan = $('.nilai_pengajuan_' + no).val() || '0';
+		nilai_pengajuan = parseFloat(nilai_pengajuan.split(',').join('')) || 0;
 
-		var admin_charge = $('.admin_charge_' + no).val();
-		if (admin_charge !== '') {
-			admin_charge = admin_charge.split(',').join('');
-			admin_charge = parseFloat(admin_charge);
-		}
+		var admin_charge = $('.admin_charge_' + no).val() || '0';
+		admin_charge = parseFloat(admin_charge.split(',').join('')) || 0;
 
-		var nilai_pph = $('.nilai_pph_' + no).val();
-		if (nilai_pph !== '') {
-			nilai_pph = nilai_pph.split(',').join('');
-			nilai_pph = parseFloat(nilai_pph);
-		}
+		var nilai_pph = $('.nilai_pph_' + no).val() || '0';
+		nilai_pph = parseFloat(nilai_pph.split(',').join('')) || 0;
 
 		var net_payment = (nilai_pengajuan + admin_charge - nilai_pph);
-
 		$('.net_payment_' + no).val(net_payment.toLocaleString());
 	}
 
@@ -219,21 +183,19 @@ $ENABLE_VIEW    = has_permission('Request_Payment.View');
 				icon: 'warning',
 				title: 'Warning !',
 				text: 'Reject Reason masih kosong !',
-				showConfirmButton: false,
-				showCancelButton: false,
-				allowEscapeKey: false,
-				allowOutsideClick: false,
-				timer: 3000
+				timer: 3000,
+				showConfirmButton: false
 			});
-
 			return false;
 		}
 
 		Swal.fire({
-			type: 'warning',
+			icon: 'warning',
 			title: 'Are you sure ?',
 			text: 'Selected data will be rejected !',
-			showCancelButton: true
+			showCancelButton: true,
+			confirmButtonText: 'Yes, Reject it!',
+			cancelButtonText: 'Cancel'
 		}).then((next) => {
 			if (next.isConfirmed) {
 				$.ajax({
@@ -250,54 +212,26 @@ $ENABLE_VIEW    = has_permission('Request_Payment.View');
 								icon: 'success',
 								title: 'Success !',
 								text: result.msg,
-								showConfirmButton: false,
-								showCancelButton: false,
-								allowEscapeKey: false,
-								allowOutsideClick: false,
-								timer: 3000
-							}, function(lanjut) {
-								swal.close();
+								timer: 2000,
+								showConfirmButton: false
+							}).then(() => {
 								DataTables();
 							});
 						} else {
 							Swal.fire({
 								icon: 'warning',
 								title: 'Failed !',
-								text: result.msg,
-								showConfirmButton: false,
-								showCancelButton: false,
-								allowEscapeKey: false,
-								allowOutsideClick: false,
-								timer: 3000
+								text: result.msg
 							});
 						}
 					},
-					error: function(result) {
+					error: function() {
 						Swal.fire({
 							icon: 'error',
 							title: 'Error !',
-							text: 'Please try again later !',
-							showConfirmButton: false,
-							showCancelButton: false,
-							allowEscapeKey: false,
-							allowOutsideClick: false,
-							timer: 3000
+							text: 'Please try again later !'
 						});
 					}
-				});
-			} else {
-				Swal.fire({
-					icon: 'success',
-					title: 'Success !',
-					text: 'Selected data did not reject !',
-					showConfirmButton: false,
-					showCancelButton: false,
-					allowEscapeKey: false,
-					allowOutsideClick: false,
-					timer: 3000
-				}, function(next) {
-					Swal.close();
-					DataTables();
 				});
 			}
 		});
@@ -306,13 +240,8 @@ $ENABLE_VIEW    = has_permission('Request_Payment.View');
 	$(document).on('click', '.pilih_data', function() {
 		var val_pilih = $(this).val();
 		var kategori = $(this).data('kategori');
-
-		var isChecked = $('input[value="' + val_pilih + '"]').is(':checked');
-
-		var wdo = 1;
-		if (!isChecked) {
-			wdo = 0;
-		}
+		var isChecked = $(this).is(':checked');
+		var wdo = isChecked ? 1 : 0;
 
 		$.ajax({
 			type: 'post',
@@ -323,25 +252,17 @@ $ENABLE_VIEW    = has_permission('Request_Payment.View');
 				'wdo': wdo
 			},
 			cache: false,
-			success: function(result) {
-
-			},
-			error: function(result) {
+			error: function() {
 				Swal.fire({
 					icon: 'error',
 					title: 'Error !',
-					text: 'Please try again later !',
-					showConfirmButton: false,
-					showCancelButton: false,
-					allowEscapeKey: false,
-					allowOutsideClick: false,
-					timer: 3000
+					text: 'Please try again later !'
 				});
 			}
-		})
-	})
+		});
+	});
 
-	//Save
+	// Save/Update Form Handler
 	$('#frm_data').on('submit', function(e) {
 		e.preventDefault();
 
@@ -349,7 +270,9 @@ $ENABLE_VIEW    = has_permission('Request_Payment.View');
 			icon: 'warning',
 			title: 'Are you sure ?',
 			text: 'The data you choose will be processed !',
-			showCancelButton: true
+			showCancelButton: true,
+			confirmButtonText: 'Yes, Process it!',
+			cancelButtonText: 'Cancel'
 		}).then((next) => {
 			if (next.isConfirmed) {
 				var formdata = $('#frm_data').serialize();
@@ -365,11 +288,8 @@ $ENABLE_VIEW    = has_permission('Request_Payment.View');
 								icon: 'success',
 								title: 'Success !',
 								text: result.msg,
-								showConfirmButton: false,
-								showCancelButton: false,
-								allowEscapeKey: false,
-								allowOutsideClick: false,
-								timer: 3000
+								timer: 2000,
+								showConfirmButton: false
 							}).then(() => {
 								DataTables();
 							});
@@ -377,108 +297,26 @@ $ENABLE_VIEW    = has_permission('Request_Payment.View');
 							Swal.fire({
 								icon: 'warning',
 								title: 'Failed !',
-								text: result.msg,
-								showConfirmButton: false,
-								showCancelButton: false,
-								allowEscapeKey: false,
-								allowOutsideClick: false,
-								timer: 3000
-							}).then(() => {
-								DataTables();
+								text: result.msg
 							});
 						}
 					},
-					error: function(result) {
+					error: function() {
 						Swal.fire({
 							icon: 'error',
 							title: 'Error !',
-							text: 'Please try again later !',
-							showConfirmButton: false,
-							showCancelButton: false,
-							allowEscapeKey: false,
-							allowOutsideClick: false,
-							timer: 3000
+							text: 'Please try again later !'
 						});
 					}
-				})
+				});
 			}
 		});
-
-		// var errors = "";
-
-		// var checked_item = $('input[name="pilih"]:checked').length;
-		// if (errors == "" && checked_item > 0) {
-		// 	swal({
-		// 			title: "Anda Yakin?",
-		// 			text: "Data Akan Disimpan!",
-		// 			type: "info",
-		// 			showCancelButton: true,
-		// 			confirmButtonText: "Ya, simpan!",
-		// 			cancelButtonText: "Tidak!",
-		// 			closeOnConfirm: false,
-		// 			closeOnCancel: true
-		// 		},
-		// 		function(isConfirm) {
-		// 			if (isConfirm) {
-		// 				var formdata = new FormData($('#frm_data')[0]);
-		// 				$.ajax({
-		// 					url: url_save,
-		// 					dataType: "json",
-		// 					type: 'POST',
-		// 					data: formdata,
-		// 					processData: false,
-		// 					contentType: false,
-		// 					success: function(msg) {
-		// 						if (msg['save'] == '1') {
-		// 							swal({
-		// 								title: "Sukses!",
-		// 								text: "Data Berhasil Di Update",
-		// 								type: "success",
-		// 								timer: 1500,
-		// 								showConfirmButton: false
-		// 							});
-		// 							window.location.href = window.location.href;
-		// 						} else {
-		// 							swal({
-		// 								title: "Gagal!",
-		// 								text: "Data Gagal Di Update",
-		// 								type: "error",
-		// 								timer: 1500,
-		// 								showConfirmButton: false
-		// 							});
-		// 						};
-		// 						console.log(msg);
-		// 					},
-		// 					error: function(msg) {
-		// 						swal({
-		// 							title: "Gagal!",
-		// 							text: "Ajax Data Gagal Di Proses",
-		// 							type: "error",
-		// 							timer: 1500,
-		// 							showConfirmButton: false
-		// 						});
-		// 						console.log(msg);
-		// 					}
-		// 				});
-		// 			}
-		// 		});
-		// } else {
-		// 	if (checked_item < 1) {
-		// 		errors = 'Please check at least 1 data before you update it !';
-		// 	}
-		// 	swal({
-		// 		title: 'Error !',
-		// 		text: errors,
-		// 		type: 'error'
-		// 	});
-		// 	return false;
-		// }
 	});
 
 	function DataTables() {
-		var DataTables = $('#table_req_payment').dataTable({
+		$('#table_req_payment').dataTable({
 			serverSide: true,
-			process: true,
+			processing: true,
 			stateSave: true,
 			paging: true,
 			destroy: true,
@@ -488,33 +326,43 @@ $ENABLE_VIEW    = has_permission('Request_Payment.View');
 				dataType: 'json'
 			},
 			columns: [{
-					data: 'no'
+					data: 'no',
+					className: 'text-center'
 				},
 				{
 					data: 'no_dokumen',
+					className: 'text-center'
 				},
 				{
 					data: 'request_by'
 				},
 				{
-					data: 'tanggal'
+					data: 'tanggal',
+					className: 'text-center'
 				},
 				{
 					data: 'keperluan'
 				},
 				{
-					data: 'kategori'
+					data: 'kategori',
+					className: 'text-center'
 				},
 				{
-					data: 'nilai_pengajuan'
+					data: 'nilai_pengajuan',
+					className: 'text-end'
 				},
 				{
-					data: 'tanggal_pembayaran'
+					data: 'tanggal_pembayaran',
+					className: 'text-center'
 				},
 				{
-					data: 'action'
+					data: 'action',
+					className: 'text-center'
 				}
-			]
+			],
+			drawCallback: function() {
+				initFlatpickr();
+			}
 		});
 	}
 </script>

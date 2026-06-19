@@ -325,8 +325,8 @@ foreach ($results['result_payment'] as $item) {
 
 			<div class="col-md-4">
 				<?php
-				if (file_exists('uploads/expense/' . $results['result_header']->link_doc) && $results['result_header']->link_doc !== '') {
-					echo '<a href="' . base_url('uploads/expense/' . $results['result_header']->link_doc) . '" class="btn btn-sm btn-primary" target="_blank"><i class="fa fa-download"></i> Download</a>';
+				if (file_exists('assets/expense/' . $results['result_header']->link_doc) && $results['result_header']->link_doc !== '') {
+					echo '<a href="' . base_url('assets/expense/' . $results['result_header']->link_doc) . '" class="btn btn-sm btn-primary" target="_blank"><i class="fa fa-download"></i> Download</a>';
 				}
 				?>
 			</div>

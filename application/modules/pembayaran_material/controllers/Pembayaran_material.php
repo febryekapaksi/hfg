@@ -136,8 +136,6 @@ class Pembayaran_material extends Admin_Controller
 	//==================================================================================================================
 	public function payment_list()
 	{
-		// $results = $this->pembayaran_material_model->get_data_json_request_payment_header("status>0 and tipe='material'");
-		// $results = $this->db->get_where('payment_approve', ['status' => 2])->result();
 		$results = $this->db
 			->select('a.*')
 			->from('payment_approve a')
@@ -152,19 +150,7 @@ class Pembayaran_material extends Admin_Controller
 			->result();
 
 		$results2 = $this->db->query("SELECT a.* FROM payment_approve a LEFT JOIN tr_expense b ON b.no_doc = a.no_doc WHERE a.status = 2 AND a.no_doc NOT LIKE '%INV-%' AND a.no_doc NOT LIKE '%PI-%' AND (a.id_payment IS NOT NULL AND a.id_payment <> '') GROUP BY a.id_payment ORDER BY a.created_on DESC")->result();
-		// ->select('a.*')
-		// ->from('payment_approve a')
-		// ->join('tr_expense b', 'b.no_doc = a.no_doc', 'left')
-		// ->where('a.status', 2)
-		// ->where('(SELECT COUNT(aa.id) FROM tr_expense aa WHERE aa.no_doc = a.no_doc AND (aa.exp_inv_po IS NULL OR aa.exp_inv_po = "")) <=', 0)
-		// ->group_by('a.id')
-		// ->order_by('a.created_on', 'DESC')
-		// ->get()
-		// ->result();
 
-
-		// $results2 = $this->pembayaran_material_model->get_data_json_request_payment_header("status>0 and tipe='nonmaterial'");
-		// $data_Group			= $this->master_model->getArray('groups', array(), 'id', 'name');
 		$data = array(
 			'title'			=> 'Payment List',
 			'action'		=> 'index',
@@ -172,11 +158,9 @@ class Pembayaran_material extends Admin_Controller
 			'results'		=> $results,
 			'results2' => $results2
 		);
-		// history('List Payment');
 		$this->template->set($data);
 		$this->template->render('index_payment_new');
 	}
-
 
 	public function form_payment_new()
 	{
@@ -728,28 +712,13 @@ class Pembayaran_material extends Admin_Controller
 	{
 		$list_id_payment = [];
 		$get_id_payment = $this->db->select('a.id')->get_where('payment_approve a', ['a.id_payment' => $id])->result();
+
 		foreach ($get_id_payment as $item_id_payment) {
 			$list_id_payment[] = $item_id_payment->id;
 		}
+
 		$list_id_payment = implode(';', $list_id_payment);
-
 		$id_payment = explode(';', $list_id_payment);
-
-		// $dataid = implode("','", $request_id);
-		// $results = $this->pembayaran_material_model->get_data_json_request_payment("id in ('" . $dataid . "')");
-		// $data_Group	= $this->master_model->getArray('groups', array(), 'id', 'name');
-		// $datacoa	= $this->All_model->GetCoaCombo('5', " a.no_perkiraan like '1101%'");
-		// $data = array(
-		// 	'title'			=> 'Form Payment',
-		// 	'action'		=> 'index',
-		// 	'datacoa'		=> $datacoa,
-		// 	'row_group'		=> $data_Group,
-		// 	'akses_menu'	=> $Arr_Akses,
-		// 	'results'		=> $results,
-		// );
-		// history('Form Payment');
-		// $this->load->view('Pembayaran_material/form_payment_new.php', $data);
-
 		$get_payment = $this->db
 			->select('a.*')
 			->from('payment_approve a')
@@ -757,7 +726,7 @@ class Pembayaran_material extends Admin_Controller
 			->get()
 			->result();
 		$get_supplier = $this->db->get('new_supplier')->result();
-		$get_bank = $this->db->get_where(DBACC . '.coa_master', ['kode_bank <>' => '', 'kode_bank <>' => null])->result();
+		// $get_bank = $this->db->get_where(DBACC . '.coa_master', ['kode_bank <>' => '', 'kode_bank <>' => null])->result();
 		$get_mata_uang = $this->db->get_where('mata_uang', ['deleted_by' => 0, 'activation' => 'active'])->result();
 
 		$get_payment_header = $this->db
@@ -779,7 +748,7 @@ class Pembayaran_material extends Admin_Controller
 			'result_header' => $get_payment_header,
 			'result_payment' => $get_payment,
 			'list_supplier' => $get_supplier,
-			'list_bank' => $get_bank,
+			// 'list_bank' => $get_bank,
 			'list_mata_uang' => $get_mata_uang,
 			'bank_charge' => $bank_charge
 		];

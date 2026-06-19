@@ -151,10 +151,23 @@
 <script src="https://cdn.datatables.net/2.0.7/js/dataTables.min.js"></script>
 <script src="<?= base_url('assets/chosen_v1.8.7/chosen.jquery.min.js') ?>"></script>
 <script>
+    function initFlatpickr() {
+        flatpickr('input[type="date"], .datepicker', {
+            dateFormat: "Y-m-d",
+            allowInput: true,
+            locale: {
+                firstDayOfWeek: 1
+            }
+        });
+    }
     $(document).ready(function() {
         $('.table_req_pay_dp').dataTable();
 
         $('#select_supplier').chosen();
+
+        $(document).on('shown.bs.modal', '#dialog-popup', function() {
+            initFlatpickr();
+        });
     });
 
     $(document).on('click', '.search_dp', function() {

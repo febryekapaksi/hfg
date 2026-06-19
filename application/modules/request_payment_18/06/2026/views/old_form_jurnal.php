@@ -8,64 +8,72 @@ $ENABLE_DELETE  = has_permission('Payment_Jurnal.Delete');
 <div class="tab-content">
 	<div class="tab-pane active">
 		<div class="box box-primary">
-			<div class="box-body">
-				<input type="hidden" name="no_transaksi" value="<?= $no_transaksi ?>">
-				<div class="table-responsive">
-					<table class="table table-striped">
-						<thead>
-							<tr>
-								<th>No Jurnal</th>
-								<th>Tipe</th>
-								<th>Tanggal</th>
-								<th>COA</th>
-								<th style="min-width: 300px;">Keterangan</th>
-								<th>Debet</th>
-								<th>Kredit</th>
-							</tr>
-						</thead>
-						<tbody>
-							<?php
-							$numb = 0;
-							$ttl_debit = 0;
-							$ttl_kredit = 0;
-							foreach ($data as $record) {
-								$numb++;
-							?>
-								<tr>
-									<td><input type="text" class="form-control" name="no_jurnal[]" id="no_jurnal<?= $numb ?>" value="<?= $record->no_jurnal ?>" readonly></td>
-									<td><input type="text" class="form-control" name="tipe[]" id="tipe<?= $numb ?>" value="<?= $record->tipe ?>" readonly></td>
-									<td><input type="date" class="form-control" name="tgl_jurnal[]" id="tgl_jurnal<?= $numb ?>" value="<?= $record->tgl_jurnal ?>" readonly></td>
-									<td>
-										<?php
-										echo form_dropdown('no_perkiraan[]', $datacoa, $record->coa, array('id' => 'no_perkiraan' . $numb, 'class' => 'form-control select2', 'required' => 'required', 'style' => 'width:100%'));
-										?>
-									</td>
-									<td>
-										<textarea name="keterangan[]" class="form-control" id="keterangan<?= $numb ?>"><?= $record->keterangan; ?></textarea>
-									</td>
-									<td><input type="text" class="form-control divide text-right" id="debit<?= $numb ?>" name="debit[]" value="<?= $record->debit; ?>" required></td>
-									<td><input type="text" class="form-control divide text-right" id="kredit<?= $numb ?>" name="kredit[]" value="<?= $record->kredit; ?>" required></td>
-									<input type="hidden" name="id[]" id="id<?= $numb ?>" value="<?= $record->id; ?>" />
-								</tr>
-							<?php
-								$ttl_debit += $record->debit;
-								$ttl_kredit += $record->kredit;
-							}
-							?>
-						</tbody>
-						<tfoot>
-							<tr class="bg-gray">
-								<td class="text-right" colspan="5"><b>Total</b></td>
-								<td class="text-right"><?= number_format($ttl_debit) ?></td>
-								<td class="text-right"><?= number_format($ttl_kredit) ?></td>
-							</tr>
-						</tfoot>
-					</table>
+			<div class="box-header">
+				<div class="form-group ">
+					<label class="col-sm-2 control-label">No Request</label>
+					<div class="col-sm-4">
+						<input type="text" id="no_reff" name="no_reff" value="" class="form-control" readonly tabindex="-1">
+					</div>
+					<label class="col-sm-2 control-label">Date</label>
+					<div class="col-sm-4">
+						<input type="text" id="tanggal" name="tanggal" value="" class="form-control" readonly tabindex="-1">
+					</div>
 				</div>
+			</div>
+
+			<input type="hidden" name="tipe" id="tipe" value="" />
+			<input type="hidden" name="nomor" id="nomor" value="" />
+			<input type="hidden" name="no_request" id="no_request" value="" />
+			<input type="hidden" name="jenis_jurnal" id="jenis_jurnal" value="" />
+			<input type="hidden" name="nocust" id="nocust" value="" />
+			<div class="box-body">
+				<table class="table">
+					<thead>
+						<tr>
+							<th>COA</th>
+							<th>Keterangan</th>
+							<th>Debet</th>
+							<th>Kredit</th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php
+						$tanggal = "";
+						$no_reff = "";
+						$no_request = "";
+						$tipe = "";
+						$nomor = "";
+						$jenis_jurnal = "";
+						$nocust = "";
+						$numb = 0;
+						foreach ($data as $record) {
+							$tanggal = $record->tanggal;
+							$no_reff = $record->no_reff;
+							$tipe = $record->tipe;
+							$nomor = $record->nomor;
+							$no_request = $record->no_request;
+							$jenis_jurnal = $record->jenis_jurnal;
+							$nocust = $record->nocust;
+							$numb++;
+						?>
+							<tr>
+								<td><input type="hidden" name="id[]" id="id<?= $numb ?>" value="<?= $record->id; ?>" />
+									<?php
+									echo form_dropdown('no_perkiraan[]', $datacoa, $record->no_perkiraan, array('id' => 'no_perkiraan' . $numb, 'class' => 'form-control select2', 'required' => 'required', 'style' => 'width:100%'));
+									?>
+								</td>
+								<td><input type="text" class="form-control" id="keterangan<?= $numb ?>" name="keterangan[]" value="<?= $record->keterangan; ?>"></td>
+								<td><input type="text" class="form-control divide" id="debet<?= $numb ?>" name="debet[]" value="<?= $record->debet; ?>" required></td>
+								<td><input type="text" class="form-control divide" id="kredit<?= $numb ?>" name="kredit[]" value="<?= $record->kredit; ?>" required></td>
+							</tr>
+						<?php }
+						?>
+					</tbody>
+				</table>
 			</div>
 			<div class="box-footer">
 				<div class="form-group">
-					<div class="text-center">
+					<div class="col-sm-offset-2 col-sm-10">
 						<button type="submit" name="simpan-com" class="btn btn-success btn-sm stsview" id="simpan-com"><i class="fa fa-save">&nbsp;</i>Submit</button>
 						<a href="<?= base_url("request_payment/payment_jurnal_list") ?>" class="btn btn-warning btn-sm"><i class="fa fa-reply">&nbsp;</i>Kembali</a>
 					</div>
@@ -77,6 +85,14 @@ $ENABLE_DELETE  = has_permission('Payment_Jurnal.Delete');
 <?= form_close() ?>
 <script src="<?= base_url('assets/js/number-divider.min.js') ?>"></script>
 <script type="text/javascript">
+	$("#tanggal").val('<?= $tanggal ?>');
+	$("#no_reff").val('<?= $no_reff ?>');
+	$("#no_request").val('<?= $no_request ?>');
+	$("#tipe").val('<?= $tipe ?>');
+	$("#nomor").val('<?= $nomor ?>');
+	$("#jenis_jurnal").val('<?= $jenis_jurnal ?>');
+	$("#nocust").val('<?= $nocust ?>');
+	<?php if ($tipe != 'BUK') echo '$(".payment").addClass("hidden");'; ?>
 	$(".divide").divide();
 	$('#simpan-com').click(function(e) {
 		$("#simpan-com").addClass("hidden");

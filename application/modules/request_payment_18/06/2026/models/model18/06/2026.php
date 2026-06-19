@@ -157,36 +157,27 @@ class Request_payment_model extends BF_Model
     public function GetListDataPaymentList()
     {
         $data = $this->db->query("
-        SELECT x.*
-        FROM (
-            SELECT id as ids, no_doc, nama, tgl_doc, 'Transportasi' as keperluan, 'transportasi' as tipe, jumlah_expense as jumlah, null as tanggal, no_doc as id, bank_id, accnumber, accname, sts_reject, sts_reject_manage, reject_reason, null as kurang_bayar, null as id_kasbon 
-            FROM tr_transport_req 
-
-            UNION ALL
-
-            SELECT id as ids, no_doc, nama, tgl_doc, keperluan, 'kasbon' as tipe, jumlah_kasbon as jumlah, null as tanggal, no_doc as id, bank_id, accnumber, accname, sts_reject, sts_reject_manage, reject_reason, null as kurang_bayar, null as id_kasbon 
-            FROM tr_kasbon
-
-            UNION ALL
-
-            SELECT a.id as ids, a.no_doc, a.nama, a.tgl_doc, a.informasi as keperluan, 'expense' as tipe, a.jumlah, null as tanggal, a.no_doc as id, bank_id, accnumber, accname, a.sts_reject, a.sts_reject_manage, a.reject_reason, a.kurang_bayar, a.id_kasbon 
-            FROM tr_expense a 
-            LEFT JOIN " . DBACC . ".coa_master as b ON a.coa = b.no_perkiraan 
-            WHERE (a.jumlah >= 0 OR (a.id_kasbon IS NOT NULL AND a.kurang_bayar IS NOT NULL AND a.kurang_bayar > 0 AND a.status=2))
-
-            UNION ALL
-
-            SELECT b.id as ids, a.no_doc, c.nm_lengkap nama, a.tanggal_doc as tgl_doc, b.nama as keperluan, 'periodik' as tipe, b.nilai jumlah, null as tanggal, a.no_doc as id, b.bank_id, b.accnumber, b.accname, b.sts_reject, b.sts_reject_manage, b.reject_reason, null as kurang_bayar, null as id_kasbon 
-            FROM tr_pengajuan_rutin a 
-            JOIN tr_pengajuan_rutin_detail b ON a.no_doc = b.no_doc 
-            JOIN users c ON a.created_by = c.id_user
-        ) x
-        WHERE EXISTS (
-            SELECT 1
-            FROM payment_approve pa
-            WHERE pa.no_doc = x.no_doc
-        )
-        ORDER BY x.tgl_doc DESC, x.ids DESC
+        SELECT id as ids, no_doc, nama, tgl_doc, 'Transportasi' as keperluan, 'transportasi' as tipe, jumlah_expense as jumlah, null as tanggal, no_doc as id, bank_id, accnumber, accname, sts_reject, sts_reject_manage, reject_reason, null as kurang_bayar, null as id_kasbon 
+        FROM tr_transport_req 
+        
+        UNION ALL
+        
+        SELECT id as ids, no_doc, nama, tgl_doc, keperluan, 'kasbon' as tipe, jumlah_kasbon as jumlah, null as tanggal, no_doc as id, bank_id, accnumber, accname, sts_reject, sts_reject_manage, reject_reason, null as kurang_bayar, null as id_kasbon 
+        FROM tr_kasbon
+        
+        UNION ALL
+        
+        SELECT a.id as ids, a.no_doc, a.nama, a.tgl_doc, a.informasi as keperluan, 'expense' as tipe, a.jumlah, null as tanggal, a.no_doc as id, bank_id, accnumber, accname, a.sts_reject, a.sts_reject_manage, a.reject_reason, a.kurang_bayar, a.id_kasbon 
+        FROM tr_expense a 
+        LEFT JOIN " . DBACC . ".coa_master as b ON a.coa = b.no_perkiraan 
+        WHERE (a.jumlah >= 0 OR (a.id_kasbon IS NOT NULL AND a.kurang_bayar IS NOT NULL AND a.kurang_bayar > 0 AND a.status=2))
+        
+        UNION ALL
+        
+        SELECT b.id as ids, a.no_doc, c.nm_lengkap nama, a.tanggal_doc as tgl_doc, b.nama as keperluan, 'periodik' as tipe, b.nilai jumlah, null as tanggal, a.no_doc as id, b.bank_id, b.accnumber, b.accname, b.sts_reject, b.sts_reject_manage, b.reject_reason, null as kurang_bayar, null as id_kasbon 
+        FROM tr_pengajuan_rutin a 
+        JOIN tr_pengajuan_rutin_detail b ON a.no_doc = b.no_doc 
+        JOIN users c ON a.created_by = c.id_user
     ")->result();
 
         return $data;
@@ -212,48 +203,11 @@ class Request_payment_model extends BF_Model
         return $data;
     }
 
-    // public function GetListDataJurnal()
-    // {
-    //     $data    = $this->db->query("SELECT no_jurnal,tgl_jurnal,coa,sts,sum(kredit) as total, no_transaksi FROM tr_jurnal group by no_jurnal order by no_jurnal desc")->result();
-    //     return $data;
-    // }
-
     public function GetListDataJurnal()
     {
-        $sql = "
-    SELECT
-        pp.id AS id_payment,
-        pa.keperluan,
-        pa.total,
-        ja.no_jurnal,
-        ja.tgl_jurnal,
-        ja.sts
-    FROM tr_payment_paid pp
-    LEFT JOIN (
-        SELECT
-            id_payment,
-            GROUP_CONCAT(keperluan ORDER BY keperluan SEPARATOR ' | ') AS keperluan,
-            SUM(payment_bank) AS total
-        FROM payment_approve
-        WHERE id_payment IS NOT NULL AND id_payment <> ''
-        GROUP BY id_payment
-    ) pa ON pa.id_payment = pp.id
-    LEFT JOIN (
-        SELECT
-            no_transaksi,
-            MIN(no_jurnal) AS no_jurnal,
-            MAX(tgl_jurnal) AS tgl_jurnal,
-            MIN(sts) AS sts
-        FROM tr_jurnal
-        WHERE jenis_transaksi = 'Payment'
-        GROUP BY no_transaksi
-    ) ja ON ja.no_transaksi = pp.id
-    ORDER BY pp.id DESC
-    ";
-
-        return $this->db->query($sql)->result();
+        $data    = $this->db->query("SELECT nomor,tanggal,tipe,no_reff,stspos,sum(kredit) as total FROM jurnal group by nomor order by nomor desc")->result();
+        return $data;
     }
-
 
     function generate_id_detail($no = null)
     {
@@ -487,213 +441,29 @@ class Request_payment_model extends BF_Model
         $start = $this->input->post('start');
         $search = $this->input->post('search');
 
-        $sql = '
-            SELECT
-                z.id,
-                z.no_dokumen,
-                z.request_by,
-                z.tanggal,
-                z.keperluan,
-                z.kategori,
-                z.nilai_pengajuan
-            FROM
-                (
-                    SELECT
-                        a.id as id,
-                        a.no_doc as no_dokumen,
-                        a.created_by as request_by,
-                        a.tgl_doc as tanggal,
-                        b.keperluan as keperluan,
-                        "Transport" as kategori,
-                        a.jumlah_expense as nilai_pengajuan
-                    FROM
-                        tr_transport_req a
-                        LEFT JOIN tr_transport b ON b.no_req = a.no_doc
-                    WHERE
-                        a.status = "1" AND (
-                            a.no_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.created_by LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.tgl_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            b.keperluan LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.jumlah_expense LIKE "%' . $this->db->escape_str($search['value']) . '%"
-                        )
-                    
-                    UNION ALL
+        $this->db->select('a.*');
+        $this->db->from('v_request_payment a');
+        $this->db->where('a.status', '1');
 
-                    SELECT
-                        a.id as id,
-                        a.no_doc as no_dokumen,
-                        a.created_by as request_by,
-                        a.tgl_doc as tanggal,
-                        a.keperluan as keperluan,
-                        "Kasbon" as kategori,
-                        a.jumlah_kasbon as nilai_pengajuan
-                    FROM
-                        tr_kasbon a 
-                    WHERE
-                        a.status = "1" AND (
-                            a.no_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.created_by LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.tgl_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.keperluan LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.jumlah_kasbon LIKE "%' . $this->db->escape_str($search['value']) . '%"
-                        )
-                    
-                    UNION ALL
+        $count_all = $this->db->count_all_results('', false);
 
-                    SELECT  
-                        a.id as id,
-                        a.no_doc as no_dokumen,
-                        a.created_by as request_by,
-                        a.tgl_doc as tanggal,
-                        a.informasi as keperluan,
-                        "Expense" as kategori,
-                        a.jumlah as nilai_pengajuan
-                    FROM
-                        tr_expense a
-                    WHERE
-                        a.status = "1" AND (
-                            a.no_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.created_by LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.tgl_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.informasi LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.jumlah LIKE "%' . $this->db->escape_str($search['value']) . '%"
-                        )
-                    
-                    UNION ALL
+        if (!empty($search['value'])) {
+            $this->db->group_start();
+            $this->db->like('a.no_dokumen', $search['value'], 'both');
+            $this->db->or_like('a.request_by', $search['value'], 'both');
+            $this->db->or_like('DATE_FORMAT(a.tanggal, "%d-%M-%Y")', $search['value'], 'both');
+            $this->db->or_like('a.keperluan', $search['value'], 'both');
+            $this->db->or_like('a.kategori', $search['value'], 'both');
+            $this->db->or_like('a.nilai_pengajuan', $search['value'], 'both');
+            $this->db->group_end();
+        }
 
-                    SELECT
-                        a.id as id,
-                        a.no_doc as no_dokumen,
-                        c.nm_lengkap as request_by,
-                        a.tanggal_doc as tgl_doc,
-                        a.keterangan as keperluan,
-                        "Periodik" as tipe,
-                        a.nilai_total as nilai_pengajuan
-                    FROM
-                        tr_pengajuan_rutin a 
-                        JOIN tr_pengajuan_rutin_detail b ON b.no_doc = a.no_doc
-                        LEFT JOIN users c ON c.id_user = a.created_by
-                    WHERE
-                        a.status = "1" AND (
-                            a.no_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            c.nm_lengkap LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.tanggal_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.keterangan LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.nilai_total LIKE "%' . $this->db->escape_str($search['value']) . '%"
-                        )
-                    
-                    
-                ) z
-                GROUP BY z.no_dokumen
-            ORDER BY z.tanggal DESC
-            LIMIT ' . $length . ' OFFSET ' . $start . '
-        ';
+        $count_filter = $this->db->count_all_results('', false);
 
-        $get_data = $this->db->query($sql);
+        $this->db->order_by('a.tanggal', 'desc');
+        $this->db->limit($length, $start);
 
-        $sql_all = '
-            SELECT
-                z.id,
-                z.no_dokumen,
-                z.request_by,
-                z.tanggal,
-                z.keperluan,
-                z.kategori,
-                z.nilai_pengajuan
-            FROM
-                (
-                    SELECT
-                        a.id as id,
-                        a.no_doc as no_dokumen,
-                        a.created_by as request_by,
-                        a.tgl_doc as tanggal,
-                        b.keperluan as keperluan,
-                        "Transport" as kategori,
-                        a.jumlah_expense as nilai_pengajuan
-                    FROM
-                        tr_transport_req a
-                        LEFT JOIN tr_transport b ON b.no_req = a.no_doc
-                    WHERE
-                        a.status = "1" AND (
-                            a.no_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.created_by LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.tgl_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            b.keperluan LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.jumlah_expense LIKE "%' . $this->db->escape_str($search['value']) . '%"
-                        )
-                    
-                    UNION ALL
-
-                    SELECT
-                        a.id as id,
-                        a.no_doc as no_dokumen,
-                        a.created_by as request_by,
-                        a.tgl_doc as tanggal,
-                        a.keperluan as keperluan,
-                        "Kasbon" as kategori,
-                        a.jumlah_kasbon as nilai_pengajuan
-                    FROM
-                        tr_kasbon a 
-                    WHERE
-                        a.status = "1" AND (
-                            a.no_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.created_by LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.tgl_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.keperluan LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.jumlah_kasbon LIKE "%' . $this->db->escape_str($search['value']) . '%"
-                        )
-                    
-                    UNION ALL
-
-                    SELECT  
-                        a.id as id,
-                        a.no_doc as no_dokumen,
-                        a.created_by as request_by,
-                        a.tgl_doc as tanggal,
-                        a.informasi as keperluan,
-                        "Expense" as kategori,
-                        a.jumlah as nilai_pengajuan
-                    FROM
-                        tr_expense a
-                    WHERE
-                        a.status = "1" AND (
-                            a.no_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.created_by LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.tgl_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.informasi LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.jumlah LIKE "%' . $this->db->escape_str($search['value']) . '%"
-                        )
-                    
-                    UNION ALL
-
-                    SELECT
-                        a.id as id,
-                        a.no_doc as no_dokumen,
-                        c.nm_lengkap as request_by,
-                        a.tanggal_doc as tgl_doc,
-                        a.keterangan as keperluan,
-                        "Periodik" as tipe,
-                        a.nilai_total as nilai_pengajuan
-                    FROM
-                        tr_pengajuan_rutin a 
-                        JOIN tr_pengajuan_rutin_detail b ON b.no_doc = a.no_doc
-                        LEFT JOIN users c ON c.id_user = a.created_by
-                    WHERE
-                        a.status = "1" AND (
-                            a.no_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            c.nm_lengkap LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.tanggal_doc LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.keterangan LIKE "%' . $this->db->escape_str($search['value']) . '%" OR
-                            a.nilai_total LIKE "%' . $this->db->escape_str($search['value']) . '%"
-                        )
-                ) z
-                GROUP BY z.no_dokumen
-            ORDER BY z.tanggal DESC
-            
-        ';
-
-        $get_data_all = $this->db->query($sql_all);
+        $get_data = $this->db->get();
 
         $no = ($start + 0);
         $hasil = [];
@@ -732,13 +502,16 @@ class Request_payment_model extends BF_Model
 
             $checked = (count($check_added) > 0) ? 'checked' : '';
 
-            $input_tanggal_pembayaran = '<input type="date" class="form-control form-control-sm" name="tanggal_pembayaran_' . $item->no_dokumen . '" required>';
+            $input_tanggal_pembayaran = '<input type="date" class="form-control form-control-sm" name="tanggal_pembayaran_' . $item->no_dokumen . '">';
 
             $action = '<input type="checkbox" class="pilih_data" name="pilih[]" value="' . $item->no_dokumen . '" data-kategori="' . $item->kategori . '" ' . $checked . '>';
             $action .= '<input type="hidden" name="kategori_' . $item->no_dokumen . '" value="' . $item->kategori . '">';
             $action .= '<input type="hidden" name="nilai_pengajuan_' . $item->no_dokumen . '" value="' . $item->nilai_pengajuan . '">';
 
             $btn_print = '';
+            if ($item->kategori == 'Periodik') {
+                $btn_print = ' <a href="' . base_url('expense/periodik_print/' . $item->id) . '" target="_blank" class="btn btn-sm btn-info" title="Print"><i class="fa fa-print"></i></a>';
+            }
             if ($item->kategori == 'Kasbon') {
                 $btn_print = ' <a href="' . base_url('expense/kasbon_print/' . $item->id) . '" target="_blank" class="btn btn-sm btn-info" title="Print"><i class="fa fa-print"></i></a>';
             }
@@ -748,13 +521,36 @@ class Request_payment_model extends BF_Model
             if ($item->kategori == 'Expense') {
                 $btn_print = ' <a href="' . base_url('expense/expense_print/' . $item->id) . '" target="_blank" class="btn btn-sm btn-info" title="Print"><i class="fa fa-print"></i></a>';
             }
+            if ($item->kategori == 'Cash') {
+                $get_check_non_po = $this->db->get_where('tr_pr_non_po', ['id' => $item->id])->row();
+                if ($get_check_non_po->jenis_pr == 'pr departemen' || $get_check_non_po->jenis_pr == 'pr asset') {
+                    $btn_print = '<a href="' . base_url('request_payment/print_cash/' . $item->id) . '" target="_blank" class="btn btn-sm btn-info" title="Print"><i class="fa fa-print"></i></a>';
+                }
+            }
+
+            $keperluan = (!empty($item->keperluan)) ? $item->keperluan : '';
+            if ($item->kategori == 'Non-PO') {
+                $get_pr_non_po = $this->db->get_where('tr_pr_non_po', ['id' => $item->id])->row();
+
+                if ($get_pr_non_po->jenis_pr == 'pr stok') {
+                    $keperluan = 'PR Stock - ' . $get_pr_non_po->no_pr;
+                } else if ($get_pr_non_po->jenis_pr == 'pr departemen') {
+                    $get_pr_dept = $this->db->get_where('rutin_non_planning_header', ['no_pr' => $get_pr_non_po->no_pr])->row();
+
+                    $keperluan = (!empty($get_pr_dept)) ? $get_pr_dept->project_name : '';
+                } else {
+                    $get_pr_asset = $this->db->get_where('tran_pr_detail', ['no_pr' => $get_pr_non_po->no_pr])->row();
+
+                    $keperluan = 'PR Asset - ' . $get_pr_non_po->no_pr . ' - ' . $get_pr_asset->nm_barang;
+                }
+            }
 
             $hasil[] = [
                 'no' => $no,
                 'no_dokumen' => $item->no_dokumen . ' ' . $btn_print,
                 'request_by' => $nmuser,
                 'tanggal' => date('d F Y', strtotime($item->tanggal)),
-                'keperluan' => $item->keperluan,
+                'keperluan' => $keperluan,
                 'kategori' => $item->kategori,
                 'nilai_pengajuan' => number_format($item->nilai_pengajuan, 2),
                 'tanggal_pembayaran' => $input_tanggal_pembayaran,
@@ -764,8 +560,8 @@ class Request_payment_model extends BF_Model
 
         echo json_encode([
             'draw' => intval($draw),
-            'recordsFiltered' => $get_data_all->num_rows(),
-            'recordsTotal' => $get_data_all->num_rows(),
+            'recordsFiltered' => $count_filter,
+            'recordsTotal' => $count_all,
             'data' => $hasil
         ]);
     }
@@ -793,9 +589,11 @@ class Request_payment_model extends BF_Model
             $no_coa_bank = $no_coa_bank[0];
 
             $kode_bank = '';
-            $get_kode_bank = $this->db->get_where(DBACC . '.coa_master', ['no_perkiraan' => $no_coa_bank])->row();
-            if (!empty($get_kode_bank)) {
-                $kode_bank = $get_kode_bank->kode_bank;
+            if (!empty($no_coa_bank)) {
+                $get_kode_bank = $this->db->get_where(DBACC . '.coa_master', ['no_perkiraan' => $no_coa_bank])->row();
+                if (!empty($get_kode_bank)) {
+                    $kode_bank = $get_kode_bank->kode_bank;
+                }
             }
 
             $Id = $this->generate_id_payment2($kode_bank, $no);
@@ -844,7 +642,6 @@ class Request_payment_model extends BF_Model
             ];
 
             if ($item['tipe'] == 'expense') {
-                $get_expense = $this->db->get_where('tr_expense', ['no_doc' => $item['no_doc']])->row();
                 $get_expense_detail = $this->db->get_where('tr_expense_detail', ['no_doc' => $item['no_doc']])->result_array();
 
                 foreach ($get_expense_detail as $item_expense) {
@@ -886,6 +683,13 @@ class Request_payment_model extends BF_Model
                         'modified_on'     => date("Y-m-d h:i:s"),
                     ];
 
+                    $updateExpense[] = [
+                        'id'             => $item_expense['id'],
+                        'status'         => '3',
+                        'modified_by'     => $this->auth->user_name(),
+                        'modified_on'     => date("Y-m-d h:i:s"),
+                    ];
+
                     // if ($item_expense['id_kasbon'] != null) {
                     //     $Harga[]            = $item_expense['kurang_bayar'];
                     // } else {
@@ -898,13 +702,6 @@ class Request_payment_model extends BF_Model
 
                     $no2++;
                 }
-
-                $updateExpense[] = [
-                    'id'             => $get_expense->id,
-                    'status'         => '3',
-                    'modified_by'     => $this->auth->user_name(),
-                    'modified_on'     => date("Y-m-d h:i:s"),
-                ];
             }
 
             if ($item['tipe'] == 'kasbon') {
@@ -912,7 +709,7 @@ class Request_payment_model extends BF_Model
 
                 $dtl                 = $this->db->get_where('tr_kasbon', ['no_doc' => $item['no_doc']])->row();
 
-                if ($dtl->kurang_bayar != null) {
+                if (isset($dtl->kurang_bayar) && $dtl->kurang_bayar != null) {
                     $nilai = $dtl->kurang_bayar;
                 } else {
                     $nilai = $dtl->jumlah_kasbon;
@@ -1078,7 +875,7 @@ class Request_payment_model extends BF_Model
             $this->db->insert_batch('payment_approve_details', $arr_detail);
         }
 
-        if (!empty($updateExpense)) {
+        if (!empty($updateDetail)) {
             $this->db->update_batch('tr_expense', $updateExpense, 'id');
         }
 
@@ -1103,9 +900,7 @@ class Request_payment_model extends BF_Model
 
     public function get_payment_paid()
     {
-        $get_payment_approve = $this->db->select('no_doc, created_by, created_by as by_pay, DATE_FORMAT(tanggal, "%d %M %Y") as tgl_pengajuan, IF(tanggal IS NULL, "", DATE_FORMAT(tgl_bayar, "%d %M %Y")) as tgl_pembayaran')->from('payment_approve')
-            ->get()
-            ->result();
+        $get_payment_approve = $this->db->select('no_doc, created_by, created_by as by_pay, DATE_FORMAT(created_on, "%d %M %Y") as tgl_pengajuan, IF(created_on IS NULL, "", DATE_FORMAT(tgl_bayar, "%d %M %Y")) as tgl_pembayaran')->get_where('payment_approve', ['tgl_bayar <>' => null])->result();
 
         $list_tgl_pengajuan_pembayaran = [];
         foreach ($get_payment_approve as $item_payment) {
@@ -1131,83 +926,12 @@ class Request_payment_model extends BF_Model
 
     public function list_all_request_payment()
     {
-        $sql_all = '
-            SELECT
-                z.id,
-                z.no_dokumen,
-                z.request_by,
-                z.tanggal,
-                z.keperluan,
-                z.kategori,
-                z.nilai_pengajuan
-            FROM
-                (
-                    SELECT
-                        a.id as id,
-                        a.no_doc as no_dokumen,
-                        a.created_by as request_by,
-                        a.tgl_doc as tanggal,
-                        b.keperluan as keperluan,
-                        "Transport" as kategori,
-                        a.jumlah_expense as nilai_pengajuan
-                    FROM
-                        tr_transport_req a
-                        LEFT JOIN tr_transport b ON b.no_req = a.no_doc
-                    WHERE
-                        a.status = "1"
-                    
-                    UNION ALL
+        $this->db->select('a.*');
+        $this->db->from('v_request_payment a');
+        $this->db->where('a.status', '1');
+        $this->db->order_by('a.tanggal', 'desc');
+        $get_data = $this->db->get()->result();
 
-                    SELECT
-                        a.id as id,
-                        a.no_doc as no_dokumen,
-                        a.created_by as request_by,
-                        a.tgl_doc as tanggal,
-                        a.keperluan as keperluan,
-                        "Kasbon" as kategori,
-                        a.jumlah_kasbon as nilai_pengajuan
-                    FROM
-                        tr_kasbon a 
-                    WHERE
-                        a.status = "1"
-                    
-                    UNION ALL
-
-                    SELECT  
-                        a.id as id,
-                        a.no_doc as no_dokumen,
-                        a.created_by as request_by,
-                        a.tgl_doc as tanggal,
-                        a.informasi as keperluan,
-                        "Expense" as kategori,
-                        a.jumlah as nilai_pengajuan
-                    FROM
-                        tr_expense a
-                    WHERE
-                        a.status = "1"
-                    
-                    UNION ALL
-
-                    SELECT
-                        a.id as id,
-                        a.no_doc as no_dokumen,
-                        c.nm_lengkap as request_by,
-                        a.tanggal_doc as tgl_doc,
-                        a.keterangan as keperluan,
-                        "Periodik" as tipe,
-                        a.nilai_total as nilai_pengajuan
-                    FROM
-                        tr_pengajuan_rutin a 
-                        JOIN tr_pengajuan_rutin_detail b ON b.no_doc = a.no_doc
-                        LEFT JOIN users c ON c.id_user = a.created_by
-                    WHERE
-                        a.status = "1"
-                ) z
-                GROUP BY z.no_dokumen
-            ORDER BY z.tanggal DESC
-        ';
-        $get_list_all_request_payment = $this->db->query($sql_all)->result();
-
-        return $get_list_all_request_payment;
+        return $get_data;
     }
 }
