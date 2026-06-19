@@ -170,6 +170,8 @@
 </div>
 <script src="<?= base_url('assets/chosen_v1.8.7/chosen.jquery.min.js') ?>"></script>
 <script src="https://cdn.datatables.net/2.0.7/js/dataTables.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     $(document).ready(function() {
         $('.table_req_pay_inc').dataTable();
