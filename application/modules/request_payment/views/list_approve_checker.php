@@ -28,6 +28,9 @@ foreach ($data as $item) :
     if ($item->tipe == 'periodik') {
         $count_periodik += 1;
     }
+    if (in_array($item->tipe, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
+        $count_pembayaran_po += 1;
+    }
     if ($item->tipe == 'direct_payment') {
         $count_direct_payment += 1;
     }
@@ -472,6 +475,41 @@ endforeach;
                                     echo '</div></td>';
                                     echo '</tr>';
                                 }
+                            }
+                        endforeach;
+                        ?>
+
+                        <?php
+                        // === Tambahan: Invoice PO (DP/Import/Local) dari tipe baru ===
+                        foreach ($data as $item_inv) :
+                            if (in_array($item_inv->tipe, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
+                                $tipe_label = str_replace(['invoice_dp', 'invoice_import', 'invoice_local'], ['Invoice DP', 'Invoice Import', 'Invoice Local'], $item_inv->tipe);
+
+                                echo '<tr>';
+                                echo '<td class="text-center fw-semibold">' . $item_inv->no_doc . '</td>';
+                                echo '<td class="text-center">' . $item_inv->keperluan . '</td>';
+                                echo '<td>' . $item_inv->nama . '</td>';
+                                echo '<td class="text-center">' . $item_inv->tgl_doc . '</td>';
+                                echo '<td>' . $item_inv->keperluan . '</td>';
+                                echo '<td class="text-center">' . $tipe_label . '</td>';
+                                echo '<td class="text-end fw-semibold">' . number_format($item_inv->jumlah, 2) . '</td>';
+                                echo '<td class="text-center">' . $item_inv->tanggal . '</td>';
+                                echo '<td>' . ($item_inv->currency ?? 'IDR') . '</td>';
+                                echo '<td class="text-center">';
+                                if ($item_inv->status == '0') {
+                                    echo '<span class="badge bg-info text-dark">Open</span>';
+                                } elseif ($item_inv->status == '9') {
+                                    echo '<span class="badge bg-danger">Rejected</span>';
+                                } else {
+                                    echo '<span class="badge bg-warning text-dark">Process</span>';
+                                }
+                                echo '</td>';
+                                echo '<td class="text-center"><div class="d-flex justify-content-center gap-1">';
+                                if ($ENABLE_MANAGE && $item_inv->status == '0' && $item_inv->app_checker === null) {
+                                    echo '<a href="' . base_url($this->uri->segment(1) . '/approval_payment_checker/?type=' . $item_inv->tipe . '&id=' . $item_inv->id . '&nilai=' . $item_inv->jumlah) . '" class="btn btn-success btn-sm" title="Approve"><i class="fa fa-check-square"></i></a>';
+                                }
+                                echo '</div></td>';
+                                echo '</tr>';
                             }
                         endforeach;
                         ?>

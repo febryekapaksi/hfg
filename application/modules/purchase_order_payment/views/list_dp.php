@@ -1,35 +1,28 @@
-<link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.min.css">
 <link rel="stylesheet" href="<?= base_url('assets/chosen_v1.8.7/chosen.min.css') ?>">
+
 <div class="req_payment_dp" style="margin-top: 2vh;">
-    <hr class="mt-2">
-    <h3>Receive Invoice by DP</h3>
-    <div class="row">
+    <div class="row mb-3">
         <div class="col-md-4 mt-3">
             <select name="supplier" id="select_supplier" class="form-control">
                 <option value="">- Pilih Supplier -</option>
-                <?php
-                foreach ($list_supplier as $item_supp) {
-                    echo '<option value="' . $item_supp->kode_supplier . '">' . $item_supp->nama . '</option>';
-                }
-                ?>
+                <?php foreach ($list_supplier as $item_supp): ?>
+                    <option value="<?= $item_supp->kode_supplier ?>"><?= $item_supp->nama ?></option>
+                <?php endforeach; ?>
             </select>
         </div>
         <div class="col-md-2 mt-3">
-            <button type="button" class="btn btn-sm btn-primary search_inc">
+            <button type="button" class="btn btn-sm btn-primary search_dp">
                 <i class="fa fa-search"></i> Cari
             </button>
         </div>
-        <div class="col-md-6 text-end mt-3">
-            <a href="purchase_order_payment/check_list_inc" class="btn btn-sm btn-success rec_invoice_btn">Receive Invoice</a>
-        </div>
     </div>
+
     <div class="col_table">
-        <table class="table table-bordered table_req_pay_dp">
-            <thead class="bg-green">
+        <table class="table table-bordered table-hover table-sm table_req_pay_dp">
+            <thead class="table-primary">
                 <tr>
                     <th class="text-center">No</th>
                     <th class="text-center">No. PO</th>
-                    <th class="text-center">No. Purchase Invoice</th>
                     <th class="text-center">No. Invoice</th>
                     <th class="text-center">No. Payment</th>
                     <th class="text-center">Nama Supplier</th>
@@ -40,158 +33,201 @@
                 </tr>
             </thead>
             <tbody>
-                <?php
-                $no = 1;
-                foreach ($list_po as $item) {
-                    $sts = '<div class="badge bg-yellow">Waiting</div>';
-                    $close = 0;
-                    if ($item['ttl_persen_dp'] == $item['progress']) {
-                        $sts = '<div class="badge bg-green">Belum Lunas</div>';
-                        $close = 1;
+                <?php $no = 1;
+                foreach ($list_po as $item): ?>
+                    <?php
+                    $sudah_receive = !empty($item['id_receive_dp']);
+                    $sudah_request = !empty($item['id_request_payment']);
+                    $sudah_bayar   = !empty($item['no_payment']) && $item['status_payment'] == 2;
 
-                        $get_invoice = $this->db->get_where('tr_invoice_po', ['no_po' => $item['no_surat'], 'id_top' => $item['id_top']])->row();
-                        $check_payment_approve = $this->db->get_where('payment_approve', ['no_doc' => $get_invoice->id, 'status' => 2])->result();
+                    if (!$sudah_receive) {
+                        // Belum receive invoice
+                        $badge = '<span class="badge bg-secondary">Belum Receive</span>';
+                        $action_btn = '
+                        <button type="button" class="btn btn-sm btn-primary btn-req-dp"
+                            data-id_top="' . $item['id_top'] . '"
+                            data-no_po="' . $item['no_po'] . '"
+                            title="Receive Invoice DP">
+                            <i class="fa fa-plus"></i>
+                        </button>';
+                    } elseif ($sudah_receive && !$sudah_request) {
+                        // Sudah receive, belum request payment
+                        $badge = '<span class="badge bg-info text-dark">Sudah Receive</span>';
 
-                        if (count($check_payment_approve) > 0) {
-                            $sts = '<div class="badge bg-blue">Lunas</div>';
-                            $close = 1;
+                        // Tombol View DP selalu muncul
+                        $action_btn = '
+                        <button type="button" class="btn btn-sm btn-info btn-view-dp"
+                            data-id="' . $item['id_receive_dp'] . '"
+                            title="Lihat Invoice">
+                            <i class="fa fa-eye"></i>
+                        </button>';
+
+                        // JIKA STATUS BUKAN 2, BARU TAMPILKAN TOMBOL REQUEST PAYMENT
+                        if (in_array($item['status_receive_dp'], [2, 3])) {
+                            $action_btn .= '
+                            <button type="button" class="btn btn-sm btn-warning btn-req-payment ms-1"
+                                data-id_receive="' . $item['id_receive_dp'] . '"
+                                data-tipe="dp"
+                                title="Request Payment">
+                                <i class="fa fa-paper-plane"></i>
+                            </button>';
                         }
-                    }
-
-                    $get_incoming = $this->db->get_where('tr_incoming_check', ['no_ipp' => $item['no_po']])->result();
-                    $arr_id_incoming = [];
-
-                    foreach ($get_incoming as $item_incoming) {
-                        $arr_id_incoming[] = $item_incoming->kode_trans;
-                    }
-
-                    if (!empty($arr_id_incoming)) {
-                        $this->db->select('count(a.no_po) as num_po, a.id');
-                        $this->db->from('tr_invoice_po a');
-                        $this->db->where_in('a.no_po', $arr_id_incoming);
-                        $num_invoice = $this->db->get()->row();
-
-                        // if ($num_invoice->num_po > 0) {
-                        //     $sts = '<div class="badge bg-green">Complete</div>';
-                        //     $close = 1;
-                        // }
-                    }
-
-
-
-                    $view_btn = '';
-                    $req_pay_btn = '<button type="button" class="btn btn-sm btn-primary req_app" style="margin-left: 0.5rem" title="Request Payment" data-no_po="' . $item['no_surat'] . '" data-id_top="' . $item['id_top'] . '" data-tipe="dp"><i class="fa fa-arrow-up"></i></button>';
-                    if ($close == 1) {
-                        $get_invoice = $this->db->select('id')->get_where('tr_invoice_po', ['no_po' => $item['no_surat'], 'id_top' => $item['id_top']])->row_array();
-
-                        $view_btn = '<button type="button" class="btn btn-sm btn-info view" data-id="' . $get_invoice['id'] . '" data-id_top="' . $item['id_top'] . '" data-tipe="dp" title="view"><i class="fa fa-eye"></i></button>';
-                        $req_pay_btn = '';
-                    }
-
-                    $list_dp_btn = '';
-                    // if($item['ttl_persen_dp'] > 0) {
-                    //     $list_dp_btn = '<button type="button" class="btn btn-sm btn-warning list_dp" data-no_po="'.$item['no_po'].'" style="margin-left: 0.5rem"><i class="fa fa-list"></i></button>';
-                    // }
-
-                    $no_purchase_invoice = [];
-                    $no_invoice = [];
-
-                    $get_invoice = $this->db->select('a.*')
-                        ->from('tr_invoice_po a')
-                        ->where('a.id_top', $item['id_top'])
-                        ->like('a.no_po', $item['no_surat'])
-                        ->get()
-                        ->result();
-
-                    foreach ($get_invoice as $item_invoice) {
-                        $no_purchase_invoice[] = str_replace(',', '', $item_invoice->id);
-                        $no_invoice[] = str_replace(',', '', $item_invoice->invoice_no);
-                    }
-
-                    if (!empty($no_purchase_invoice)) {
-                        $no_purchase_invoice = implode(', ', $no_purchase_invoice);
+                    } elseif ($sudah_request && !$sudah_bayar) {
+                        // Sudah request, menunggu pembayaran
+                        $badge = '<span class="badge bg-warning text-dark">Menunggu Pembayaran</span>';
+                        $action_btn = '
+                        <button type="button" class="btn btn-sm btn-info btn-view-dp"
+                            data-id="' . $item['id_receive_dp'] . '"
+                            title="Lihat Invoice">
+                            <i class="fa fa-eye"></i>
+                        </button>';
                     } else {
-                        $no_purchase_invoice = '';
+                        // Sudah lunas
+                        $badge = '<span class="badge bg-success">Lunas</span>';
+                        $action_btn = '
+                        <button type="button" class="btn btn-sm btn-info btn-view-dp"
+                            data-id="' . $item['id_receive_dp'] . '"
+                            title="Lihat Invoice">
+                            <i class="fa fa-eye"></i>
+                        </button>';
                     }
-
-                    if (!empty($no_invoice)) {
-                        $no_invoice = implode(', ', $no_invoice);
-                    } else {
-                        $no_invoice = '';
-                    }
-
-                    $no_payment = array();
-                    $get_no_payment = $this->db->get_where('payment_approve', ['no_doc' => $item['id_invoice']])->result();
-                    foreach ($get_no_payment as $item_no_payment) {
-                        $no_payment[] = $item_no_payment->id_payment;
-                    }
-
-                    $no_payment = implode(', ', $no_payment);
-
-                    echo '<tr>';
-                    echo '<td class="text-center">' . $no . '</td>';
-                    echo '<td class="text-center">' . $item['no_surat'] . '</td>';
-                    echo '<td class="text-center">' . $no_purchase_invoice . '</td>';
-                    echo '<td class="text-center">' . $no_invoice . '</td>';
-                    echo '<td class="text-center">' . $no_payment . '</td>';
-                    echo '<td class="text-center">' . $item['nm_supplier'] . '</td>';
-                    echo '<td class="text-center">' . date('d F Y', strtotime($item['tanggal'])) . '</td>';
-                    echo '<td class="text-center">' . $item['keterangan_top'] . '</td>';
-                    echo '<td class="text-center">' . $sts . '</td>';
-                    echo '<td style="text-align: center;">' . $view_btn . $req_pay_btn . $list_dp_btn . '</td>';
-                    echo '</tr>';
-
-                    $no++;
-                }
-                ?>
+                    ?>
+                    <tr>
+                        <td class="text-center"><?= $no++ ?></td>
+                        <td class="text-center"><?= $item['no_surat'] ?></td>
+                        <td class="text-center"><?= $item['nomor_invoice'] ?? '-' ?></td>
+                        <td class="text-center"><?= $item['no_payment'] ?? '-' ?></td>
+                        <td><?= $item['nm_supplier'] ?></td>
+                        <td class="text-center"><?= date('d F Y', strtotime($item['tanggal'])) ?></td>
+                        <td><?= $item['keterangan_top'] ?? '-' ?></td>
+                        <td class="text-center"><?= $badge ?></td>
+                        <td class="text-center"><?= $action_btn ?></td>
+                    </tr>
+                <?php endforeach; ?>
             </tbody>
         </table>
     </div>
 </div>
-<script src="https://cdn.datatables.net/2.0.7/js/dataTables.min.js"></script>
+
 <script src="<?= base_url('assets/chosen_v1.8.7/chosen.jquery.min.js') ?>"></script>
 <script>
-    function initFlatpickr() {
-        flatpickr('input[type="date"], .datepicker', {
-            dateFormat: "Y-m-d",
-            allowInput: true,
-            locale: {
-                firstDayOfWeek: 1
-            }
-        });
-    }
     $(document).ready(function() {
-        $('.table_req_pay_dp').dataTable();
-
+        $('.table_req_pay_dp').DataTable();
         $('#select_supplier').chosen();
 
-        $(document).on('shown.bs.modal', '#dialog-popup', function() {
-            initFlatpickr();
+        $(document).on('click', '.btn-req-payment', function() {
+            var id_receive = $(this).data('id_receive');
+            var tipe = $(this).data('tipe');
+
+            Swal.fire({
+                title: 'Request Payment',
+                text: 'Ajukan request payment untuk invoice ini?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Ajukan',
+                cancelButtonText: 'Batal'
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: 'POST',
+                        url: siteurl + active_controller + 'req_payment_dp',
+                        data: {
+                            id_receive: id_receive,
+                            tipe: tipe
+                        },
+                        cache: false,
+                        success: function(res) {
+                            var response = typeof res === 'string' ? JSON.parse(res) : res;
+                            if (response.status == 1) {
+                                Swal.fire({
+                                    title: 'Berhasil!',
+                                    text: response.message,
+                                    icon: 'success'
+                                }).then(function() {
+                                    // Refresh tabel dengan supplier yang sedang aktif
+                                    var supplier = $('#select_supplier').val();
+                                    if (supplier) {
+                                        $('.search_dp').trigger('click');
+                                    } else {
+                                        location.reload();
+                                    }
+                                });
+                            } else {
+                                Swal.fire('Gagal', response.message, 'error');
+                            }
+                        },
+                        error: showAjaxError
+                    });
+                }
+            });
+        });
+    });
+
+    $(document).on('click', '.btn-req-dp', function() {
+        var id_top = $(this).data('id_top');
+        var no_po = $(this).data('no_po');
+
+        $.ajax({
+            type: 'POST',
+            url: siteurl + active_controller + 'form_dp',
+            data: {
+                id_top: id_top,
+                no_po: no_po
+            },
+            cache: false,
+            success: function(result) {
+                $('#ModalView').html(result);
+                $('#dialog-popup').modal('show');
+            },
+            error: function() {
+                showAjaxError();
+            }
+        });
+    });
+
+    $(document).on('click', '.btn-view-dp', function() {
+        var id = $(this).data('id');
+
+        $.ajax({
+            type: 'POST',
+            url: siteurl + active_controller + 'view_dp',
+            data: {
+                id: id
+            },
+            cache: false,
+            success: function(result) {
+                $('.save_btn_modal').hide();
+                $('#ModalView').html(result);
+                $('#dialog-popup').modal('show');
+            },
+            error: function() {
+                showAjaxError();
+            }
         });
     });
 
     $(document).on('click', '.search_dp', function() {
-        var kode_supplier = $('#select_supplier').val();
-
-        if (kode_supplier == '') {
-            swal({
-                title: 'Warning !',
-                text: 'Pastikan kolom Supplier sudah diisi !',
-                type: 'warning'
+        var supplier = $('#select_supplier').val();
+        if (!supplier) {
+            Swal.fire({
+                title: 'Warning!',
+                text: 'Pilih supplier terlebih dahulu!',
+                icon: 'warning'
             });
-        } else {
-            $.ajax({
-                type: "POST",
-                url: siteurl + active_controller + "search_dp",
-                data: {
-                    'kode_supplier': kode_supplier
-                },
-                cache: false,
-                success: function(result) {
-                    $('.col_table').html(result);
-                    $('.table_req_pay_dp').dataTable();
-                }
-            });
+            return;
         }
+        $.ajax({
+            type: 'POST',
+            url: siteurl + active_controller + 'search_dp',
+            data: {
+                kode_supplier: supplier
+            },
+            cache: false,
+            success: function(result) {
+                // Ganti seluruh col_table dengan hasil partial
+                $('.col_table').html(result);
+            },
+            error: showAjaxError
+        });
     });
 </script>

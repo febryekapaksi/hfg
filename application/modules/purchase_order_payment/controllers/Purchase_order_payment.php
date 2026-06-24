@@ -46,83 +46,662 @@ class Purchase_order_payment extends Admin_Controller
 
 		$this->template->set('list_po', $get_list_po);
 		$this->template->title('Receive Invoice');
-		$this->template->render('index_incoming');
+		$this->template->render('index');
 	}
 
 	public function checkbx()
 	{
 		$post = $this->input->post();
+		$tipe = $post['checkbx'] ?? 'dp';
 
-		if ($post['checkbx'] == 'dp') {
-			$this->db->select('a.*, b.nm_lengkap, c.nama as nm_supplier, d.id as id_invoice, IF(SUM(d.persen_dp) IS NULL, 0, SUM(d.persen_dp)) as ttl_persen_dp, e.id as id_top, e.progress, e.nilai as nilai_top, e.keterangan as keterangan_top');
+		$get_supplier = $this->db->get('new_supplier')->result();
+
+		if ($tipe == 'dp') {
+			$this->db->select('
+				a.no_po, a.no_surat, a.id_suplier, a.tanggal, a.loi, a.status,
+				c.nama as nm_supplier,
+				e.id as id_top, e.progress, e.nilai, e.keterangan as keterangan_top,
+				rid.id as id_receive_dp, rid.status as status_receive_dp, 
+				rp.id as id_request_payment, rp.status as status_request,
+				pa.id_payment as no_payment, pa.status as status_payment
+			');
 			$this->db->from('tr_purchase_order a');
-			$this->db->join('users b', 'b.id_user = a.created_by', 'left');
 			$this->db->join('new_supplier c', 'c.kode_supplier = a.id_suplier', 'left');
 			$this->db->join('tr_top_po e', 'e.no_po = a.no_po');
-			$this->db->join('tr_invoice_po d', 'd.no_po = a.no_surat AND d.id_top = e.id', 'left');
+			$this->db->join('tr_receive_invoice_dp rid', 'rid.id_top = e.id', 'left');
+			$this->db->join('request_payment rp', "rp.no_doc = rid.id AND rp.tipe = 'invoice_dp'", 'left');
+			$this->db->join('payment_approve pa', 'pa.no_doc = rid.id', 'left');
 			$this->db->where('e.group_top', 76);
 			$this->db->where('a.status', '2');
 			$this->db->group_by('e.id');
 			$this->db->order_by('a.created_on', 'desc');
-			$get_list_po = $this->db->get()->result_array();
+			$list_po = $this->db->get()->result_array();
 
-
-
-			$get_supplier = $this->db->get('new_supplier')->result();
-
-			$this->template->set('list_po', $get_list_po);
+			$this->template->set('list_po', $list_po);
 			$this->template->set('list_supplier', $get_supplier);
 			$this->template->render('list_dp');
-		} else if ($post['checkbx'] == 'pro') {
-			$this->db->select('a.*, b.nm_lengkap, c.nama as nm_supplier, d.id as id_invoice, IF(SUM(d.persen_dp) IS NULL, 0, SUM(d.persen_dp)) as ttl_persen_dp, e.id as id_top, e.progress, e.nilai as nilai_top, e.keterangan as keterangan_top');
+		} elseif ($tipe == 'import') {
+			$this->db->select('
+				a.no_po, a.no_surat, a.id_suplier, a.tanggal, a.loi,
+				c.nama as nm_supplier,
+				e.id as id_top, e.progress, e.nilai, e.keterangan as keterangan_top,
+				ril.id as id_receive_il,
+				rid.id as id_dp, rid.value_dp as nilai_dp,
+				rp.id as id_request_payment, rp.status as status_request,
+				pa.id_payment as no_payment
+			');
 			$this->db->from('tr_purchase_order a');
-			$this->db->join('users b', 'b.id_user = a.created_by', 'left');
 			$this->db->join('new_supplier c', 'c.kode_supplier = a.id_suplier', 'left');
 			$this->db->join('tr_top_po e', 'e.no_po = a.no_po');
-			$this->db->join('tr_invoice_po d', 'd.no_po = a.no_surat AND d.id_top = e.id', 'left');
-			$this->db->where('e.group_top', 77);
-			$this->db->where('a.status', '2');
+			$this->db->join('tr_ros_header rh', 'rh.no_po = a.no_po');
+			$this->db->join('tr_receive_invoice_imp_lok ril', "ril.id_top = e.id AND ril.tipe = 'import'", 'left');
+			$this->db->join('tr_receive_invoice_dp rid', 'rid.no_po = a.no_po', 'left');
+			$this->db->join('request_payment rp', "rp.no_doc = ril.id AND rp.tipe = 'invoice_import'", 'left');
+			$this->db->join('payment_approve pa', 'pa.no_doc = ril.id', 'left');
+			$this->db->where('a.loi', 'Import');
+			$this->db->where('e.group_top', 101);
+			$this->db->where('rh.status_incoming', 'closed');
 			$this->db->group_by('e.id');
 			$this->db->order_by('a.created_on', 'desc');
-			$get_list_po = $this->db->get()->result_array();
+			$list_po = $this->db->get()->result_array();
 
-			$get_supplier = $this->db->get('new_supplier')->result();
-
-			$this->template->set('list_po', $get_list_po);
+			$this->template->set('list_po', $list_po);
 			$this->template->set('list_supplier', $get_supplier);
-			$this->template->render('list_pro');
-		} else if ($post['checkbx'] == 'ret') {
-			$this->db->select('a.*, b.nm_lengkap, c.nama as nm_supplier, d.id as id_invoice , IF(SUM(d.persen_dp) IS NULL, 0, SUM(d.persen_dp)) as ttl_persen_dp, e.id as id_top, e.progress, e.nilai as nilai_top, e.keterangan as keterangan_top');
+			$this->template->render('list_import');
+		} elseif ($tipe == 'local') {
+			$this->db->select('
+            a.no_po, a.no_surat, a.id_suplier, a.tanggal, a.loi,
+            c.nama as nm_supplier,
+            e.id as id_top, e.progress, e.nilai, e.keterangan as keterangan_top,
+            ril.id as id_receive_il,
+            rid.id as id_dp, rid.value_dp as nilai_dp,
+            pa.id_payment as no_payment
+        ');
 			$this->db->from('tr_purchase_order a');
-			$this->db->join('users b', 'b.id_user = a.created_by', 'left');
 			$this->db->join('new_supplier c', 'c.kode_supplier = a.id_suplier', 'left');
 			$this->db->join('tr_top_po e', 'e.no_po = a.no_po');
-			$this->db->join('tr_invoice_po d', 'd.no_po = a.no_surat AND d.id_top = e.id', 'left');
-			$this->db->where('e.group_top', 78);
-			$this->db->where('a.status', '2');
+			$this->db->join('tr_incoming_header ih', 'ih.no_po = a.no_po');
+			$this->db->join('tr_receive_invoice_imp_lok ril', "ril.id_top = e.id AND ril.tipe = 'local'", 'left');
+			$this->db->join('tr_receive_invoice_dp rid', 'rid.no_po = a.no_po', 'left');
+			$this->db->join('payment_approve pa', 'pa.no_doc = ril.id', 'left');
+			$this->db->where('a.loi', 'Lokal');
+			$this->db->where('e.group_top', 101);
+			$this->db->where('ih.status', 'finalized');
 			$this->db->group_by('e.id');
 			$this->db->order_by('a.created_on', 'desc');
-			$get_list_po = $this->db->get()->result_array();
+			$list_po = $this->db->get()->result_array();
 
-			$get_supplier = $this->db->get('new_supplier')->result();
-
-			$this->template->set('list_po', $get_list_po);
+			$this->template->set('list_po', $list_po);
 			$this->template->set('list_supplier', $get_supplier);
-			$this->template->render('list_ret');
-		} else {
-			$this->db->select('a.*');
-			$this->db->from('tr_invoice_po a');
-			//$this->db->like('a.no_po', 'TR');
-			$this->db->order_by('a.created_date', 'desc');
-			$get_list_inc = $this->db->get()->result_array();
-
-			$get_supplier = $this->db->get('new_supplier')->result();
-
-			$this->template->set('list_inc', $get_list_inc);
-			$this->template->set('list_supplier', $get_supplier);
-			$this->template->render('list_inc');
+			$this->template->render('list_local');
 		}
 	}
+
+	public function form_dp()
+	{
+		$id_top = $this->input->post('id_top');
+		$no_po  = $this->input->post('no_po');
+
+		if (empty($id_top) || empty($no_po)) {
+			echo "<div class='alert alert-warning'>Data tidak valid.</div>";
+			return;
+		}
+
+		// Ambil data PO
+		$data_po = $this->db->select('
+            a.*,
+            e.id as id_top,
+            e.group_top,
+            e.progress,
+            e.nilai,
+            e.keterangan as keterangan_top
+        ')
+			->from('tr_purchase_order a')
+			->join('tr_top_po e', 'e.no_po = a.no_po')
+			->where('a.no_po', $no_po)
+			->where('e.id', $id_top)
+			->get()
+			->row_array();
+
+		if (empty($data_po)) {
+			echo "<div class='alert alert-warning'>Data PO tidak ditemukan.</div>";
+			return;
+		}
+
+		// Ambil supplier
+		$get_supplier = $this->db->get_where('new_supplier', [
+			'kode_supplier' => $data_po['id_suplier']
+		])->row_array();
+
+		// Hitung DPP
+		$subtotal   = (float)($data_po['subtotal']  ?? 0);
+		$nilai_disc = (float)($data_po['nilai_disc'] ?? 0);
+		$progress   = (float)($data_po['progress']   ?? 0);
+		$dpp        = ($subtotal - $nilai_disc) * $progress / 100;
+
+		// Hitung Nilai PPN
+		$ppn_persen = (float)($data_po['total_ppn_persen'] ?? 0);
+		$nilai_ppn  = $ppn_persen > 0
+			? $dpp * $ppn_persen / 100
+			: (float)($data_po['total_ppn'] ?? 0);
+
+		// Jumlah PO murni dari database (hargatotal)
+		$jumlah_po = (float)($data_po['hargatotal'] ?? 0);
+
+		// Total DP existing untuk PO ini — sudah dalam IDR (jumlah_rupiah sudah dikali kurs saat save)
+		$total_dp_existing = (float)($this->db
+			->select_sum('jumlah_rupiah')
+			->where('no_po', $no_po)
+			->get('tr_receive_invoice_dp')
+			->row()
+			->jumlah_rupiah ?? 0);
+
+		$this->template->set('mode',               'form');
+		$this->template->set('data_po',            $data_po);
+		$this->template->set('get_supplier',       $get_supplier);
+		$this->template->set('dpp',                $dpp);
+		$this->template->set('nilai_ppn',          $nilai_ppn);
+		$this->template->set('nilai_disc',         $nilai_disc);
+		$this->template->set('jumlah_po',          $jumlah_po);         // foreign currency, JS yang kali kurs
+		$this->template->set('total_dp_existing',  $total_dp_existing); // IDR, untuk hitung outstanding di JS
+		$this->template->render('form_dp');
+	}
+
+	public function form_il()
+	{
+		$id_top = $this->input->post('id_top');
+		$no_po  = $this->input->post('no_po');
+		$tipe   = $this->input->post('tipe');   // 'import' atau 'local'
+		$id_dp  = $this->input->post('id_dp');  // nullable, kalau PO punya DP sebelumnya
+
+		if (empty($id_top) || empty($no_po) || empty($tipe)) {
+			echo "<div class='alert alert-warning'>Data tidak valid.</div>";
+			return;
+		}
+
+		// Ambil data PO + top
+		$data_po = $this->db->select('
+            a.*,
+            e.id as id_top,
+            e.group_top,
+            e.progress,
+            e.nilai,
+            e.keterangan as keterangan_top
+        ')
+			->from('tr_purchase_order a')
+			->join('tr_top_po e', 'e.no_po = a.no_po')
+			->where('a.no_po', $no_po)
+			->where('e.id', $id_top)
+			->get()
+			->row_array();
+
+		if (empty($data_po)) {
+			echo "<div class='alert alert-warning'>Data PO tidak ditemukan.</div>";
+			return;
+		}
+
+		// Ambil supplier
+		$get_supplier = $this->db->get_where('new_supplier', [
+			'kode_supplier' => $data_po['id_suplier']
+		])->row_array();
+
+		// Hitung nilai dasar
+		$subtotal   = (float)($data_po['subtotal']   ?? 0);
+		$nilai_disc = (float)($data_po['nilai_disc']  ?? 0);
+		$progress   = (float)($data_po['progress']    ?? 0);
+		$dpp_full   = ($subtotal - $nilai_disc); // 100% sebelum dikurangi DP
+
+		// Cek apakah ada data DP sebelumnya
+		$data_dp    = null;
+		$nilai_dp   = 0;
+		$sisa_dpp   = $dpp_full;
+
+		if (!empty($id_dp)) {
+			$data_dp = $this->db->get_where('tr_receive_invoice_dp', ['id' => $id_dp])->row_array();
+			if ($data_dp) {
+				$nilai_dp = (float)($data_dp['value_dp'] ?? 0);
+				$sisa_dpp = $dpp_full - $nilai_dp;
+			}
+		}
+
+		// Hitung PPN dari sisa DPP
+		$ppn_persen = (float)($data_po['total_ppn_persen'] ?? 0);
+		$nilai_ppn  = $ppn_persen > 0
+			? $sisa_dpp * $ppn_persen / 100
+			: (float)($data_po['total_ppn'] ?? 0);
+
+		$this->template->set('mode', 'form');
+		$this->template->set('data_po',      $data_po);
+		$this->template->set('get_supplier', $get_supplier);
+		$this->template->set('tipe',         $tipe);
+		$this->template->set('id_dp',        $id_dp);
+		$this->template->set('data_dp',      $data_dp);
+		$this->template->set('dpp_full',     $dpp_full);
+		$this->template->set('nilai_dp',     $nilai_dp);
+		$this->template->set('sisa_dpp',     $sisa_dpp);
+		$this->template->set('nilai_ppn',    $nilai_ppn);
+		$this->template->set('nilai_disc',   $nilai_disc);
+		$this->template->render('form_il');
+	}
+
+	public function save_dp()
+	{
+
+		// Validasi field wajib
+		$required = ['id_top', 'no_po', 'no_surat', 'nomor_invoice', 'invoice_date', 'bank', 'no_bank', 'nm_acc_bank'];
+		foreach ($required as $field) {
+			if (empty($this->input->post($field))) {
+				echo json_encode(['status' => 0, 'message' => 'Field ' . $field . ' wajib diisi.']);
+				return;
+			}
+		}
+
+		$id_top   = $this->input->post('id_top');
+		$no_po    = $this->input->post('no_po');
+		$no_surat = $this->input->post('no_surat');
+
+		// Cek duplikat — 1 id_top hanya boleh 1 record
+		$cek = $this->db->get_where('tr_receive_invoice_dp', ['id_top' => $id_top])->row();
+		if ($cek) {
+			echo json_encode(['status' => 0, 'message' => 'Invoice DP untuk PO ini sudah pernah dibuat.']);
+			return;
+		}
+
+		// Validasi kurs
+		$currency = $this->input->post('currency');
+		$kurs_raw = str_replace(',', '', $this->input->post('kurs') ?? '0');
+		$kurs     = strtoupper($currency) === 'IDR' ? 1 : (float)$kurs_raw;
+
+		if (strtoupper($currency) !== 'IDR' && $kurs <= 0) {
+			echo json_encode(['status' => 0, 'message' => 'Kurs wajib diisi dan harus lebih dari 0.']);
+			return;
+		}
+
+		// Handle upload file
+		$file_invoice = null;
+		if (!empty($_FILES['upload_invoice']['name'])) {
+			$upload_path = FCPATH . 'uploads/invoice_dp/';
+			if (!is_dir($upload_path)) mkdir($upload_path, 0755, true);
+
+			$config_upload = [
+				'upload_path'   => FCPATH . 'uploads/invoice_dp/',
+				'allowed_types' => 'pdf|jpg|jpeg|png',
+				'max_size'      => 5120,
+				'file_name'     => 'inv_dp_' . $id_top . '_' . time()
+			];
+
+			$this->load->library('upload', $config_upload);
+			$this->upload->initialize($config_upload);
+
+			if ($this->upload->do_upload('upload_invoice')) {
+				$file_invoice = $this->upload->data('file_name');
+			} else {
+				echo json_encode(['status' => 0, 'message' => 'Gagal upload file: ' . $this->upload->display_errors('', '')]);
+				return;
+			}
+		}
+
+		// Helper bersihkan format angka dari autoNumeric
+		$clean = function ($val) {
+			return (float)str_replace(',', '', $val ?? '0');
+		};
+
+		// Hitung jumlah_rupiah = value_dp × kurs
+		$value_dp      = $clean($this->input->post('value_dp'));
+		$jumlah_rupiah = $value_dp * $kurs;
+
+		// Ambil data PO untuk recalculate server-side (anti manipulasi)
+		$po_row        = $this->db->get_where('tr_purchase_order', ['no_po' => $no_po])->row_array();
+		$subtotal_po   = (float)($po_row['subtotal']        ?? 0);
+		$disc_po       = (float)($po_row['nilai_disc']       ?? 0);
+		$ppn_persen_po = (float)($po_row['total_ppn_persen'] ?? 0);
+		$ppn_po        = $ppn_persen_po > 0
+			? ($subtotal_po - $disc_po) * $ppn_persen_po / 100
+			: (float)($po_row['total_ppn'] ?? 0);
+
+		// jumlah_po dalam IDR = grand total foreign × kurs
+		$jumlah_po_foreign = $subtotal_po - $disc_po + $ppn_po;
+		$jumlah_po_idr     = $jumlah_po_foreign * $kurs;
+
+		// Total DP existing dalam IDR (belum termasuk yang sekarang)
+		$total_dp_existing = (float)($this->db
+			->select_sum('jumlah_rupiah')
+			->where('no_po', $no_po)
+			->get('tr_receive_invoice_dp')
+			->row()
+			->jumlah_rupiah ?? 0);
+
+		$outstanding = $jumlah_po_idr - $total_dp_existing - $jumlah_rupiah;
+
+		$data_insert = [
+			'no_po'                => $no_po,
+			'no_surat'             => $no_surat,
+			'id_top'               => $id_top,
+			'nomor_invoice'        => $this->input->post('nomor_invoice'),
+			'invoice_date'         => $this->input->post('invoice_date'),
+			'invoice_date_real'    => $this->input->post('invoice_date_real') ?: null,
+			'persen_dp'            => $clean($this->input->post('persen_dp')),
+			'dpp'                  => $clean($this->input->post('dpp')),
+			'value_dp'             => $value_dp,
+			'nilai_ppn'            => $clean($this->input->post('nilai_ppn')),
+			'nilai_disc'           => $clean($this->input->post('nilai_disc')),
+			'currency'             => $currency,
+			'kurs'                 => $kurs,
+			'jumlah_rupiah'        => $jumlah_rupiah,
+			'jumlah_po'            => $jumlah_po_idr,   // disimpan dalam IDR
+			'outstanding'          => $outstanding,
+			'nomor_faktur_pajak'   => $this->input->post('nomor_faktur_pajak') ?: null,
+			'tanggal_faktur_pajak' => $this->input->post('tanggal_faktur_pajak') ?: null,
+			'file_invoice'         => $file_invoice,
+			'status'               => '1',
+			'bank'                 => $this->input->post('bank'),
+			'no_bank'              => $this->input->post('no_bank'),
+			'nm_acc_bank'          => $this->input->post('nm_acc_bank'),
+			'created_by'           => $this->auth->user_id(),
+			'created_on'           => date('Y-m-d H:i:s'),
+		];
+
+		$this->db->insert('tr_receive_invoice_dp', $data_insert);
+
+		if ($this->db->affected_rows() > 0) {
+			$id_dp = $this->db->insert_id();
+
+			// Generate jurnal ke gl_interface (silent — jangan block response jika gagal)
+			try {
+				$this->_generate_jurnal_invoice_dp($id_dp, $no_po, $no_surat, $jumlah_rupiah);
+			} catch (Exception $e) {
+				log_message('error', 'Generate jurnal DP failed: ' . $e->getMessage());
+			}
+
+			if (ob_get_length()) ob_clean();
+			header('Content-Type: application/json');
+			echo json_encode(['status' => 1, 'message' => 'Invoice DP berhasil disimpan.']);
+		} else {
+			if (ob_get_length()) ob_clean();
+			header('Content-Type: application/json');
+			echo json_encode(['status' => 0, 'message' => 'Gagal menyimpan data.']);
+		}
+	}
+
+	public function save_il()
+	{
+		// Validasi field wajib
+		$required = ['id_top', 'no_po', 'no_surat', 'tipe_req', 'nomor_invoice', 'invoice_date', 'bank', 'no_bank', 'nm_acc_bank'];
+		foreach ($required as $field) {
+			if (empty($this->input->post($field))) {
+				echo json_encode(['status' => 0, 'message' => 'Field ' . $field . ' wajib diisi.']);
+				return;
+			}
+		}
+
+		$id_top   = $this->input->post('id_top');
+		$no_po    = $this->input->post('no_po');
+		$no_surat = $this->input->post('no_surat');
+		$tipe     = $this->input->post('tipe_req'); // 'import' atau 'local'
+		$id_dp    = $this->input->post('id_dp') ?: null;
+
+		// Validasi tipe
+		if (!in_array($tipe, ['import', 'local'])) {
+			echo json_encode(['status' => 0, 'message' => 'Tipe tidak valid.']);
+			return;
+		}
+
+		// Cek duplikat
+		$cek = $this->db->get_where('tr_receive_invoice_imp_lok', [
+			'id_top' => $id_top,
+			'tipe'   => $tipe
+		])->row();
+		if ($cek) {
+			echo json_encode(['status' => 0, 'message' => 'Invoice ' . ucfirst($tipe) . ' untuk PO ini sudah pernah dibuat.']);
+			return;
+		}
+
+		// Validasi kurs
+		$currency = $this->input->post('currency');
+		$kurs_raw = str_replace(',', '', $this->input->post('kurs') ?? '0');
+		$kurs     = (float)$kurs_raw;
+
+		if (strtoupper($currency) !== 'IDR' && $kurs <= 0) {
+			echo json_encode(['status' => 0, 'message' => 'Kurs wajib diisi dan harus lebih dari 0.']);
+			return;
+		}
+
+		// Handle upload file
+		$file_invoice = null;
+		if (!empty($_FILES['upload_invoice']['name'])) {
+			$upload_path = FCPATH . 'uploads/invoice_il/';
+			if (!is_dir($upload_path)) mkdir($upload_path, 0755, true);
+
+			$this->load->library('upload', [
+				'upload_path'   => $upload_path,
+				'allowed_types' => 'pdf|jpg|jpeg|png',
+				'max_size'      => 5120,
+				'file_name'     => 'inv_' . $tipe . '_' . $id_top . '_' . time()
+			]);
+
+			if ($this->upload->do_upload('upload_invoice')) {
+				$file_invoice = $this->upload->data('file_name');
+			} else {
+				echo json_encode(['status' => 0, 'message' => 'Gagal upload file: ' . $this->upload->display_errors('', '')]);
+				return;
+			}
+		}
+
+		// Bersihkan format angka
+		$clean = function ($val) {
+			return (float)str_replace(',', '', $val ?? '0');
+		};
+
+		$data_insert = [
+			'no_po'                => $no_po,
+			'no_surat'             => $no_surat,
+			'id_top'               => $id_top,
+			'tipe'                 => $tipe,
+			'id_dp'                => $id_dp,
+			'nomor_invoice'        => $this->input->post('nomor_invoice'),
+			'invoice_date'         => $this->input->post('invoice_date'),
+			'invoice_date_real'    => $this->input->post('invoice_date_real') ?: null,
+			'dpp'                  => $clean($this->input->post('dpp')),
+			'nilai_ppn'            => $clean($this->input->post('nilai_ppn')),
+			'nilai_disc'           => $clean($this->input->post('nilai_disc')),
+			'sisa_nilai'           => $clean($this->input->post('sisa_nilai')),
+			'currency'             => $currency,
+			'kurs'                 => $kurs,
+			'nomor_faktur_pajak'   => $this->input->post('nomor_faktur_pajak') ?: null,
+			'tanggal_faktur_pajak' => $this->input->post('tanggal_faktur_pajak') ?: null,
+			'file_invoice'         => $file_invoice,
+			'bank'                 => $this->input->post('bank'),
+			'no_bank'              => $this->input->post('no_bank'),
+			'nm_acc_bank'          => $this->input->post('nm_acc_bank'),
+			'created_by'           => $this->auth->user_id(),
+			'created_on'           => date('Y-m-d H:i:s'),
+		];
+
+		$this->db->insert('tr_receive_invoice_imp_lok', $data_insert);
+
+		if ($this->db->affected_rows() > 0) {
+			echo json_encode(['status' => 1, 'message' => 'Invoice ' . ucfirst($tipe) . ' berhasil disimpan.']);
+		} else {
+			echo json_encode(['status' => 0, 'message' => 'Gagal menyimpan data.']);
+		}
+	}
+
+	// ─────────────────────────────────────────────
+	// VIEW DP
+	// ─────────────────────────────────────────────
+	public function view_dp()
+	{
+		$id = $this->input->post('id');
+
+		if (empty($id)) {
+			echo "<div class='alert alert-warning'>Data tidak valid.</div>";
+			return;
+		}
+
+		$data = $this->db->select('
+            r.*,
+            p.no_po, p.no_surat, p.matauang,
+            s.nama as nm_supplier,
+            e.progress, e.nilai, e.keterangan as keterangan_top,
+            pa.id_payment as no_payment, pa.status as status_payment
+        ')
+			->from('tr_receive_invoice_dp r')
+			->join('tr_purchase_order p', 'p.no_po = r.no_po', 'left')
+			->join('new_supplier s', 's.kode_supplier = p.id_suplier', 'left')
+			->join('tr_top_po e', 'e.id = r.id_top', 'left')
+			->join('payment_approve pa', 'pa.no_doc = r.id', 'left')
+			->where('r.id', $id)
+			->get()
+			->row_array();
+
+		if (empty($data)) {
+			echo "<div class='alert alert-warning'>Data tidak ditemukan.</div>";
+			return;
+		}
+
+		$this->template->set('mode', 'view');
+		$this->template->set('data', $data);
+		$this->template->render('form_dp');
+	}
+
+	// ─────────────────────────────────────────────
+	// VIEW IL (Import / Local)
+	// ─────────────────────────────────────────────
+	public function view_il()
+	{
+		$id = $this->input->post('id');
+
+		if (empty($id)) {
+			echo "<div class='alert alert-warning'>Data tidak valid.</div>";
+			return;
+		}
+
+		$data = $this->db->select('
+            r.*,
+            p.no_po, p.no_surat, p.matauang,
+            s.nama as nm_supplier,
+            e.progress, e.nilai, e.keterangan as keterangan_top,
+            dp.nomor_invoice as no_invoice_dp, dp.value_dp as nilai_dp, dp.persen_dp,
+            pa.id_payment as no_payment, pa.status as status_payment
+        ')
+			->from('tr_receive_invoice_imp_lok r')
+			->join('tr_purchase_order p', 'p.no_po = r.no_po', 'left')
+			->join('new_supplier s', 's.kode_supplier = p.id_suplier', 'left')
+			->join('tr_top_po e', 'e.id = r.id_top', 'left')
+			->join('tr_receive_invoice_dp dp', 'dp.id = r.id_dp', 'left')
+			->join('payment_approve pa', 'pa.no_doc = r.id', 'left')
+			->where('r.id', $id)
+			->get()
+			->row_array();
+
+		if (empty($data)) {
+			echo "<div class='alert alert-warning'>Data tidak ditemukan.</div>";
+			return;
+		}
+
+		$this->template->set('mode', 'view');
+		$this->template->set('data', $data);
+		$this->template->render('form_il');
+	}
+
+	public function search_dp()
+	{
+		$kode_supplier = $this->input->post('kode_supplier');
+
+		$this->db->select('
+        a.no_po, a.no_surat, a.id_suplier, a.tanggal, a.loi, a.status,
+        c.nama as nm_supplier,
+        e.id as id_top, e.progress, e.nilai, e.keterangan as keterangan_top,
+        rid.id as id_receive_dp,
+        rid.nomor_invoice,
+        rp.id as id_request_payment, rp.status as status_request,
+        pa.id_payment as no_payment, pa.status as status_payment
+    ');
+		$this->db->from('tr_purchase_order a');
+		$this->db->join('new_supplier c', 'c.kode_supplier = a.id_suplier', 'left');
+		$this->db->join('tr_top_po e', 'e.no_po = a.no_po');
+		$this->db->join('tr_receive_invoice_dp rid', 'rid.id_top = e.id', 'left');
+		$this->db->join('request_payment rp', "rp.no_doc = rid.id AND rp.tipe = 'invoice_dp'", 'left');
+		$this->db->join('payment_approve pa', 'pa.no_doc = rid.id', 'left');
+		$this->db->where('e.group_top', 76);
+		$this->db->where('a.status', '2');
+		$this->db->where('a.id_suplier', $kode_supplier);
+		$this->db->group_by('e.id');
+		$this->db->order_by('a.created_on', 'desc');
+		$list_po = $this->db->get()->result_array();
+
+		$this->template->set('list_po', $list_po);
+		$this->template->render('_partial/table_dp');
+	}
+
+	public function search_import()
+	{
+		$kode_supplier = $this->input->post('kode_supplier');
+
+		$this->db->select('
+        a.no_po, a.no_surat, a.id_suplier, a.tanggal, a.loi,
+        c.nama as nm_supplier,
+        e.id as id_top, e.progress, e.nilai, e.keterangan as keterangan_top,
+        ril.id as id_receive_il,
+        ril.nomor_invoice,
+        rid.id as id_dp, rid.value_dp as nilai_dp,
+        rp.id as id_request_payment, rp.status as status_request,
+        pa.id_payment as no_payment
+    ');
+		$this->db->from('tr_purchase_order a');
+		$this->db->join('new_supplier c', 'c.kode_supplier = a.id_suplier', 'left');
+		$this->db->join('tr_top_po e', 'e.no_po = a.no_po');
+		$this->db->join('tr_ros_header rh', 'rh.no_po = a.no_po');
+		$this->db->join('tr_receive_invoice_imp_lok ril', "ril.id_top = e.id AND ril.tipe = 'import'", 'left');
+		$this->db->join('tr_receive_invoice_dp rid', 'rid.no_po = a.no_po', 'left');
+		$this->db->join('request_payment rp', "rp.no_doc = ril.id AND rp.tipe = 'invoice_import'", 'left');
+		$this->db->join('payment_approve pa', 'pa.no_doc = ril.id', 'left');
+		$this->db->where('a.loi', 'Import');
+		$this->db->where('e.group_top', 101);
+		$this->db->where('rh.status_incoming', 'closed');
+		$this->db->where('a.id_suplier', $kode_supplier);
+		$this->db->group_by('e.id');
+		$this->db->order_by('a.created_on', 'desc');
+		$list_po = $this->db->get()->result_array();
+
+		$this->template->set('list_po', $list_po);
+		$this->template->render('_partial/table_import');
+	}
+
+	public function search_local()
+	{
+		$kode_supplier = $this->input->post('kode_supplier');
+
+		$this->db->select('
+        a.no_po, a.no_surat, a.id_suplier, a.tanggal, a.loi,
+        c.nama as nm_supplier,
+        e.id as id_top, e.progress, e.nilai, e.keterangan as keterangan_top,
+        ril.id as id_receive_il,
+        ril.nomor_invoice,
+        rid.id as id_dp, rid.value_dp as nilai_dp,
+        rp.id as id_request_payment, rp.status as status_request,
+        pa.id_payment as no_payment
+    ');
+		$this->db->from('tr_purchase_order a');
+		$this->db->join('new_supplier c', 'c.kode_supplier = a.id_suplier', 'left');
+		$this->db->join('tr_top_po e', 'e.no_po = a.no_po');
+		$this->db->join('tr_incoming_header ih', 'ih.no_po = a.no_po');
+		$this->db->join('tr_receive_invoice_imp_lok ril', "ril.id_top = e.id AND ril.tipe = 'local'", 'left');
+		$this->db->join('tr_receive_invoice_dp rid', 'rid.no_po = a.no_po', 'left');
+		$this->db->join('request_payment rp', "rp.no_doc = ril.id AND rp.tipe = 'invoice_local'", 'left');
+		$this->db->join('payment_approve pa', 'pa.no_doc = ril.id', 'left');
+		$this->db->where('a.loi', 'Lokal');
+		$this->db->where('e.group_top', 101);
+		$this->db->where('ih.status', 'finalized');
+		$this->db->where('a.id_suplier', $kode_supplier);
+		$this->db->group_by('e.id');
+		$this->db->order_by('a.created_on', 'desc');
+		$list_po = $this->db->get()->result_array();
+
+		$this->template->set('list_po', $list_po);
+		$this->template->render('_partial/table_local');
+	}
+
 
 	public function req_app()
 	{
@@ -1353,10 +1932,10 @@ class Purchase_order_payment extends Admin_Controller
 		// JURNAL OTOMATIS
 		// ================================================================
 		// $datajurnal1 = $this->db->query("
-        // SELECT * FROM " . DBACC . ".master_oto_jurnal_detail 
-        // WHERE kode_master_jurnal = '" . $jenis_jurnal . "' 
-        // ORDER BY parameter_no
-    	// ")->result();
+		// SELECT * FROM " . DBACC . ".master_oto_jurnal_detail 
+		// WHERE kode_master_jurnal = '" . $jenis_jurnal . "' 
+		// ORDER BY parameter_no
+		// ")->result();
 
 		// $nomor_jurnal   = $jenis_jurnal . $no_po . rand(100, 999);
 		// $payment_date   = $post['invoice_date'];
@@ -1663,173 +2242,173 @@ class Purchase_order_payment extends Admin_Controller
 		echo $hasil;
 	}
 
-	public function search_dp()
-	{
-		$kode_supplier = $this->input->post('kode_supplier');
+	// public function search_dp()
+	// {
+	// 	$kode_supplier = $this->input->post('kode_supplier');
 
-		$this->db->select('a.*, b.nm_lengkap, c.nama as nm_supplier, IF(SUM(d.persen_dp) IS NULL, 0, SUM(d.persen_dp)) as ttl_persen_dp, e.id as id_top, e.progress, e.nilai as nilai_top, e.keterangan as keterangan_top');
-		$this->db->from('tr_purchase_order a');
-		$this->db->join('users b', 'b.id_user = a.created_by', 'left');
-		$this->db->join('new_supplier c', 'c.kode_supplier = a.id_suplier', 'left');
-		$this->db->join('tr_top_po e', 'e.no_po = a.no_po');
-		$this->db->join('tr_invoice_po d', 'd.no_po = a.no_surat AND d.id_top = e.id', 'left');
-		$this->db->where('e.group_top', 76);
-		$this->db->where('a.status', '2');
-		$this->db->order_by('a.created_on', 'desc');
-		if ($kode_supplier !== '') {
-			$this->db->where('a.id_suplier', $kode_supplier);
-		}
-		$this->db->group_by('e.id');
-		$get_list_po = $this->db->get()->result_array();
+	// 	$this->db->select('a.*, b.nm_lengkap, c.nama as nm_supplier, IF(SUM(d.persen_dp) IS NULL, 0, SUM(d.persen_dp)) as ttl_persen_dp, e.id as id_top, e.progress, e.nilai as nilai_top, e.keterangan as keterangan_top');
+	// 	$this->db->from('tr_purchase_order a');
+	// 	$this->db->join('users b', 'b.id_user = a.created_by', 'left');
+	// 	$this->db->join('new_supplier c', 'c.kode_supplier = a.id_suplier', 'left');
+	// 	$this->db->join('tr_top_po e', 'e.no_po = a.no_po');
+	// 	$this->db->join('tr_invoice_po d', 'd.no_po = a.no_surat AND d.id_top = e.id', 'left');
+	// 	$this->db->where('e.group_top', 76);
+	// 	$this->db->where('a.status', '2');
+	// 	$this->db->order_by('a.created_on', 'desc');
+	// 	if ($kode_supplier !== '') {
+	// 		$this->db->where('a.id_suplier', $kode_supplier);
+	// 	}
+	// 	$this->db->group_by('e.id');
+	// 	$get_list_po = $this->db->get()->result_array();
 
-		$hasil = '
-			<table class="table table-bordered table_req_pay_dp">
-            <thead class="bg-green">
-                <tr>
-					<th class="text-center">No</th>
-					<th class="text-center">No. PO</th>
-					<th class="text-center">No. Purchase Invoice</th>
-					<th class="text-center">No. Invoice</th>
-					<th class="text-center">Nama Supplier</th>
-					<th class="text-center">Tanggal PO</th>
-					<th class="text-center">Keterangan</th>
-					<th class="text-center">Created By</th>
-					<th class="text-center">Status</th>
-					<th class="text-center">Action</th>
-				</tr>
-            </thead>
-            <tbody>
-			';
+	// 	$hasil = '
+	// 		<table class="table table-bordered table_req_pay_dp">
+	//         <thead class="bg-green">
+	//             <tr>
+	// 				<th class="text-center">No</th>
+	// 				<th class="text-center">No. PO</th>
+	// 				<th class="text-center">No. Purchase Invoice</th>
+	// 				<th class="text-center">No. Invoice</th>
+	// 				<th class="text-center">Nama Supplier</th>
+	// 				<th class="text-center">Tanggal PO</th>
+	// 				<th class="text-center">Keterangan</th>
+	// 				<th class="text-center">Created By</th>
+	// 				<th class="text-center">Status</th>
+	// 				<th class="text-center">Action</th>
+	// 			</tr>
+	//         </thead>
+	//         <tbody>
+	// 		';
 
-		// $no_po = [];
-		// foreach ($get_list_po as $item) {
-		// 	$get_no_po = $this->db->query("SELECT a.no_surat FROM tr_purchase_order a WHERE a.no_po IN ('" . str_replace(",", "','", $item['no_ipp']) . "')")->result();
-		// 	if (!empty($get_no_po)) {
-		// 		$list_no_po = [];
-		// 		foreach ($get_no_po as $item_no_po) {
-		// 			$list_no_po[] = $item_no_po->no_surat;
-		// 		}
+	// 	// $no_po = [];
+	// 	// foreach ($get_list_po as $item) {
+	// 	// 	$get_no_po = $this->db->query("SELECT a.no_surat FROM tr_purchase_order a WHERE a.no_po IN ('" . str_replace(",", "','", $item['no_ipp']) . "')")->result();
+	// 	// 	if (!empty($get_no_po)) {
+	// 	// 		$list_no_po = [];
+	// 	// 		foreach ($get_no_po as $item_no_po) {
+	// 	// 			$list_no_po[] = $item_no_po->no_surat;
+	// 	// 		}
 
-		// 		if (!empty($list_no_po)) {
-		// 			$list_no_po = implode(', ', $list_no_po);
+	// 	// 		if (!empty($list_no_po)) {
+	// 	// 			$list_no_po = implode(', ', $list_no_po);
 
-		// 			$no_po[$item['kode_trans']] = $list_no_po;
-		// 		} else {
-		// 			$no_po[$item['kode_trans']] = '';
-		// 		}
-		// 	} else {
-		// 		$no_po[$item['kode_trans']] = '';
-		// 	}
-		// }
+	// 	// 			$no_po[$item['kode_trans']] = $list_no_po;
+	// 	// 		} else {
+	// 	// 			$no_po[$item['kode_trans']] = '';
+	// 	// 		}
+	// 	// 	} else {
+	// 	// 		$no_po[$item['kode_trans']] = '';
+	// 	// 	}
+	// 	// }
 
-		// $total_invoice = [];
-		// foreach ($get_list_po as $item) {
-		// 	$get_total_invoice = $this->db->select('total_invoice')->get_where('tr_invoice_po', ['no_po' => $item['kode_trans']])->row();
-		// 	if (!empty($get_total_invoice)) {
-		// 		$total_invoice[$item['kode_trans']] = $get_total_invoice->total_invoice;
-		// 	} else {
-		// 		$total_invoice[$item['kode_trans']] = 0;
-		// 	}
-		// }
+	// 	// $total_invoice = [];
+	// 	// foreach ($get_list_po as $item) {
+	// 	// 	$get_total_invoice = $this->db->select('total_invoice')->get_where('tr_invoice_po', ['no_po' => $item['kode_trans']])->row();
+	// 	// 	if (!empty($get_total_invoice)) {
+	// 	// 		$total_invoice[$item['kode_trans']] = $get_total_invoice->total_invoice;
+	// 	// 	} else {
+	// 	// 		$total_invoice[$item['kode_trans']] = 0;
+	// 	// 	}
+	// 	// }
 
-		$no = 1;
-		foreach ($get_list_po as $item) {
+	// 	$no = 1;
+	// 	foreach ($get_list_po as $item) {
 
-			$sts = '<div class="badge bg-blue">Waiting</div>';
-			$close = 0;
-			if ($item['ttl_persen_dp'] == $item['progress']) {
-				$sts = '<div class="badge bg-green">Complete</div>';
-				$close = 1;
-			} else {
-				if ($item['ttl_persen_dp'] > 0 && $item['ttl_persen_dp'] < 100) {
-					$sts = '<div class="badge bg-yellow">Partial</div>';
-				}
-			}
+	// 		$sts = '<div class="badge bg-blue">Waiting</div>';
+	// 		$close = 0;
+	// 		if ($item['ttl_persen_dp'] == $item['progress']) {
+	// 			$sts = '<div class="badge bg-green">Complete</div>';
+	// 			$close = 1;
+	// 		} else {
+	// 			if ($item['ttl_persen_dp'] > 0 && $item['ttl_persen_dp'] < 100) {
+	// 				$sts = '<div class="badge bg-yellow">Partial</div>';
+	// 			}
+	// 		}
 
-			$get_incoming = $this->db->get_where('tr_incoming_check', ['no_ipp' => $item['no_po']])->result();
-			$arr_id_incoming = [];
+	// 		$get_incoming = $this->db->get_where('tr_incoming_check', ['no_ipp' => $item['no_po']])->result();
+	// 		$arr_id_incoming = [];
 
-			foreach ($get_incoming as $item_incoming) {
-				$arr_id_incoming[] = $item_incoming->kode_trans;
-			}
+	// 		foreach ($get_incoming as $item_incoming) {
+	// 			$arr_id_incoming[] = $item_incoming->kode_trans;
+	// 		}
 
-			if (!empty($arr_id_incoming)) {
-				$this->db->select('count(a.no_po) as num_po');
-				$this->db->from('tr_invoice_po a');
-				$this->db->where_in('a.no_po', $arr_id_incoming);
-				$num_invoice = $this->db->get()->row();
+	// 		if (!empty($arr_id_incoming)) {
+	// 			$this->db->select('count(a.no_po) as num_po');
+	// 			$this->db->from('tr_invoice_po a');
+	// 			$this->db->where_in('a.no_po', $arr_id_incoming);
+	// 			$num_invoice = $this->db->get()->row();
 
-				if ($num_invoice->num_po > 0) {
-					$sts = '<div class="badge bg-green">Complete</div>';
-					$close = 1;
-				}
-			}
+	// 			if ($num_invoice->num_po > 0) {
+	// 				$sts = '<div class="badge bg-green">Complete</div>';
+	// 				$close = 1;
+	// 			}
+	// 		}
 
 
 
-			$view_btn = '';
-			$req_pay_btn = '<button type="button" class="btn btn-sm btn-primary req_app" style="margin-left: 0.5rem" title="Receive Invoice" data-no_po="' . $item['no_surat'] . '" data-id_top="' . $item['id_top'] . '" data-tipe="dp"><i class="fa fa-file-invoice"></i> Receive Invoice</button>';
-			if ($close == 1) {
-				$get_invoice = $this->db->select('id')->get_where('tr_invoice_po', ['no_po' => $item['no_surat'], 'id_top' => $item['id_top']])->row_array();
+	// 		$view_btn = '';
+	// 		$req_pay_btn = '<button type="button" class="btn btn-sm btn-primary req_app" style="margin-left: 0.5rem" title="Receive Invoice" data-no_po="' . $item['no_surat'] . '" data-id_top="' . $item['id_top'] . '" data-tipe="dp"><i class="fa fa-file-invoice"></i> Receive Invoice</button>';
+	// 		if ($close == 1) {
+	// 			$get_invoice = $this->db->select('id')->get_where('tr_invoice_po', ['no_po' => $item['no_surat'], 'id_top' => $item['id_top']])->row_array();
 
-				$view_btn = '<button type="button" class="btn btn-sm btn-info view" data-id="' . $get_invoice['id'] . '" data-id_top="' . $get_invoice['id_top'] . '" data-tipe="dp" title="view"><i class="fa fa-eye"></i></button>';
-				$req_pay_btn = '';
-			}
+	// 			$view_btn = '<button type="button" class="btn btn-sm btn-info view" data-id="' . $get_invoice['id'] . '" data-id_top="' . $get_invoice['id_top'] . '" data-tipe="dp" title="view"><i class="fa fa-eye"></i></button>';
+	// 			$req_pay_btn = '';
+	// 		}
 
-			$list_dp_btn = '';
-			// if($item['ttl_persen_dp'] > 0) {
-			//     $list_dp_btn = '<button type="button" class="btn btn-sm btn-warning list_dp" data-no_po="'.$item['no_po'].'" style="margin-left: 0.5rem"><i class="fa fa-list"></i></button>';
-			// }
+	// 		$list_dp_btn = '';
+	// 		// if($item['ttl_persen_dp'] > 0) {
+	// 		//     $list_dp_btn = '<button type="button" class="btn btn-sm btn-warning list_dp" data-no_po="'.$item['no_po'].'" style="margin-left: 0.5rem"><i class="fa fa-list"></i></button>';
+	// 		// }
 
-			$no_purchase_invoice = [];
-			$no_invoice = [];
+	// 		$no_purchase_invoice = [];
+	// 		$no_invoice = [];
 
-			$get_invoice = $this->db->select('a.*')
-				->from('tr_invoice_po a')
-				->where('a.id_top', $item['id_top'])
-				->like('a.no_po', $item['no_surat'])
-				->get()
-				->result();
+	// 		$get_invoice = $this->db->select('a.*')
+	// 			->from('tr_invoice_po a')
+	// 			->where('a.id_top', $item['id_top'])
+	// 			->like('a.no_po', $item['no_surat'])
+	// 			->get()
+	// 			->result();
 
-			foreach ($get_invoice as $item_invoice) {
-				$no_purchase_invoice[] = str_replace(',', '', $item_invoice->id);
-				$no_invoice[] = str_replace(',', '', $item_invoice->invoice_no);
-			}
+	// 		foreach ($get_invoice as $item_invoice) {
+	// 			$no_purchase_invoice[] = str_replace(',', '', $item_invoice->id);
+	// 			$no_invoice[] = str_replace(',', '', $item_invoice->invoice_no);
+	// 		}
 
-			if (!empty($no_purchase_invoice)) {
-				$no_purchase_invoice = implode(', ', $no_purchase_invoice);
-			} else {
-				$no_purchase_invoice = '';
-			}
+	// 		if (!empty($no_purchase_invoice)) {
+	// 			$no_purchase_invoice = implode(', ', $no_purchase_invoice);
+	// 		} else {
+	// 			$no_purchase_invoice = '';
+	// 		}
 
-			if (!empty($no_invoice)) {
-				$no_invoice = implode(', ', $no_invoice);
-			} else {
-				$no_invoice = '';
-			}
+	// 		if (!empty($no_invoice)) {
+	// 			$no_invoice = implode(', ', $no_invoice);
+	// 		} else {
+	// 			$no_invoice = '';
+	// 		}
 
-			$hasil .= '<tr>';
-			$hasil .= '<td class="text-center">' . $no . '</td>';
-			$hasil .= '<td class="text-center">' . $item['no_surat'] . '</td>';
-			$hasil .= '<td class="text-center">' . $no_purchase_invoice . '</td>';
-			$hasil .= '<td class="text-center">' . $no_invoice . '</td>';
-			$hasil .= '<td class="text-center">' . $item['nm_supplier'] . '</td>';
-			$hasil .= '<td class="text-center">' . date('d F Y', strtotime($item['tanggal'])) . '</td>';
-			$hasil .= '<td class="text-center">' . $item['keterangan_top'] . '</td>';
-			$hasil .= '<td class="text-center">' . $item['nm_lengkap'] . '</td>';
-			$hasil .= '<td class="text-center">' . $sts . '</td>';
-			$hasil .= '<td style="text-align: center;">' . $view_btn . $req_pay_btn . $list_dp_btn . '</td>';
-			$hasil .= '</tr>';
+	// 		$hasil .= '<tr>';
+	// 		$hasil .= '<td class="text-center">' . $no . '</td>';
+	// 		$hasil .= '<td class="text-center">' . $item['no_surat'] . '</td>';
+	// 		$hasil .= '<td class="text-center">' . $no_purchase_invoice . '</td>';
+	// 		$hasil .= '<td class="text-center">' . $no_invoice . '</td>';
+	// 		$hasil .= '<td class="text-center">' . $item['nm_supplier'] . '</td>';
+	// 		$hasil .= '<td class="text-center">' . date('d F Y', strtotime($item['tanggal'])) . '</td>';
+	// 		$hasil .= '<td class="text-center">' . $item['keterangan_top'] . '</td>';
+	// 		$hasil .= '<td class="text-center">' . $item['nm_lengkap'] . '</td>';
+	// 		$hasil .= '<td class="text-center">' . $sts . '</td>';
+	// 		$hasil .= '<td style="text-align: center;">' . $view_btn . $req_pay_btn . $list_dp_btn . '</td>';
+	// 		$hasil .= '</tr>';
 
-			$no++;
-		}
-		$hasil .= '
-            </tbody>
-        </table>
-		';
+	// 		$no++;
+	// 	}
+	// 	$hasil .= '
+	//         </tbody>
+	//     </table>
+	// 	';
 
-		echo $hasil;
-	}
+	// 	echo $hasil;
+	// }
 
 	public function search_pro()
 	{
@@ -2165,6 +2744,24 @@ class Purchase_order_payment extends Admin_Controller
 		echo $hasil;
 	}
 
+	public function check_list_dp()
+	{
+		$this->db->select('a.*, b.nama as nama_supplier, c.group_top, c.nilai');
+		$this->db->from('tr_purchase_order a');
+		$this->db->join('new_supplier b', 'b.kode_supplier = a.id_suplier', 'left');
+		$this->db->join('tr_top_po c', 'c.no_po = a.no_po', 'left');
+		$this->db->where('c.group_top', 76);
+		$this->db->order_by('a.no_po', 'DESC');
+
+		$list_po = $this->db->get()->result_array();
+		$list_supplier = $this->db->get('new_supplier')->result_array();
+
+		$this->template->set('list_dp', $list_po);
+		$this->template->set('list_supplier', $list_supplier);
+
+		$this->template->render('check_list_dp');
+	}
+
 	public function check_list_inc()
 	{
 		$get_list_inc = $this->db->query('
@@ -2316,393 +2913,263 @@ class Purchase_order_payment extends Admin_Controller
 
 	public function rec_invoice_btn()
 	{
-		$get_checked_invoice = $this->db->select('kode_trans')->get_where('tr_check_invoice', ['id_user' => $this->auth->user_id()])->result();
-		$no_incoming = [];
-		foreach ($get_checked_invoice as $item) {
-			$no_incoming[] = $item->kode_trans;
+		$id_user = $this->auth->user_id();
+		$data_po = $this->db->select('
+                            tr_purchase_order.*, 
+                            tr_top_po.id as id_top, 
+                            tr_top_po.group_top, 
+                            tr_top_po.progress, 
+                            tr_top_po.nilai, 
+                            tr_top_po.keterangan
+                        ')
+			->from('tr_purchase_order')
+			->join('tr_check_invoice', 'tr_check_invoice.kode_trans = tr_purchase_order.no_po')
+			->join('tr_top_po', 'tr_top_po.no_po = tr_purchase_order.no_po', 'left')
+			->where('tr_check_invoice.id_user', $id_user)
+			->get()
+			->row_array();
+
+		if (empty($data_po)) {
+			echo "<div class='alert alert-warning text-center'>Tidak ada data PO yang dipilih atau data tidak ditemukan.</div>";
+			return;
 		}
 
-		if (!empty($no_incoming)) {
-			$incoming_no = implode(', ', $no_incoming);
+		$get_supplier = $this->db->get_where('new_supplier', ['kode_supplier' => $data_po['id_suplier']])->row_array();
+
+		$this->template->set('data_po',      $data_po);
+		$this->template->set('get_supplier', $get_supplier);
+		$this->template->set('get_top',      (object)['progress' => $data_po['progress'], 'nilai' => $data_po['nilai']]);
+		$this->template->render('add_dp');
+	}
+
+	public function req_payment_dp()
+	{
+		$id_receive = $this->input->post('id_receive');
+		$tipe       = $this->input->post('tipe'); // 'dp', 'import', 'local'
+
+		if (empty($id_receive) || empty($tipe)) {
+			echo json_encode(['status' => 0, 'message' => 'Data tidak valid.']);
+			return;
+		}
+
+		// Tentukan tabel dan tipe_rp berdasarkan tipe
+		if ($tipe === 'dp') {
+			$tabel_receive = 'tr_receive_invoice_dp';
+			$tipe_rp       = 'invoice_dp';
+		} elseif ($tipe === 'import') {
+			$tabel_receive = 'tr_receive_invoice_imp_lok';
+			$tipe_rp       = 'invoice_import';
+		} elseif ($tipe === 'local') {
+			$tabel_receive = 'tr_receive_invoice_imp_lok';
+			$tipe_rp       = 'invoice_local';
 		} else {
-			$incoming_no = '';
+			echo json_encode(['status' => 0, 'message' => 'Tipe tidak valid.']);
+			return;
 		}
 
-		$arr_no_po = [];
-		$ppn_asli = 0;
-		$get_no_po = $this->db->query("
-			SELECT
-				b.no_surat as surat_no,
-				b.total_ppn as total_ppn,
-				b.uang_muka,
-				b.uang_muka_idr,
-				b.kurs_terima_barang,
-				b.matauang
-
-			FROM
-				dt_trans_po a
-				JOIN tr_purchase_order b ON b.no_po = a.no_po
-			WHERE
-				a.id IN (SELECT aa.id_po_detail FROM tr_incoming_check_detail aa WHERE aa.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "'))
-			GROUP BY b.no_surat
-
-			UNION ALL
-
-			SELECT
-				b.no_surat as surat_no,
-				b.total_ppn as total_ppn,
-				b.uang_muka,
-				b.uang_muka_idr,
-				b.kurs_terima_barang,
-				b.matauang
-			FROM
-				dt_trans_po a
-				JOIN tr_purchase_order b ON b.no_po = a.no_po
-			WHERE
-				a.id IN (SELECT aa.no_ipp FROM warehouse_adjustment_detail aa WHERE aa.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "'))
-			GROUP BY b.no_surat
-
-			UNION ALL
-
-			SELECT
-				a.no_pr as surat_no,
-				0 as total_ppn,
-				b.uang_muka,
-				b.uang_muka_idr,
-				b.kurs_terima_barang,
-				'IDR' as matauang
-			FROM
-				rutin_non_planning_detail a
-				JOIN rutin_non_planning_header b ON b.no_pengajuan = a.no_pengajuan
-			WHERE
-				a.id IN (SELECT aa.id_po_detail FROM warehouse_adjustment_detail aa WHERE aa.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "'))
-			GROUP BY a.no_pr
-
-			UNION ALL
-
-			SELECT
-				b.no_surat as surat_no,
-				b.total_ppn as total_ppn,
-				b.uang_muka,
-				b.uang_muka_idr,
-				b.kurs_terima_barang,
-				b.matauang
-			FROM
-				dt_trans_po a
-				JOIN tr_purchase_order b ON b.no_po = a.no_po
-			WHERE
-				b.no_surat IN (SELECT aa.no_ipp FROM warehouse_adjustment_detail aa WHERE aa.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "')) AND b.tipe = 'pr asset'
-			GROUP BY b.no_surat
-		")->result();
-
-		foreach ($get_no_po as $item_no_po) {
-			$arr_no_po[] = $item_no_po->surat_no;
-			$ppn_asli += $item_no_po->total_ppn;
-			$uang_muka = $item_no_po->uang_muka;
-			$uang_muka_idr = $item_no_po->uang_muka_idr;
-			$kurs_terima_barang = $item_no_po->kurs_terima_barang;
-			if ($item_no_po->matauang == 'IDR') {
-				$kurs_terima_barang = 1;
-			}
+		// Cek data exist
+		$data = $this->db->get_where($tabel_receive, ['id' => $id_receive])->row_array();
+		if (empty($data)) {
+			echo json_encode(['status' => 0, 'message' => 'Data invoice tidak ditemukan.']);
+			return;
 		}
 
-		$arrNmSupplier = [];
-		$arrKdSupplier = [];
-		$get_nm_supplier = $this->db->query("
-			SELECT
-				c.nama as nm_supplier,
-				c.kode_supplier as kode_supplier
-			FROM
-				dt_trans_po a
-				JOIN tr_purchase_order b ON b.no_po = a.no_po
-				LEFT JOIN new_supplier c ON c.kode_supplier = b.id_suplier
-			WHERE
-				a.id IN (SELECT aa.id_po_detail FROM tr_incoming_check_detail aa WHERE aa.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "'))
-				GROUP BY c.nama
-
-			UNION ALL
-
-			SELECT
-				c.nama as nm_supplier,
-				c.kode_supplier as kode_supplier
-			FROM
-				dt_trans_po a
-				JOIN tr_purchase_order b ON b.no_po = a.no_po
-				LEFT JOIN new_supplier c ON c.kode_supplier = b.id_suplier
-			WHERE
-				a.id IN (SELECT aa.no_ipp FROM warehouse_adjustment_detail aa WHERE aa.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "'))
-			GROUP BY c.nama
-
-			UNION ALL
-
-			SELECT
-				c.nama as nm_supplier,
-				c.kode_supplier as kode_supplier
-			FROM
-				dt_trans_po a
-				JOIN tr_purchase_order b ON b.no_po = a.no_po
-				LEFT JOIN new_supplier c ON c.kode_supplier = b.id_suplier
-			WHERE
-				b.no_surat IN (SELECT aa.no_ipp FROM warehouse_adjustment_detail aa WHERE aa.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "'))
-			GROUP BY c.nama
-		")->result();
-		foreach ($get_nm_supplier as $item_supplier) {
-			$arrNmSupplier[] = $item_supplier->nm_supplier;
-			$arrKdSupplier[] = $item_supplier->kode_supplier;
+		// Cek status — jangan bisa re-request kalau sudah diajukan
+		if (isset($data['status']) && $data['status'] >= 2) {
+			echo json_encode(['status' => 0, 'message' => 'Invoice ini sudah pernah diajukan.']);
+			return;
 		}
 
-		if (!empty($arrNmSupplier)) {
-			$nm_supplier = implode(', ', $arrNmSupplier);
-			$kode_supplier = implode(',', $arrKdSupplier);
+		// Cek duplikat di request_payment
+		$cek_rp = $this->db->get_where('request_payment', [
+			'no_doc' => $data['no_po'],
+			'tipe'   => $tipe_rp
+		])->row();
+		if ($cek_rp) {
+			echo json_encode(['status' => 0, 'message' => 'Request payment untuk invoice ini sudah pernah dibuat.']);
+			return;
+		}
+
+		// Ambil data PO & Supplier
+		$data_po = $this->db->get_where('tr_purchase_order', ['no_po' => $data['no_po']])->row_array();
+		$get_supplier = $this->db->get_where('new_supplier', [
+			'kode_supplier' => $data_po['id_suplier'] ?? ''
+		])->row_array();
+
+		// Hitung jumlah (simpan dalam currency asli, kurs diterapkan saat pembayaran)
+		$kurs = (float)($data['kurs'] ?? 1);
+		if ($kurs <= 0) $kurs = 1;
+
+		if ($tipe === 'dp') {
+			$jumlah = (float)($data['value_dp'] ?? 0);
 		} else {
-			$nm_supplier = '';
-			$kode_supplier = '';
+			$jumlah = (float)($data['sisa_nilai'] ?? 0);
 		}
+		$jumlah_total = $jumlah + (float)($data['nilai_ppn'] ?? 0);
 
-		$arrCurrency = [];
-		$get_currency = $this->db->query("
-			SELECT
-				b.matauang as currency
-			FROM
-				dt_trans_po a
-				JOIN tr_purchase_order b ON b.no_po = a.no_po
-			WHERE
-				a.id IN (SELECT aa.id_po_detail FROM tr_incoming_check_detail aa WHERE aa.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "'))
-			GROUP BY b.matauang
+		// Ambil data user
+		$get_user = $this->db->get_where('users', ['id_user' => $this->auth->user_id()])->row_array();
 
-			UNION ALL
-
-			SELECT
-				b.matauang as currency
-			FROM
-				dt_trans_po a
-				JOIN tr_purchase_order b ON b.no_po = a.no_po
-			WHERE
-				a.id IN (SELECT aa.no_ipp FROM warehouse_adjustment_detail aa WHERE aa.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "'))
-			GROUP BY b.matauang
-
-			UNION ALL
-
-			SELECT
-				b.matauang as currency
-			FROM
-				dt_trans_po a
-				JOIN tr_purchase_order b ON b.no_po = a.no_po
-			WHERE
-				b.no_surat IN (SELECT aa.no_ipp FROM warehouse_adjustment_detail aa WHERE aa.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "'))
-			GROUP BY b.matauang
-		")->result();
-		foreach ($get_currency as $item_currency) {
-			if ($item_currency->currency !== '') {
-				$arrCurrency[] = $item_currency->currency;
-			}
-		}
-
-		if (!empty($arrCurrency)) {
-			$currency = implode(', ', $arrCurrency);
-		} else {
-			$currency = '';
-		}
-
-		$value_dp = 0;
-		$get_value_dp = $this->db->query("
-			SELECT
-				c.nilai as nilai_dp_material,
-				0 as nilai_dp_stok
-			FROM
-				dt_trans_po a
-				JOIN tr_purchase_order b ON b.no_po = a.no_po
-				LEFT JOIN tr_top_po c ON c.no_po = b.no_po
-			WHERE
-				a.id IN (SELECT aa.id_po_detail FROM tr_incoming_check_detail aa WHERE aa.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "'))
-			GROUP BY c.id
-
-			UNION ALL
-
-			SELECT
-				0 as nilai_dp_material,
-				c.nilai as nilai_dp_stok
-			FROM
-				dt_trans_po a
-				JOIN tr_purchase_order b ON b.no_po = a.no_po
-				LEFT JOIN tr_top_po c ON c.no_po = b.no_po
-			WHERE
-				a.id IN (SELECT aa.no_ipp FROM warehouse_adjustment_detail aa WHERE aa.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "'))
-			GROUP BY c.id
-
-			UNION ALL
-
-			SELECT
-				0 as nilai_dp_material,
-				c.nilai as nilai_dp_stok
-			FROM
-				dt_trans_po a
-				JOIN tr_purchase_order b ON b.no_po = a.no_po
-				LEFT JOIN tr_top_po c ON c.no_po = b.no_po
-			WHERE
-				b.no_surat IN (SELECT aa.no_ipp FROM warehouse_adjustment_detail aa WHERE aa.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "'))
-			GROUP BY c.id
-		")->result();
-		foreach ($get_value_dp as $item_dp) {
-			$value_dp += ($item_dp->nilai_dp_material + $item_dp->nilai_dp_stok);
-		}
-
-		$total_invoice = 0;
-		$base = 0;
-		$get_ttl_invoice = $this->db->query("
-			SELECT
-				c.qty_oke as qty_oke,
-				b.hargasatuan as hargasatuan
-			FROM
-				tr_incoming_check_detail a
-				JOIN dt_trans_po b ON b.id = a.id_po_detail
-				JOIN tr_checked_incoming_detail c ON c.kode_trans = a.kode_trans AND c.id_detail = a.id
-			WHERE
-				a.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "')
-			
-			UNION ALL
-
-			SELECT
-				a.qty_oke as qty_oke,
-				b.hargasatuan as hargasatuan
-			FROM
-				warehouse_adjustment_detail a
-				JOIN dt_trans_po b ON b.id = a.no_ipp
-				LEFT JOIN warehouse_adjustment c ON c.kode_trans = a.kode_trans
-			WHERE
-				a.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "')  AND
-				c.category = 'incoming stok'
-
-			UNION ALL
-
-			SELECT
-				a.qty_oke as qty_oke,
-				b.harga as hargasatuan
-			FROM
-				warehouse_adjustment_detail a
-				JOIN tr_pr_detail_kasbon b ON b.id_detail = a.id_po_detail AND b.id_kasbon = a.no_ipp
-				LEFT JOIN warehouse_adjustment c ON c.kode_trans = a.kode_trans
-			WHERE
-				a.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "') AND 
-				c.category = 'incoming non rutin'
-
-			UNION ALL
-
-			SELECT
-				a.qty_oke as qty_oke,
-				d.hargasatuan as hargasatuan
-			FROM
-				warehouse_adjustment_detail a
-				JOIN tr_purchase_order b ON b.no_surat = a.no_ipp
-				JOIN dt_trans_po d ON d.no_po = b.no_po AND a.nm_material = d.namamaterial
-				LEFT JOIN warehouse_adjustment c ON c.kode_trans = a.kode_trans
-			WHERE
-				a.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "')  AND
-				c.category = 'incoming asset'
-		")->result();
-
-
-
-		foreach ($get_ttl_invoice as $item_ttl_invoice) {
-			$total_invoice += ($item_ttl_invoice->hargasatuan * $item_ttl_invoice->qty_oke);
-		}
-
-		$nilai_disc = 0;
-		$get_nilai_disc = $this->db->query("
-			SELECT
-				d.qty_oke,
-				b.hargasatuan,
-				b.persen_disc as persen_disc_item,
-				c.persen_disc as persen_disc_po
-			FROM
-				tr_incoming_check_detail a
-				JOIN dt_trans_po b ON b.id = a.id_po_detail
-				JOIN tr_purchase_order c ON c.no_po = b.no_po
-				JOIN tr_checked_incoming_detail d ON d.kode_trans = a.kode_trans AND d.id_detail = a.id
-			WHERE
-				a.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "')
-		")->result();
-		foreach ($get_nilai_disc as $item_nilai_disc) {
-			if ($item_nilai_disc->persen_disc_item > 0) {
-				$persen_disc = $item_nilai_disc->persen_disc_item;
-			} else {
-				$persen_disc = $item_nilai_disc->persen_disc_po;
-			}
-
-			$nilai_awal = ($item_nilai_disc->hargasatuan * $item_nilai_disc->qty_oke);
-			$nilai_disc += (($nilai_awal) * $persen_disc / 100);
-		}
-
-		$get_nilai_disc_stok = $this->db->query("
-			SELECT
-				a.qty_oke,
-				b.hargasatuan,
-				b.persen_disc as persen_disc_item,
-				c.persen_disc as persen_disc_po
-			FROM
-				warehouse_adjustment_detail a
-				JOIN dt_trans_po b ON b.id = a.no_ipp
-				JOIN tr_purchase_order c ON c.no_po = b.no_po
-				JOIN tr_checked_incoming_detail d ON d.kode_trans = a.kode_trans AND d.id_material = a.id_material
-			WHERE
-				a.kode_trans IN ('" . str_replace(",", "','", implode(',', $no_incoming)) . "')
-		")->result();
-		foreach ($get_nilai_disc_stok as $item_nilai_disc) {
-			if ($item_nilai_disc->persen_disc_item > 0) {
-				$persen_disc = $item_nilai_disc->persen_disc_item;
-			} else {
-				$persen_disc = $item_nilai_disc->persen_disc_po;
-			}
-
-			$nilai_awal = ($item_nilai_disc->hargasatuan * $item_nilai_disc->qty_oke);
-			$nilai_disc += (($nilai_awal) * $persen_disc / 100);
-		}
-
-		if ($nilai_disc <= 0) {
-			$this->db->select('a.qty_oke, c.hargasatuan, c.persen_disc as persen_disc_item, b.persen_disc as persen_disc_po');
-			$this->db->from('warehouse_adjustment_detail a');
-			$this->db->join('tr_purchase_order b', 'b.no_surat = a.no_ipp');
-			$this->db->join('dt_trans_po c', 'c.no_po = b.no_po AND c.namamaterial = a.nm_material', 'left');
-			$this->db->where_in('a.kode_trans', $no_incoming);
-			$get_nilai_disc_asset = $this->db->get()->result();
-
-			// print_r($this->db->last_query());
-			// exit;
-
-			foreach ($get_nilai_disc_asset as $item_nilai_disc) {
-				if ($item_nilai_disc->persen_disc_item > 0) {
-					$persen_disc = $item_nilai_disc->persen_disc_item;
-				} else {
-					$persen_disc = $item_nilai_disc->persen_disc_po;
-				}
-
-				$nilai_awal = ($item_nilai_disc->hargasatuan * $item_nilai_disc->qty_oke);
-				$nilai_disc += (($nilai_awal) * $persen_disc / 100);
-			}
-		}
-
-		$base       = ($total_invoice * $kurs_terima_barang) - $uang_muka_idr;
-		$nilai_ppn  = $base * 11 / 111;
-		// $nilai_ppn = ((($total_invoice * $kurs_terima_barang) - $uang_muka_idr) * 11 / 100);
-		if ($ppn_asli <= 0) {
-			$nilai_ppn = 0;
-		}
-		$nilai_req_payment = (($total_invoice * $kurs_terima_barang) + $nilai_ppn - $nilai_disc - $value_dp);
-
-		$data = [
-			'no_incoming' => $no_incoming,
-			'incoming_no' => $incoming_no,
-			'nm_supplier' => $nm_supplier,
-			'kode_supplier' => $kode_supplier,
-			'currency' => $currency,
-			'value_dp' => $uang_muka_idr,
-			'total_invoice' => ($total_invoice * $kurs_terima_barang),
-			'nilai_disc' => $nilai_disc,
-			'nilai_ppn' => $nilai_ppn,
-			'nilai_req_payment' => $nilai_req_payment,
-			'no_po' => $arr_no_po
+		// INSERT ke request_payment dengan status=1
+		// Status 1 = muncul di halaman index untuk diisi tanggal pembayaran
+		$data_insert = [
+			'no_doc'      => $data['no_po'] ?? '',
+			'no_surat'    => $data['no_surat'] ?? '',
+			'nama'        => $get_user['nm_lengkap'] ?? $this->auth->user_name(),
+			'tgl_doc'     => $data['invoice_date'] ?? date('Y-m-d'),
+			'keperluan'   => 'Pembayaran ' . ucfirst(str_replace('_', ' ', $tipe_rp)) . ' - ' . ($data['no_surat'] ?? '') . ' - ' . ($data['nomor_invoice'] ?? ''),
+			'tipe'        => $tipe_rp,
+			'jumlah'      => $jumlah_total,
+			'status'      => 1,
+			'tanggal'     => null,
+			'currency'    => $data['currency'] ?? 'IDR',
+			'bank_id'     => $data['bank'] ?? '',
+			'accnumber'   => $data['no_bank'] ?? '',
+			'accname'     => $data['nm_acc_bank'] ?? '',
+			'bank_name'   => $data['bank'] ?? '',
+			'ids'         => (string)$id_receive,
+			'admin_bank'  => 0,
+			'total_pph'   => 0,
+			'id_supplier' => $data_po['id_suplier'] ?? '',
+			'nm_supplier' => $get_supplier['nama'] ?? '',
+			'created_by'  => $get_user['nm_lengkap'] ?? $this->auth->user_name(),
+			'created_on'  => date('Y-m-d H:i:s'),
 		];
-		$this->template->set('results', $data);
-		$this->template->render('add_inc');
+
+		$this->db->trans_begin();
+
+		// Update status di tabel receive → 2
+		$this->db->update(
+			$tabel_receive,
+			[
+				'status'     => '2',
+				'updated_by' => $this->auth->user_id(),
+				'updated_on' => date('Y-m-d H:i:s'),
+			],
+			['id' => $id_receive]
+		);
+
+		// Insert ke request_payment
+		$this->db->insert('request_payment', $data_insert);
+
+		if ($this->db->trans_status() === false) {
+			$this->db->trans_rollback();
+			echo json_encode(['status' => 0, 'message' => 'Gagal mengajukan request payment.']);
+		} else {
+			$this->db->trans_commit();
+			echo json_encode(['status' => 1, 'message' => 'Request payment berhasil diajukan. Silakan isi tanggal pembayaran di menu Request Payment.']);
+		}
+	}
+
+	// ═══════════════════════════════════════════════════════════════════
+	// PRIVATE: Generate Jurnal Invoice DP ke gl_interface
+	// ═══════════════════════════════════════════════════════════════════
+
+	private function _generate_jurnal_invoice_dp($id_dp, $no_po, $no_surat, $jumlah_rupiah)
+	{
+		$tgl_inv    = date('Y-m-d');
+		$created_on = date('Y-m-d H:i:s');
+		$user_id    = $this->auth->user_id();
+
+		// COA: hanya 2 akun
+		$coa = [
+			'dp'     => '1104-01-02', // Advance Purchase (Uang Muka Pembelian) - DEBET
+			'hutang' => '2101-01-02', // Hutang Usaha (Accounts Payable) - KREDIT
+		];
+
+		// Validate COA dari DBACC
+		$coa_names = [];
+		$db_acc = $this->load->database('accounting', TRUE);
+		foreach ($coa as $key => $no_perkiraan) {
+			$row = $db_acc->get_where('coa_master', ['no_perkiraan' => $no_perkiraan])->row();
+			$coa_names[$key] = (!empty($row)) ? $row->nama : $no_perkiraan;
+		}
+
+		$nominal = (int) round($jumlah_rupiah);
+		$keterangan = "Invoice DP - {$no_surat} | PO: {$no_po}";
+		$nomor_jv   = $this->_generate_nomor_jv_dp();
+
+		// ── Insert header GL Interface ──
+		$this->db->insert('gl_interface', [
+			'nomor'           => $nomor_jv,
+			'tgl'             => $tgl_inv,
+			'bulan'           => date('m'),
+			'tahun'           => date('Y'),
+			'kdcab'           => '101',
+			'jenis'           => 'JV',
+			'keterangan'      => $keterangan,
+			'jenis_transaksi' => 'invoice dp',
+			'status'          => 'pending',
+			'user_id'         => $user_id,
+			'memo'            => json_encode([
+				'id_dp'       => $id_dp,
+				'no_po'       => $no_po,
+				'no_surat'    => $no_surat,
+				'nominal'     => $nominal,
+			]),
+		]);
+
+		$id_gl = $this->db->insert_id();
+
+		// ── Insert detail: DEBET - Advance Purchase ──
+		$this->db->insert('gl_interface_detail', [
+			'id_gl_interface' => $id_gl,
+			'no_batch'        => $nomor_jv,
+			'tipe'            => 'JV',
+			'tanggal'         => $tgl_inv,
+			'no_perkiraan'    => $coa['dp'],
+			'id_material'     => null,
+			'nm_material'     => null,
+			'id_gudang'       => null,
+			'no_coil'         => null,
+			'keterangan'      => $coa_names['dp'] . " | {$keterangan}",
+			'no_reff'         => $no_surat,
+			'no_request'      => (string)$id_dp,
+			'debet'           => $nominal,
+			'kredit'          => 0,
+			'created_at'      => $created_on,
+		]);
+
+		// ── Insert detail: KREDIT - Hutang Usaha ──
+		$this->db->insert('gl_interface_detail', [
+			'id_gl_interface' => $id_gl,
+			'no_batch'        => $nomor_jv,
+			'tipe'            => 'JV',
+			'tanggal'         => $tgl_inv,
+			'no_perkiraan'    => $coa['hutang'],
+			'id_material'     => null,
+			'nm_material'     => null,
+			'id_gudang'       => null,
+			'no_coil'         => null,
+			'keterangan'      => $coa_names['hutang'] . " | {$keterangan}",
+			'no_reff'         => $no_surat,
+			'no_request'      => (string)$id_dp,
+			'debet'           => 0,
+			'kredit'          => $nominal,
+			'created_at'      => $created_on,
+		]);
+	}
+
+	private function _generate_nomor_jv_dp()
+	{
+		$db_acc = $this->load->database('accounting', TRUE);
+
+		$cabang = $db_acc->query(
+			"SELECT nomorJC FROM pastibisa_tb_cabang WHERE nocab = '101' LIMIT 1 FOR UPDATE"
+		)->row();
+
+		if (empty($cabang)) {
+			// Fallback jika data cabang belum ada
+			return '101-AJV' . date('ym') . '0001';
+		}
+
+		$nomor_urut = (int) $cabang->nomorJC + 1;
+		$nomor_jv   = '101-AJV' . date('ym') . $nomor_urut;
+
+		$db_acc->query(
+			"UPDATE pastibisa_tb_cabang SET nomorJC = nomorJC + 1 WHERE nocab = '101'"
+		);
+
+		return $nomor_jv;
 	}
 }

@@ -31,6 +31,9 @@ foreach ($data as $item) :
     if ($item->tipe == 'direct_payment') {
         $count_direct_payment += 1;
     }
+    if (in_array($item->tipe, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
+        $count_pembayaran_po += 1;
+    }
 endforeach;
 ?>
 
@@ -495,6 +498,40 @@ endforeach;
                                         </tr>
                             <?php }
                                 }
+                            endforeach; ?>
+
+                            <?php
+                            // === Tambahan: Invoice PO (DP/Import/Local) ===
+                            foreach ($data as $item_inv) :
+                                if (in_array($item_inv->tipe, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
+                                    $tipe_label = str_replace(['invoice_dp', 'invoice_import', 'invoice_local'], ['Invoice DP', 'Invoice Import', 'Invoice Local'], $item_inv->tipe);
+                            ?>
+                                    <tr>
+                                        <td class="text-center fw-semibold"><?= $item_inv->no_doc ?></td>
+                                        <td class="text-center"><?= $item_inv->keperluan ?></td>
+                                        <td><?= $item_inv->nama ?></td>
+                                        <td class="text-center"><?= $item_inv->tgl_doc ?></td>
+                                        <td><?= $item_inv->keperluan ?></td>
+                                        <td class="text-center small"><?= $tipe_label ?></td>
+                                        <td class="text-end fw-semibold"><?= number_format($item_inv->jumlah, 2) ?></td>
+                                        <td class="text-center"><?= $item_inv->tanggal ?></td>
+                                        <td><small class="text-muted"><?= $item_inv->currency ?? 'IDR' ?></small></td>
+                                        <td class="text-center">
+                                            <?php if ($item_inv->status == '0') {
+                                                echo '<span class="badge bg-info">Open</span>';
+                                            } elseif ($item_inv->status == '9') {
+                                                echo '<span class="badge bg-danger">Rejected</span>';
+                                            } else {
+                                                echo '<span class="badge bg-warning text-dark">Process</span>';
+                                            } ?>
+                                        </td>
+                                        <td class="text-center">
+                                            <?php if ($ENABLE_MANAGE) : ?>
+                                                <a href="<?= base_url($this->uri->segment(1) . '/approval_payment/?type=' . $item_inv->tipe . '&id=' . $item_inv->id . '&nilai=' . $item_inv->jumlah); ?>" class="btn btn-success btn-sm" title="Approve"><i class="fa fa-check-square"></i></a>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                            <?php }
                             endforeach; ?>
                         </tbody>
                     </table>

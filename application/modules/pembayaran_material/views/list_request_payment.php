@@ -1,4 +1,5 @@
 <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <div id='alert_edit' class="alert alert-success alert-dismissable" style="padding: 15px; display: none;"></div>
 <div class="box">
     <div class="box-header">
@@ -28,6 +29,7 @@
 </div>
 
 <script src="https://cdn.datatables.net/2.3.2/js/dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- page script -->
 <script>
@@ -58,71 +60,70 @@
                 'checked': checked
             },
             cache: false,
-            success: function(result) {
-
-            },
+            success: function(result) {},
             error: function(result) {
-                swal({
-                    title: 'Error !',
-                    text: 'Please try again later !',
-                    type: 'error'
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please try again later!',
+                    icon: 'error'
                 });
             }
         });
     });
 
     $(document).on('click', '.clear_choosed_payment', function() {
-        swal({
-                title: "Are you sure?",
-                text: "Your choosed payment data will be clearef!",
-                type: "warning",
-                showCancelButton: true,
-                confirmButtonClass: "btn-danger",
-                confirmButtonText: "Yes, Clear it!",
-                cancelButtonText: "No, cancel process!",
-                closeOnConfirm: true,
-                closeOnCancel: false
-            },
-            function(isConfirm) {
-                if (isConfirm) {
-                    $.ajax({
-                        url: siteurl + active_controller + 'clear_choosed_payment',
-                        type: "POST",
-                        cache: false,
-                        dataType: 'json',
-                        success: function(data) {
+        Swal.fire({
+            title: "Are you sure?",
+            text: "Your choosed payment data will be cleared!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            confirmButtonText: "Yes, Clear it!",
+            cancelButtonText: "No, cancel!"
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: siteurl + active_controller + 'clear_choosed_payment',
+                    type: "POST",
+                    cache: false,
+                    dataType: 'json',
+                    success: function(data) {
+                        Swal.fire('Cleared!', 'Checked payment data has been cleared.', 'success').then(function() {
                             location.reload(true);
-                        },
-                        error: function() {
-                            swal({
-                                title: 'Error !',
-                                text: 'Please try again later !',
-                                type: 'error'
-                            });
-                        }
-                    });
-                } else {
-                    swal("Cancelled", "Data can be process again :)", "error");
-                    return false;
-                }
-            });
+                        });
+                    },
+                    error: function() {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Please try again later!',
+                            icon: 'error'
+                        });
+                    }
+                });
+            }
+        });
     });
 
     $(document).on('click', '.proses_payment', function() {
-
         check_choosed_payment().done(function(data) {
             var choosed_payment = data.count_choosed_payment;
 
             if (choosed_payment > 0) {
                 window.location.href = siteurl + active_controller + 'form_payment_new/?id_payment=' + data.arr_choosed_payment;
             } else {
-                swal({
-                    title: 'Warning !',
-                    text: 'Please check at least 1 payment data !',
-                    type: 'warning'
+                Swal.fire({
+                    title: 'Warning!',
+                    text: 'Please check at least 1 payment data!',
+                    icon: 'warning'
                 });
             }
-        }).fail(function(data) {});
+        }).fail(function(data) {
+            Swal.fire({
+                title: 'Error!',
+                text: 'Failed to process payment. Please try again.',
+                icon: 'error'
+            });
+        });
     });
 
     function DataTables() {

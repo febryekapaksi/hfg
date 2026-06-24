@@ -52,7 +52,7 @@ class Request_payment extends Admin_Controller
 		$this->db->trans_begin();
 		if (!empty($status)) {
 			foreach ($status as $val) {
-				
+
 				$config['upload_path'] = './assets/expense/';
 				$config['allowed_types'] = '*';
 				$config['remove_spaces'] = TRUE;
@@ -128,16 +128,35 @@ class Request_payment extends Admin_Controller
 		echo json_encode($param);
 	}
 
+	// Di controller list_approve(), tambahkan query untuk ambil data invoice PO
+	// yang sudah ada di request_payment dengan tipe invoice_*
+
 	public function list_approve()
 	{
-		$data = $this->Request_payment_model->GetListDataApproval('status <> 2');
+		// Query existing (tidak diubah)
+		$data = $this->Request_payment_model->GetListDataApproval('a.status <> 2');
 
+		// Tambahan: mapping no_invoice untuk tipe invoice PO baru
 		$list_no_invoice = [];
+
+		// Existing — dari tr_invoice_po
 		$this->db->select('id, invoice_no');
 		$this->db->from('tr_invoice_po');
 		$get_invoice_no = $this->db->get()->result();
-		foreach ($get_invoice_no as $item_no_invoice) {
-			$list_no_invoice[$item_no_invoice->id] = $item_no_invoice->invoice_no;
+		foreach ($get_invoice_no as $item) {
+			$list_no_invoice[$item->id] = $item->invoice_no;
+		}
+
+		// Tambahan — dari tr_receive_invoice_dp
+		$get_dp = $this->db->select('id, nomor_invoice, no_surat')->get('tr_receive_invoice_dp')->result();
+		foreach ($get_dp as $item) {
+			$list_no_invoice[$item->id] = $item->nomor_invoice . ' (' . $item->no_surat . ')';
+		}
+
+		// Tambahan — dari tr_receive_invoice_imp_lok
+		$get_il = $this->db->select('id, nomor_invoice, no_surat, tipe')->get('tr_receive_invoice_imp_lok')->result();
+		foreach ($get_il as $item) {
+			$list_no_invoice[$item->id] = $item->nomor_invoice . ' (' . $item->no_surat . ' - ' . ucfirst($item->tipe) . ')';
 		}
 
 		$this->template->set('data', $data);
@@ -252,13 +271,25 @@ class Request_payment extends Admin_Controller
 			$data_detail	= $this->db->get_where('tr_direct_payment', ['no_doc' => $get_id->no_doc])->result();
 		}
 
-		$get_req_payment = $this->db->get_where('request_payment', ['id' => $id_exp])->row_array();
-
-		$list_coa = [];
-		$get_coa = $this->db->get(DBACC . '.coa_master')->result();
-		foreach ($get_coa as $item_coa) {
-			$list_coa[$item_coa->no_perkiraan] = $item_coa->nama;
+		// Invoice DP
+		if (isset($type) && $type == 'invoice_dp') {
+			$data 			= $this->db->get_where('tr_receive_invoice_dp', ['id' => $id])->row();
+			$data_detail	= $this->db->get_where('tr_receive_invoice_dp', ['id' => $id])->result();
 		}
+
+		// Invoice Import
+		if (isset($type) && $type == 'invoice_import') {
+			$data 			= $this->db->get_where('tr_receive_invoice_imp_lok', ['id' => $id, 'tipe' => 'import'])->row();
+			$data_detail	= $this->db->get_where('tr_receive_invoice_imp_lok', ['id' => $id, 'tipe' => 'import'])->result();
+		}
+
+		// Invoice Local
+		if (isset($type) && $type == 'invoice_local') {
+			$data 			= $this->db->get_where('tr_receive_invoice_imp_lok', ['id' => $id, 'tipe' => 'local'])->row();
+			$data_detail	= $this->db->get_where('tr_receive_invoice_imp_lok', ['id' => $id, 'tipe' => 'local'])->result();
+		}
+
+		$get_req_payment = $this->db->get_where('request_payment', ['id' => $id_exp])->row_array();
 
 		$this->template->set([
 			'type'		 => $type,
@@ -267,7 +298,6 @@ class Request_payment extends Admin_Controller
 			'kasbon_pr' => $kasbon_pr,
 			'data_detail_pr_kasbon' => $data_detail_pr_kasbon,
 			'data_req_payment' => $get_req_payment,
-			'list_coa' => $list_coa
 		]);
 		$this->template->render('detail_approve');
 	}
@@ -325,13 +355,25 @@ class Request_payment extends Admin_Controller
 			$data_detail	= $this->db->get_where('tr_direct_payment', ['no_doc' => $get_id->no_doc])->result();
 		}
 
-		$get_req_payment = $this->db->get_where('request_payment', ['id' => $id_exp])->row_array();
-
-		$list_coa = [];
-		$get_coa = $this->db->get(DBACC . '.coa_master')->result();
-		foreach ($get_coa as $item_coa) {
-			$list_coa[$item_coa->no_perkiraan] = $item_coa->nama;
+		// Invoice DP
+		if (isset($type) && $type == 'invoice_dp') {
+			$data 			= $this->db->get_where('tr_receive_invoice_dp', ['id' => $id])->row();
+			$data_detail	= $this->db->get_where('tr_receive_invoice_dp', ['id' => $id])->result();
 		}
+
+		// Invoice Import
+		if (isset($type) && $type == 'invoice_import') {
+			$data 			= $this->db->get_where('tr_receive_invoice_imp_lok', ['id' => $id, 'tipe' => 'import'])->row();
+			$data_detail	= $this->db->get_where('tr_receive_invoice_imp_lok', ['id' => $id, 'tipe' => 'import'])->result();
+		}
+
+		// Invoice Local
+		if (isset($type) && $type == 'invoice_local') {
+			$data 			= $this->db->get_where('tr_receive_invoice_imp_lok', ['id' => $id, 'tipe' => 'local'])->row();
+			$data_detail	= $this->db->get_where('tr_receive_invoice_imp_lok', ['id' => $id, 'tipe' => 'local'])->result();
+		}
+
+		$get_req_payment = $this->db->get_where('request_payment', ['id' => $id_exp])->row_array();
 
 		$this->template->set([
 			'type'		 			=> $type,
@@ -340,7 +382,6 @@ class Request_payment extends Admin_Controller
 			'kasbon_pr' 			=> $kasbon_pr,
 			'data_detail_pr_kasbon' => $data_detail_pr_kasbon,
 			'data_req_payment' 		=> $get_req_payment,
-			'list_coa' 				=> $list_coa
 		]);
 		$this->template->render('detail_approve_checker');
 	}
@@ -556,15 +597,23 @@ class Request_payment extends Admin_Controller
 		if ($Data['tipe'] == 'direct_payment') {
 			$header 	= $this->db->get_where('request_payment', ['no_doc' => $Data['no_doc'], 'tipe' => $Data['tipe']])->row_array();
 		}
+		if (in_array($Data['tipe'], ['invoice_dp', 'invoice_import', 'invoice_local'])) {
+			$header 	= $this->db->get_where('request_payment', ['no_doc' => $Data['no_doc'], 'tipe' => $Data['tipe']])->row_array();
+		}
 		// $Id 		= $this->_getIdPayment(str_replace('/', '-', $Data['date']));
 
-		$no_coa_bank = explode(' - ', $header['bank_name']);
-		$no_coa_bank = $no_coa_bank[0];
+		$no_coa_bank = explode(' - ', $header['bank_name'] ?? '');
+		$no_coa_bank = $no_coa_bank[0] ?? '';
 
 		$kode_bank = '';
-		$get_kode_bank = $this->db->get_where(DBACC . '.coa_master', ['no_perkiraan' => $no_coa_bank])->row();
-		if (!empty($get_kode_bank)) {
-			$kode_bank = $get_kode_bank->kode_bank;
+		if (in_array($Data['tipe'], ['invoice_dp', 'invoice_import', 'invoice_local'])) {
+			// Untuk invoice PO, skip COA lookup — gunakan kode_bank kosong
+			$kode_bank = '';
+		} else {
+			$get_kode_bank = $this->db->get_where(DBACC . '.coa_master', ['no_perkiraan' => $no_coa_bank])->row();
+			if (!empty($get_kode_bank)) {
+				$kode_bank = $get_kode_bank->kode_bank;
+			}
 		}
 
 		$Id = $this->Request_payment_model->generate_id_payment($kode_bank);
@@ -782,6 +831,39 @@ class Request_payment extends Admin_Controller
 				$Harga[] 		= $nilai;
 			}
 
+			if (in_array($Data['tipe'], ['invoice_dp', 'invoice_import', 'invoice_local'])) {
+				if ($Data['tipe'] == 'invoice_dp') {
+					$dtl = $this->db->get_where('tr_receive_invoice_dp', ['id' => $detail['id']])->row();
+					$nilai = (float)($dtl->value_dp ?? 0) + (float)($dtl->nilai_ppn ?? 0);
+				} else {
+					$dtl = $this->db->get_where('tr_receive_invoice_imp_lok', ['id' => $detail['id']])->row();
+					$nilai = (float)($dtl->sisa_nilai ?? 0) + (float)($dtl->nilai_ppn ?? 0);
+				}
+
+				$tipe_label = str_replace(['invoice_dp', 'invoice_import', 'invoice_local'], ['Invoice DP', 'Invoice Import', 'Invoice Local'], $Data['tipe']);
+
+				$ArrDetail[] = [
+					'id' 			=> $id_detail,
+					'payment_id' 	=> $Id,
+					'no_doc' 		=> $dtl->no_po,
+					'tgl_doc' 		=> $dtl->invoice_date,
+					'deskripsi' 	=> $tipe_label . ' - ' . $dtl->no_po . ' - ' . $dtl->nomor_invoice,
+					'qty' 			=> '1',
+					'harga' 		=> $nilai,
+					'total' 		=> $nilai,
+					'keterangan' 	=> $tipe_label . ' - ' . ($dtl->nomor_invoice ?? ''),
+					'doc_file' 		=> $dtl->file_invoice ?? '',
+					'coa' 			=> '',
+					'created_by' 	=> $this->auth->user_name(),
+					'created_on' 	=> date("Y-m-d h:i:s"),
+				];
+				$updateDetail[] = [
+					'id' 			=> $dtl->id,
+					'status' 		=> '3'
+				];
+				$Harga[] 		= $nilai;
+			}
+
 			$id_detail++;
 		}
 
@@ -795,7 +877,13 @@ class Request_payment extends Admin_Controller
 			$header['id'] = $Id;
 			$header['approved_by'] = $this->auth->user_name();
 			$header['approved_on'] = date("Y-m-d h:i:s");
-			$exist_data = $this->db->get_where('payment_approve', ['id' => $Data['id'], 'tipe' => $Data['tipe']])->num_rows();
+
+			// Cek duplikat - untuk invoice PO cek berdasarkan no_doc + tipe
+			if (in_array($Data['tipe'], ['invoice_dp', 'invoice_import', 'invoice_local'])) {
+				$exist_data = $this->db->get_where('payment_approve', ['no_doc' => $Data['no_doc'], 'tipe' => $Data['tipe']])->num_rows();
+			} else {
+				$exist_data = $this->db->get_where('payment_approve', ['id' => $Data['id'], 'tipe' => $Data['tipe']])->num_rows();
+			}
 
 			if ($exist_data == '0') {
 				$insert_payment_approve = $this->db->insert('payment_approve', $header);
@@ -803,8 +891,6 @@ class Request_payment extends Admin_Controller
 					print_r($this->db->error()['message']);
 					exit;
 				}
-				// print_r($this->db->last_query());
-				// exit;
 			}
 		}
 
@@ -937,6 +1023,38 @@ class Request_payment extends Admin_Controller
 				$data_request_payment = $this->db->select('id')->get_where('request_payment', ['no_doc' => $get_kasbon['no_doc']])->row_array();
 
 				$this->db->update('request_payment', ['status' => '2'], ['id' => $data_request_payment['id']]);
+			}
+
+			if (in_array($Data['tipe'], ['invoice_dp', 'invoice_import', 'invoice_local'])) {
+				$this->db->insert_batch('payment_approve_details', $ArrDetail);
+
+				// Hitung tagihan_idr dari jumlah × kurs receive invoice
+				$kurs_receive = 1;
+				if ($Data['tipe'] == 'invoice_dp') {
+					$dtl_kurs = $this->db->get_where('tr_receive_invoice_dp', ['id' => $Data['id']])->row();
+					if (!empty($dtl_kurs)) $kurs_receive = (float)($dtl_kurs->kurs ?? 1);
+				} else {
+					$dtl_kurs = $this->db->get_where('tr_receive_invoice_imp_lok', ['id' => $Data['id']])->row();
+					if (!empty($dtl_kurs)) $kurs_receive = (float)($dtl_kurs->kurs ?? 1);
+				}
+				if ($kurs_receive <= 0) $kurs_receive = 1;
+
+				$tagihan_idr = (int)round(array_sum($Harga) * $kurs_receive);
+
+				// Update payment_approve dengan tagihan_idr
+				$this->db->update('payment_approve', [
+					'tagihan_idr' => $tagihan_idr
+				], ['no_doc' => $Data['no_doc'], 'tipe' => $Data['tipe']]);
+
+				// Update status di tabel receive
+				if ($Data['tipe'] == 'invoice_dp') {
+					$this->db->update_batch('tr_receive_invoice_dp', $updateDetail, 'id');
+				} else {
+					$this->db->update_batch('tr_receive_invoice_imp_lok', $updateDetail, 'id');
+				}
+
+				// Update request_payment status = 2
+				$this->db->update('request_payment', ['status' => '2'], ['no_doc' => $Data['no_doc'], 'tipe' => $Data['tipe']]);
 			}
 		}
 
@@ -2650,6 +2768,18 @@ class Request_payment extends Admin_Controller
 
 					$this->db->update('tr_pr_non_po', ['sts' => '2'], ['no_non_po' => $item->no_doc]);
 				}
+
+				// Invoice PO (DP/Import/Local) — data sudah ada di request_payment, cukup update tanggal & status
+				if (in_array($item->tipe, ['Invoice DP', 'Invoice Import', 'Invoice Local'])) {
+					$this->db->update('request_payment', [
+						'tanggal' => $tanggal_pembayaran,
+						'status'  => 0
+					], [
+						'no_doc' => $item->no_doc,
+						'tipe'   => strtolower(str_replace(' ', '_', $item->tipe)),
+						'status' => 1
+					]);
+				}
 			}
 		}
 
@@ -2665,6 +2795,11 @@ class Request_payment extends Admin_Controller
 				$this->db->where('no_doc IS NOT NULL');
 				$this->db->delete();
 			}
+		} else {
+			// Jika hanya update (invoice PO), tetap bersihkan tr_added_req_payment
+			$this->db->from('tr_added_req_payment');
+			$this->db->where('no_doc IS NOT NULL');
+			$this->db->delete();
 		}
 
 		if ($this->db->trans_status() === false) {
@@ -2845,5 +2980,166 @@ class Request_payment extends Admin_Controller
 		];
 
 		$this->load->view('print_cash', $data);
+	}
+
+	public function form_request_payment()
+	{
+		$id_receive = $this->input->post('id_receive');
+		$tipe       = $this->input->post('tipe'); // 'dp', 'import', 'local'
+
+		if (empty($id_receive) || empty($tipe)) {
+			echo "<div class='alert alert-warning'>Data tidak valid.</div>";
+			return;
+		}
+
+		// Ambil data dari tabel receive yang sesuai
+		if ($tipe === 'dp') {
+			$data_receive = $this->db->get_where('tr_receive_invoice_dp', ['id' => $id_receive])->row_array();
+			$tipe_label   = 'Invoice DP';
+			$tipe_rp      = 'invoice_dp';
+		} else {
+			$data_receive = $this->db->get_where('tr_receive_invoice_imp_lok', ['id' => $id_receive])->row_array();
+			$tipe_label   = 'Invoice ' . ucfirst($tipe);
+			$tipe_rp      = 'invoice_' . $tipe;
+		}
+
+		if (empty($data_receive)) {
+			echo "<div class='alert alert-warning'>Data receive tidak ditemukan.</div>";
+			return;
+		}
+
+		// Cek apakah sudah pernah request payment
+		$cek_rp = $this->db->get_where('request_payment', [
+			'no_doc' => $id_receive,
+			'tipe'   => $tipe_rp
+		])->row_array();
+
+		if (!empty($cek_rp)) {
+			echo "<div class='alert alert-warning'>Request payment untuk invoice ini sudah pernah dibuat.</div>";
+			return;
+		}
+
+		// Ambil data PO
+		$data_po = $this->db->get_where('tr_purchase_order', ['no_po' => $data_receive['no_po']])->row_array();
+
+		// Ambil supplier
+		$get_supplier = $this->db->get_where('new_supplier', [
+			'kode_supplier' => $data_po['id_suplier'] ?? ''
+		])->row_array();
+
+		// Hitung jumlah yang akan direquest
+		// Untuk DP: value_dp, untuk Import/Local: sisa_nilai
+		$jumlah = ($tipe === 'dp')
+			? (float)($data_receive['value_dp']    ?? 0)
+			: (float)($data_receive['sisa_nilai']  ?? 0);
+
+		// Tambahkan PPN
+		$jumlah_total = $jumlah + (float)($data_receive['nilai_ppn'] ?? 0);
+
+		$this->template->set('data_receive',  $data_receive);
+		$this->template->set('data_po',       $data_po);
+		$this->template->set('get_supplier',  $get_supplier);
+		$this->template->set('tipe',          $tipe);
+		$this->template->set('tipe_label',    $tipe_label);
+		$this->template->set('tipe_rp',       $tipe_rp);
+		$this->template->set('jumlah',        $jumlah);
+		$this->template->set('jumlah_total',  $jumlah_total);
+		$this->template->render('form_request_payment');
+	}
+
+	public function save_request_po()
+	{
+		$id_receive = $this->input->post('id_receive');
+		$tipe_rp    = $this->input->post('tipe_rp');   // 'invoice_dp', 'invoice_import', 'invoice_local'
+		$tipe       = $this->input->post('tipe');       // 'dp', 'import', 'local'
+
+		if (empty($id_receive) || empty($tipe_rp)) {
+			echo json_encode(['status' => 0, 'message' => 'Data tidak valid.']);
+			return;
+		}
+
+		// Cek duplikat
+		$cek = $this->db->get_where('request_payment', [
+			'no_doc' => $id_receive,
+			'tipe'   => $tipe_rp
+		])->row();
+		if ($cek) {
+			echo json_encode(['status' => 0, 'message' => 'Request payment sudah pernah dibuat.']);
+			return;
+		}
+
+		// Ambil data receive
+		$tabel_receive = ($tipe === 'dp') ? 'tr_receive_invoice_dp' : 'tr_receive_invoice_imp_lok';
+		$data_receive  = $this->db->get_where($tabel_receive, ['id' => $id_receive])->row_array();
+
+		if (empty($data_receive)) {
+			echo json_encode(['status' => 0, 'message' => 'Data receive tidak ditemukan.']);
+			return;
+		}
+
+		// Ambil data PO untuk supplier
+		$data_po      = $this->db->get_where('tr_purchase_order', ['no_po' => $data_receive['no_po']])->row_array();
+		$get_supplier = $this->db->get_where('new_supplier', [
+			'kode_supplier' => $data_po['id_suplier'] ?? ''
+		])->row_array();
+
+		// Jumlah yang direquest
+		$jumlah = ($tipe === 'dp')
+			? (float)($data_receive['value_dp']   ?? 0)
+			: (float)($data_receive['sisa_nilai'] ?? 0);
+		$jumlah_total = $jumlah + (float)($data_receive['nilai_ppn'] ?? 0);
+
+		// Handle upload dokumen
+		$link_doc = null;
+		if (!empty($_FILES['link_doc']['name'])) {
+			$upload_path = FCPATH . 'assets/expense/';
+			$this->load->library('upload', [
+				'upload_path'   => $upload_path,
+				'allowed_types' => 'pdf|jpg|jpeg|png',
+				'max_size'      => 5120,
+				'encrypt_name'  => true
+			]);
+			if ($this->upload->do_upload('link_doc')) {
+				$link_doc = $this->upload->data('file_name');
+			}
+		}
+
+		$get_user = $this->db->get_where('users', ['id_user' => $this->auth->user_id()])->row_array();
+
+		$data_insert = [
+			'no_doc'     => (string)$id_receive,      // id dari tabel receive
+			'nama'       => $get_user['nm_lengkap'] ?? $this->auth->user_name(),
+			'tgl_doc'    => $data_receive['invoice_date'],
+			'keperluan'  => $this->input->post('keperluan'),
+			'tipe'       => $tipe_rp,                 // 'invoice_dp' / 'invoice_import' / 'invoice_local'
+			'jumlah'     => $jumlah_total,
+			'status'     => 0,
+			'tanggal'    => $this->input->post('tanggal'),
+			'currency'   => $data_receive['currency'],
+			'bank_id'    => $data_receive['bank'],
+			'accnumber'  => $data_receive['no_bank'],
+			'accname'    => $data_receive['nm_acc_bank'],
+			'bank_name'  => $data_receive['bank'],
+			'ids'        => (string)$id_receive,
+			'link_doc'   => $link_doc,
+			'admin_bank' => 0,
+			'total_pph'  => 0,
+			'nm_supplier' => $get_supplier['nama'] ?? '-',
+			'id_supplier' => $data_po['id_suplier'] ?? null,
+			'created_by' => $this->auth->user_name(),
+			'created_on' => date('Y-m-d H:i:s'),
+		];
+
+		$this->db->trans_begin();
+
+		$this->db->insert('request_payment', $data_insert);
+
+		if ($this->db->trans_status() === false) {
+			$this->db->trans_rollback();
+			echo json_encode(['status' => 0, 'message' => 'Gagal menyimpan request payment.']);
+		} else {
+			$this->db->trans_commit();
+			echo json_encode(['status' => 1, 'message' => 'Request payment berhasil dibuat.']);
+		}
 	}
 }

@@ -266,6 +266,36 @@ $ENABLE_VIEW    = has_permission('Request_Payment.View');
 	$('#frm_data').on('submit', function(e) {
 		e.preventDefault();
 
+		// Validasi: minimal 1 data harus di-checklist
+		var checked_items = $('.pilih_data:checked');
+		if (checked_items.length === 0) {
+			Swal.fire({
+				icon: 'warning',
+				title: 'Warning !',
+				text: 'Pilih minimal 1 data untuk diproses!'
+			});
+			return false;
+		}
+
+		// Validasi: semua yang di-checklist harus sudah isi tanggal pembayaran
+		var tanggal_kosong = false;
+		checked_items.each(function() {
+			var no_doc = $(this).val();
+			var tanggal = $('input[name="tanggal_pembayaran_' + no_doc + '"]').val();
+			if (!tanggal || tanggal === '') {
+				tanggal_kosong = true;
+			}
+		});
+
+		if (tanggal_kosong) {
+			Swal.fire({
+				icon: 'warning',
+				title: 'Warning !',
+				text: 'Pastikan semua data yang dipilih sudah diisi tanggal pembayaran!'
+			});
+			return false;
+		}
+
 		Swal.fire({
 			icon: 'warning',
 			title: 'Are you sure ?',
@@ -365,4 +395,106 @@ $ENABLE_VIEW    = has_permission('Request_Payment.View');
 			}
 		});
 	}
+
+	// Tambahkan di dalam <script> di index.php
+
+// Buka form request payment
+$(document).on('click', '.btn-req-payment', function () {
+    var id_receive = $(this).data('id_receive');
+    var tipe       = $(this).data('tipe'); // 'dp', 'import', 'local'
+
+    $.ajax({
+        type    : 'POST',
+        url     : siteurl + active_controller + 'form_request_payment',
+        data    : { id_receive: id_receive, tipe: tipe },
+        cache   : false,
+        success : function (result) {
+            // Ganti judul modal
+            $('.modal-title').html(
+                '<i class="fa fa-paper-plane"></i> Request Payment Invoice PO'
+            );
+            $('.save_btn_modal').show();
+            $('#ModalView').html(result);
+            $('#dialog-popup').modal('show');
+        },
+        error   : showAjaxError
+    });
+});
+
+// Override submit form untuk handle tipe invoice PO
+// Tambahkan di dalam handler $(document).on('submit', '#frm-data', ...)
+// Bagian penentuan url_save:
+
+$(document).on('submit', '#frm-data', function (e) {
+    e.preventDefault();
+
+    var tipe_rp  = $('#frm-data input[name="tipe_rp"]').val();
+    var tipe_req = $('#frm-data input[name="tipe_req"]').val();
+
+    // Tentukan endpoint
+    var url_save;
+    if (tipe_rp) {
+        // Form request payment
+        url_save = siteurl + active_controller + 'save_request_po';
+    } else if (tipe_req === 'dp') {
+        url_save = siteurl + active_controller + 'save_dp';
+    } else {
+        url_save = siteurl + active_controller + 'save_il';
+    }
+
+    // Validasi kurs hanya untuk form receive
+    if (!tipe_rp) {
+        var currency = $('#frm-data input[name="currency"]').val();
+        var kurs     = parseFloat(($('#frm-data input[name="kurs"]').val() || '0').replace(/,/g, ''));
+        if (currency && currency.toUpperCase() !== 'IDR' && kurs <= 0) {
+            Swal.fire({
+                title : 'Peringatan!',
+                text  : 'Kurs wajib diisi jika currency bukan IDR!',
+                icon  : 'warning'
+            });
+            return;
+        }
+    }
+
+    Swal.fire({
+        title            : 'Konfirmasi',
+        text             : 'Data akan disimpan, lanjutkan?',
+        icon             : 'warning',
+        showCancelButton : true,
+        confirmButtonText: 'Ya, Simpan!',
+        cancelButtonText : 'Batal'
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
+
+        var formdata = new FormData($('#frm-data')[0]);
+
+        $.ajax({
+            type        : 'POST',
+            url         : url_save,
+            data        : formdata,
+            cache       : false,
+            dataType    : 'json',
+            processData : false,
+            contentType : false,
+            success     : function (res) {
+                if (res.status == 1) {
+                    Swal.fire({
+                        title             : 'Berhasil!',
+                        text              : res.message,
+                        icon              : 'success',
+                        timer             : 1500,
+                        showConfirmButton : false
+                    }).then(function () { location.reload(); });
+                } else {
+                    Swal.fire({
+                        title : 'Gagal!',
+                        text  : res.message,
+                        icon  : 'error'
+                    });
+                }
+            },
+            error: showAjaxError
+        });
+    });
+});
 </script>

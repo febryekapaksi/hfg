@@ -502,7 +502,7 @@ class Request_payment_model extends BF_Model
 
             $checked = (count($check_added) > 0) ? 'checked' : '';
 
-            $input_tanggal_pembayaran = '<input type="date" class="form-control form-control-sm" name="tanggal_pembayaran_' . $item->no_dokumen . '">';
+            $input_tanggal_pembayaran = '<input type="text" class="form-control form-control-sm tanggal" name="tanggal_pembayaran_' . $item->no_dokumen . '" placeholder="Pilih tanggal...">';
 
             $action = '<input type="checkbox" class="pilih_data" name="pilih[]" value="' . $item->no_dokumen . '" data-kategori="' . $item->kategori . '" ' . $checked . '>';
             $action .= '<input type="hidden" name="kategori_' . $item->no_dokumen . '" value="' . $item->kategori . '">';
@@ -580,6 +580,7 @@ class Request_payment_model extends BF_Model
         $this->db->join('payment_approve b', 'b.no_doc = a.no_doc', 'left');
         $this->db->where('b.no_doc IS NULL');
         $this->db->where('a.tipe <>', 'direct_payment');
+        $this->db->where_not_in('a.tipe', ['invoice_dp', 'invoice_import', 'invoice_local']);
         $get_request_payment = $this->db->get()->result_array();
 
         $no = 0;
@@ -884,7 +885,7 @@ class Request_payment_model extends BF_Model
         }
 
         if (!empty($arr_update_req_payment)) {
-            $this->db->update_batch('request_payment', $arr_update_req_payment);
+            $this->db->update_batch('request_payment', $arr_update_req_payment, 'no_doc');
         }
 
         if ($this->db->trans_status() === false) {

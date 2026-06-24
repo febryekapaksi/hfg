@@ -46,6 +46,14 @@ if ($type == 'expense') {
     $bank_id = $header->bank;
     $accnumber = $header->bank_number;
     $accname = $header->bank_account;
+} elseif (in_array($type, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
+    $tipe_label = str_replace(['invoice_dp', 'invoice_import', 'invoice_local'], ['Invoice DP', 'Invoice Import', 'Invoice Local'], $type);
+    $keterangan = $tipe_label . ' - ' . $header->no_po . ' - ' . $header->nomor_invoice;
+    $no_doc = $header->no_po;
+    $tgl_doc = $header->invoice_date;
+    $bank_id = $header->bank;
+    $accnumber = $header->no_bank;
+    $accname = $header->nm_acc_bank;
 }
 ?>
 
@@ -126,7 +134,7 @@ if ($type == 'expense') {
                 <div class="row mb-3 align-items-center">
                     <label class="col-sm-4 col-form-label text-md-end fw-semibold small">Tanggal Doc</label>
                     <div class="col-sm-8">
-                        <input type="text" name="date" class="form-control bg-light text-center" readonly value="<?= $tgl_doc; ?>">
+                        <input type="text" name="date" class="form-control bg-light" readonly value="<?= $tgl_doc; ?>">
                     </div>
                 </div>
                 <div class="row mb-3 align-items-start">
@@ -143,7 +151,6 @@ if ($type == 'expense') {
                 <thead class="text-center">
                     <tr>
                         <th style="width: 4%">#</th>
-                        <th>COA</th>
                         <th>Barang/Jasa</th>
                         <th>Tanggal Transaksi</th>
                         <th style="width: 6%">Qty</th>
@@ -177,7 +184,7 @@ if ($type == 'expense') {
                     ?>
                                 <tr>
                                     <td class="text-center"><?= $n; ?></td>
-                                    <td><span class="badge bg-secondary"><?= $coa; ?></span> <span class="small"><?= $nm_coa; ?></span></td>
+                                    
                                     <td><?= $dtl->deskripsi; ?> <?= (isset($dtl->id_kasbon) && $dtl->id_kasbon !== '') ? '<span class="badge bg-warning text-dark ms-1">Kasbon</span>' : '' ?></td>
                                     <td class="text-center"><?= $dtl->tanggal; ?></td>
                                     <td class="text-center"><?= $dtl->qty; ?></td>
@@ -217,7 +224,7 @@ if ($type == 'expense') {
                     ?>
                                     <tr>
                                         <td class="text-center"><?= $n; ?></td>
-                                        <td><span class="badge bg-secondary"><?= $coa; ?></span> <span class="small"><?= $nm_coa; ?></span></td>
+                                        
                                         <td><?= $dtl->keperluan; ?></td>
                                         <td class="text-center"><?= $dtl->tgl_doc; ?></td>
                                         <td class="text-center">-</td>
@@ -261,7 +268,7 @@ if ($type == 'expense') {
                                     ?>
                                     <tr>
                                         <td class="text-center"><?= $n; ?></td>
-                                        <td><span class="badge bg-secondary"><?= $coa; ?></span> <span class="small"><?= $nm_coa; ?></span></td>
+                                        
                                         <td><?= $dtl->keperluan; ?></td>
                                         <td class="text-center"><?= $dtl->tgl_doc; ?></td>
                                         <td class="text-center">1</td>
@@ -298,7 +305,7 @@ if ($type == 'expense') {
                     ?>
                                 <tr>
                                     <td class="text-center"><?= $n; ?></td>
-                                    <td class="text-center text-muted">-</td>
+                                    
                                     <td><?= $dtl->keperluan; ?></td>
                                     <td class="text-center"><?= $dtl->tgl_doc; ?></td>
                                     <td class="text-center">1</td>
@@ -336,7 +343,7 @@ if ($type == 'expense') {
                     ?>
                                 <tr>
                                     <td class="text-center"><?= $n; ?></td>
-                                    <td><span class="badge bg-secondary"><?= $coa; ?></span> <span class="small"><?= $nm_coa; ?></span></td>
+                                    
                                     <td><?= $dtl->deskripsi; ?></td>
                                     <td class="text-center"><?= $dtl->tgl_pr; ?></td>
                                     <td class="text-center">1</td>
@@ -366,7 +373,7 @@ if ($type == 'expense') {
                     ?>
                                 <tr>
                                     <td class="text-center"><?= $n; ?></td>
-                                    <td><span class="badge bg-secondary"><?= $coa; ?></span> <span class="small"><?= $nm_coa; ?></span></td>
+                                    
                                     <td><?= $dtl->keterangan; ?></td>
                                     <td class="text-center"><?= $dtl->tanggal; ?></td>
                                     <td class="text-center">1</td>
@@ -396,7 +403,7 @@ if ($type == 'expense') {
                     ?>
                                 <tr>
                                     <td class="text-center"><?= $n; ?></td>
-                                    <td><span class="badge bg-secondary"><?= $coa; ?></span> <span class="small"><?= $nm_coa; ?></span></td>
+                                    
                                     <td><?= $dtl->deskripsi; ?></td>
                                     <td class="text-center"><?= $dtl->tgl_doc; ?></td>
                                     <td class="text-end"><?= number_format($dtl->grand_total, 2) ?></td>
@@ -418,13 +425,55 @@ if ($type == 'expense') {
                                     </td>
                                 </tr>
                     <?php 
+                            // ------------------------- TYPE INVOICE PO (DP/IMPORT/LOCAL) -------------------------
+                            elseif (in_array($type, ['invoice_dp', 'invoice_import', 'invoice_local'])) :
+                                $kurs_val = (float)($dtl->kurs ?? 1);
+                                if ($kurs_val <= 0) $kurs_val = 1;
+                                $nilai_invoice = ($type == 'invoice_dp') 
+                                    ? ((float)($dtl->value_dp ?? 0) + (float)($dtl->nilai_ppn ?? 0)) * $kurs_val
+                                    : ((float)($dtl->sisa_nilai ?? 0) + (float)($dtl->nilai_ppn ?? 0)) * $kurs_val;
+                                $gTotal += $nilai_invoice;
+                    ?>
+                                <tr>
+                                    <td class="text-center"><?= $n; ?></td>
+                                    
+                                    <td><?= $data_req_payment['keperluan'] ?? ($dtl->nomor_invoice ?? '-'); ?></td>
+                                    <td class="text-center"><?= $dtl->invoice_date; ?></td>
+                                    <td class="text-center">1</td>
+                                    <td class="text-center fw-bold text-primary"><?= $dtl->currency ?? 'IDR'; ?></td>
+                                    <td>
+                                        <table class="table table-nested table-sm mb-0 w-100 small">
+                                            <?php if ($type == 'invoice_dp') : ?>
+                                                <tr><td>Value DP</td><td class="text-center" style="width:10px">:</td><td class="text-end fw-semibold"><?= number_format($dtl->value_dp ?? 0, 2) ?></td></tr>
+                                            <?php else : ?>
+                                                <tr><td>Sisa Nilai</td><td class="text-center" style="width:10px">:</td><td class="text-end fw-semibold"><?= number_format($dtl->sisa_nilai ?? 0, 2) ?></td></tr>
+                                            <?php endif; ?>
+                                            <tr><td>PPN</td><td class="text-center">:</td><td class="text-end"><?= number_format($dtl->nilai_ppn ?? 0, 2) ?></td></tr>
+                                            <tr><td>Kurs</td><td class="text-center">:</td><td class="text-end"><?= number_format($kurs_val, 2) ?></td></tr>
+                                            <tr class="table-light fw-bold"><td>Total (IDR)</td><td class="text-center">:</td><td class="text-end text-success"><?= number_format($nilai_invoice, 2) ?></td></tr>
+                                        </table>
+                                    </td>
+                                    <td class="text-center">
+                                        <?php if (!empty($dtl->file_invoice) && file_exists(FCPATH . 'uploads/invoice_dp/' . $dtl->file_invoice)) : ?>
+                                            <a href="<?= base_url('uploads/invoice_dp/' . $dtl->file_invoice); ?>" target="_blank" class="text-primary"><i class="fa fa-download fa-lg"></i></a>
+                                        <?php elseif (!empty($dtl->file_invoice) && file_exists(FCPATH . 'uploads/invoice_il/' . $dtl->file_invoice)) : ?>
+                                            <a href="<?= base_url('uploads/invoice_il/' . $dtl->file_invoice); ?>" target="_blank" class="text-primary"><i class="fa fa-download fa-lg"></i></a>
+                                        <?php else : ?>
+                                            -
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="checkbox" checked value="<?= $dtl->id; ?>" name="item[<?= $n; ?>][id]" class="form-check-input check_item">
+                                    </td>
+                                </tr>
+                    <?php 
                             endif;
                         endforeach;
                     }  ?>
                 </tbody>
                 <tfoot>
                     <tr class="table-success align-middle">
-                        <th colspan="6" class="text-end fw-bold">Grand Total</th>
+                        <th colspan="5" class="text-end fw-bold">Grand Total</th>
                         <th class="text-end fw-bold text-success fs-5"><?= number_format($gTotal, 2); ?></th>
                         <th colspan="2" class="text-center"></th>
                     </tr>

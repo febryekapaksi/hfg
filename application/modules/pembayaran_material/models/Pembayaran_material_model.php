@@ -120,6 +120,8 @@ class Pembayaran_material_model extends BF_Model
 			];
 		}
 
+		if (ob_get_length()) ob_clean();
+		header('Content-Type: application/json');
 		echo json_encode([
 			'draw' => intval($post['draw']),
 			'recordsTotal' => $count_all,
