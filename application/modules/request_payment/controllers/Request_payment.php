@@ -2771,13 +2771,16 @@ class Request_payment extends Admin_Controller
 
 				// Invoice PO (DP/Import/Local) — data sudah ada di request_payment, cukup update tanggal & status
 				if (in_array($item->tipe, ['Invoice DP', 'Invoice Import', 'Invoice Local'])) {
+					$tipe_rp = strtolower(str_replace(' ', '_', $item->tipe));
+
+					// $item->no_doc berisi no_surat (dari VIEW), jadi match by no_surat
 					$this->db->update('request_payment', [
 						'tanggal' => $tanggal_pembayaran,
 						'status'  => 0
 					], [
-						'no_doc' => $item->no_doc,
-						'tipe'   => strtolower(str_replace(' ', '_', $item->tipe)),
-						'status' => 1
+						'no_surat' => $item->no_doc,
+						'tipe'     => $tipe_rp,
+						'status'   => 1
 					]);
 				}
 			}

@@ -412,10 +412,10 @@ $(document).ready(function () {
             if (res.no_coil) {
                 $.get(siteurl + 'production_report/get_coil_packing_list', { no_coil: res.no_coil }, function (pl) {
                     if (pl.success) {
-                        $('#pl_berat_kotor').text(parseFloat(pl.berat_kotor || 0).toFixed(3));
-                        $('#pl_berat_bersih').text(parseFloat(pl.berat_bersih || 0).toFixed(3));
-                        $('#pl_length').text(parseFloat(pl.length || 0).toFixed(2));
-                        $('#pl_berat_bersih_val').val(pl.berat_bersih || 0);
+                        // $('#pl_berat_kotor').text(parseFloat(pl.berat_kotor || 0).toFixed(3));
+                        $('#pl_berat_bersih').text(parseFloat(pl.net_weight_coil || 0).toFixed(3));
+                        // $('#pl_length').text(parseFloat(pl.length || 0).toFixed(2));
+                        // $('#pl_berat_bersih_val').val(pl.berat_bersih || 0);
                         recalcSummary();
                     }
                 }, 'json');

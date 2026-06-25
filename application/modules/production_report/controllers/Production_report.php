@@ -164,17 +164,19 @@ class Production_report extends Admin_Controller
     public function get_coil_packing_list()
     {
         $no_coil = $this->input->get('no_coil');
-        $row = $this->db->select('berat_kotor, berat_bersih, length')
-            ->from('tr_ros_detail')
+        $row = $this->db->select('net_weight_coil, estimasi_fg')
+            ->from('tr_production_plan_detail')
             ->where('no_coil', $no_coil)
             ->limit(1)->get()->row();
+
+            // var_dump($no_coil);die;
 
         if ($row) {
             echo json_encode([
                 'success'      => true,
-                'berat_kotor'  => $row->berat_kotor,
-                'berat_bersih' => $row->berat_bersih,
-                'length'       => $row->length,
+                // 'berat_kotor'  => $row->berat_kotor,
+                'net_weight_coil' => $row->net_weight_coil,
+                'estimasi_fg'       => $row->estimasi_fg,
             ]);
         } else {
             echo json_encode(['success' => false]);

@@ -868,7 +868,15 @@ foreach ($results['result_payment'] as $item) {
 				if (isConfirm) {
 
 					var formData = new FormData($('#frm-data')[0]);
-					var baseurl = siteurl + active_controller + 'save_payment_po';
+					
+					// Tentukan endpoint berdasarkan tipe payment
+					var tipe_payment = '<?= $results['result_payment'][0]->tipe ?? '' ?>';
+					var baseurl;
+					if (tipe_payment === 'invoice_import') {
+						baseurl = siteurl + active_controller + 'save_payment_import';
+					} else {
+						baseurl = siteurl + active_controller + 'save_payment_po';
+					}
 					$.ajax({
 						url: baseurl,
 						type: "POST",

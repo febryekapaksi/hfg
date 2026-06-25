@@ -91,7 +91,7 @@ $ro       = $is_view ? 'readonly' : '';
         <label class="form-label fw-semibold">Jumlah PO</label>
         <input type="text" id="jumlah_po"
             class="form-control form-control-sm text-end"
-            value="<?= number_format($is_view ? $d['jumlah_po'] : 0, 2) ?>"
+            value="<?= number_format($is_view ? $d['hargatotal'] : 0, 4) ?>"
             readonly>
     </div>
 
