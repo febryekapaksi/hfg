@@ -486,7 +486,7 @@ endforeach;
                                 $tipe_label = str_replace(['invoice_dp', 'invoice_import', 'invoice_local'], ['Invoice DP', 'Invoice Import', 'Invoice Local'], $item_inv->tipe);
 
                                 echo '<tr>';
-                                echo '<td class="text-center fw-semibold">' . $item_inv->no_doc . '</td>';
+                                echo '<td class="text-center fw-semibold">' . $item_inv->no_surat . '</td>';
                                 echo '<td class="text-center">' . $item_inv->keperluan . '</td>';
                                 echo '<td>' . $item_inv->nama . '</td>';
                                 echo '<td class="text-center">' . $item_inv->tgl_doc . '</td>';

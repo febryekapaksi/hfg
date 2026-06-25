@@ -50,6 +50,7 @@ if ($type == 'expense') {
 	$tipe_label = str_replace(['invoice_dp', 'invoice_import', 'invoice_local'], ['Invoice DP', 'Invoice Import', 'Invoice Local'], $type);
 	$keterangan = $tipe_label . ' - ' . $header->no_po . ' - ' . $header->nomor_invoice;
 	$no_doc = $header->no_po;
+	$no_surat = $header->no_surat;
 	$tgl_doc = $header->invoice_date;
 	$bank_id = $header->bank;
 	$accnumber = $header->no_bank;
@@ -80,6 +81,9 @@ if ($type == 'expense') {
 <input type="hidden" name="id" value="<?= $header->id; ?>">
 <input type="hidden" name="tipe" value="<?= $type; ?>">
 <input type="hidden" name="tingkat_approval" value="2">
+<?php if (in_array($type, ['invoice_dp', 'invoice_import', 'invoice_local'])) : ?>
+	<input type="hidden" name="no_doc" value="<?= $no_doc; ?>">
+<?php endif; ?>
 
 <div class="row g-3 mb-4">
 	<div class="col-12 col-md-6">
@@ -89,7 +93,11 @@ if ($type == 'expense') {
 
 				<div class="mb-3">
 					<label class="form-label fw-semibold small text-muted">Nomor Dokumen</label>
-					<input type="text" name="no_doc" class="form-control bg-light" readonly value="<?= $no_doc; ?>">
+					<?php if (in_array($type, ['invoice_dp', 'invoice_import', 'invoice_local'])) : ?>
+						<input type="text" class="form-control bg-light" readonly value="<?= $no_surat ?? $no_doc; ?>">
+					<?php else : ?>
+						<input type="text" name="no_doc" class="form-control bg-light" readonly value="<?= $no_doc; ?>">
+					<?php endif; ?>
 				</div>
 
 				<div class="mb-3">

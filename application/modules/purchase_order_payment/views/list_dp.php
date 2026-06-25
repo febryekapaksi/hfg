@@ -63,7 +63,7 @@
                         </button>';
 
                         // JIKA STATUS BUKAN 2, BARU TAMPILKAN TOMBOL REQUEST PAYMENT
-                        if (in_array($item['status_receive_dp'], [2, 3])) {
+                        if (!in_array($item['status_receive_dp'], [2, 3])) {
                             $action_btn .= '
                             <button type="button" class="btn btn-sm btn-warning btn-req-payment ms-1"
                                 data-id_receive="' . $item['id_receive_dp'] . '"

@@ -507,7 +507,7 @@ endforeach;
                                     $tipe_label = str_replace(['invoice_dp', 'invoice_import', 'invoice_local'], ['Invoice DP', 'Invoice Import', 'Invoice Local'], $item_inv->tipe);
                             ?>
                                     <tr>
-                                        <td class="text-center fw-semibold"><?= $item_inv->no_doc ?></td>
+                                        <td class="text-center fw-semibold"><?= $item_inv->no_surat ?></td>
                                         <td class="text-center"><?= $item_inv->keperluan ?></td>
                                         <td><?= $item_inv->nama ?></td>
                                         <td class="text-center"><?= $item_inv->tgl_doc ?></td>
