@@ -136,6 +136,8 @@ class Pembayaran_material extends Admin_Controller
 	//==================================================================================================================
 	public function payment_list()
 	{
+		// $results = $this->pembayaran_material_model->get_data_json_request_payment_header("status>0 and tipe='material'");
+		// $results = $this->db->get_where('payment_approve', ['status' => 2])->result();
 		$results = $this->db
 			->select('a.*')
 			->from('payment_approve a')
@@ -150,7 +152,19 @@ class Pembayaran_material extends Admin_Controller
 			->result();
 
 		$results2 = $this->db->query("SELECT a.* FROM payment_approve a LEFT JOIN tr_expense b ON b.no_doc = a.no_doc WHERE a.status = 2 AND a.no_doc NOT LIKE '%INV-%' AND a.no_doc NOT LIKE '%PI-%' AND (a.id_payment IS NOT NULL AND a.id_payment <> '') GROUP BY a.id_payment ORDER BY a.created_on DESC")->result();
+		// ->select('a.*')
+		// ->from('payment_approve a')
+		// ->join('tr_expense b', 'b.no_doc = a.no_doc', 'left')
+		// ->where('a.status', 2)
+		// ->where('(SELECT COUNT(aa.id) FROM tr_expense aa WHERE aa.no_doc = a.no_doc AND (aa.exp_inv_po IS NULL OR aa.exp_inv_po = "")) <=', 0)
+		// ->group_by('a.id')
+		// ->order_by('a.created_on', 'DESC')
+		// ->get()
+		// ->result();
 
+
+		// $results2 = $this->pembayaran_material_model->get_data_json_request_payment_header("status>0 and tipe='nonmaterial'");
+		// $data_Group			= $this->master_model->getArray('groups', array(), 'id', 'name');
 		$data = array(
 			'title'			=> 'Payment List',
 			'action'		=> 'index',
@@ -158,9 +172,11 @@ class Pembayaran_material extends Admin_Controller
 			'results'		=> $results,
 			'results2' => $results2
 		);
+		// history('List Payment');
 		$this->template->set($data);
 		$this->template->render('index_payment_new');
 	}
+
 
 	public function form_payment_new()
 	{
@@ -196,47 +212,15 @@ class Pembayaran_material extends Admin_Controller
 			->get()
 			->result();
 		$get_supplier = $this->db->get('new_supplier')->result();
+		// $get_bank = $this->db->get_where(DBACC . '.coa_master', ['kode_bank <>' => '', 'kode_bank <>' => null])->result();
 		$get_mata_uang = $this->db->get_where('mata_uang', ['deleted_by' => 0, 'activation' => 'active'])->result();
 
-		// Ambil list bank dari coa_master (database accounting)
-		$db_acc = $this->load->database('accounting', TRUE);
-		$db_acc->select('no_perkiraan, nama');
-		$db_acc->from('coa_master');
-		$db_acc->where_in('no_perkiraan', [
-			'1101-01-01',
-			'1101-01-02',
-			'1101-01-03',
-			'1101-01-04',
-			'1101-01-05',
-			'1101-01-06',
-			'1101-01-07',
-			'1101-01-08',
-			'1101-02-01',
-			'1101-02-02',
-			'1101-02-03',
-			'1101-02-04',
-			'1101-02-05',
-			'1101-02-06',
-			'1101-02-07',
-			'1101-02-08',
-			'1101-02-09',
-			'1101-02-10',
-			'1101-02-11',
-			'1101-02-12',
-			'1101-02-13',
-			'1101-02-14',
-			'1101-02-15',
-			'1101-02-16',
-			'1101-02-17',
-			'1101-02-18',
-			'1101-02-19',
-			'1101-02-20',
-			'1101-02-21',
-			'1101-02-22',
-			'1101-02-23'
-		]);
-		$db_acc->order_by('no_perkiraan', 'ASC');
-		$get_bank = $db_acc->get()->result();
+		$this->db->select('a.id, a.rekening, a.nama, a.coa_bank, b.nama_bank, c.nama as nm_coa');
+		$this->db->from('ms_bank a');
+		$this->db->join('list_bank b', 'b.id = a.bank', 'left');
+		$this->db->join(DBACC . '.coa_master c', 'c.no_perkiraan = a.coa_bank', 'left');
+		$this->db->where('a.deleted', '0');
+		$get_bank = $this->db->get()->result();
 
 		$data = [
 			'id_payment' => implode(',', $id_payment),
@@ -740,253 +724,32 @@ class Pembayaran_material extends Admin_Controller
 		);
 		echo json_encode($param);
 	}
-
-	/**
-	 * Save Payment untuk tipe Invoice PO (DP/Import/Local)
-	 * - Insert ke tr_payment_paid
-	 * - Update payment_approve (status=2, detail pembayaran)
-	 * - Insert ke gl_interface + gl_interface_detail (tipe BUK)
-	 */
-	public function save_payment_po()
-	{
-		if (ob_get_level()) ob_end_clean();
-		$post = $this->input->post();
-
-		$this->db->trans_begin();
-
-		try {
-			$id_payment_arr = explode(',', $post['id_payment']);
-			$tgl_bayar      = $post['tgl_bayar'];
-			$bank_coa       = $post['bank'];           // no_perkiraan COA bank
-			$mata_uang      = $post['mata_uang'];
-			$kurs           = (float)str_replace(',', '', $post['kurs_payment'] ?? '1');
-			if ($kurs <= 0) $kurs = 1;
-			$payment_bank   = (float)str_replace(',', '', $post['payment_bank'] ?? '0'); // nominal IDR yang dibayar via bank
-			$bank_charge    = (float)str_replace(',', '', $post['bank_charge'] ?? '0');
-			$keterangan     = $post['keterangan_pembayaran'] ?? '';
-			$id_supplier    = $post['supplier_input'] ?? '';
-			$nm_supplier    = $post['nm_supplier_input'] ?? '';
-
-			// Upload dokumen
-			$filenames = '';
-			if (!empty($_FILES['upload_doc']['name'])) {
-				$config_upload = [
-					'upload_path'   => FCPATH . 'assets/expense/',
-					'allowed_types' => '*',
-					'remove_spaces' => TRUE,
-					'encrypt_name'  => TRUE
-				];
-				$this->load->library('upload', $config_upload);
-				$this->upload->initialize($config_upload);
-				if ($this->upload->do_upload('upload_doc')) {
-					$filenames = $this->upload->data('file_name');
-				}
-			}
-
-			// Generate ID payment paid
-			$db_acc = $this->load->database('accounting', TRUE);
-			$kode_bank = '';
-			$id_payment_paid = $this->Pembayaran_material_model->generate_id_payment_paid($kode_bank, $tgl_bayar);
-
-			// Ambil tagihan_idr yang sudah disimpan saat approval management
-			$this->db->select('tagihan_idr, jumlah');
-			$this->db->where_in('id', $id_payment_arr);
-			$row_payment = $this->db->get('payment_approve')->row();
-			$total_doc_idr_paid = (int)($row_payment->tagihan_idr ?? round(($row_payment->jumlah ?? 0) * $kurs));
-			$selisih_total = $total_doc_idr_paid - (int)round($payment_bank);
-
-			// 1. Insert ke tr_payment_paid
-			$this->db->insert('tr_payment_paid', [
-				'id'                    => $id_payment_paid,
-				'bank_charge'           => $bank_charge,
-				'created_by'            => $this->auth->user_id(),
-				'created_on'            => date('Y-m-d H:i:s'),
-				'tgl_bayar'             => $tgl_bayar,
-				'coa_bank'              => $bank_coa,
-				'supplier'              => $id_supplier,
-				'nm_supplier'           => $nm_supplier,
-				'mata_uang'             => $mata_uang,
-				'kurs_payment'          => $kurs,
-				'payment_bank'          => $payment_bank,
-				'payment_bank_charge'   => $bank_charge,
-				'total_doc'             => $total_doc_idr_paid,
-				'selisih_total'         => $selisih_total,
-				'keterangan_pembayaran' => $keterangan,
-				'link_doc'              => $filenames,
-			]);
-
-			// 2. Update payment_approve — status, id_payment, dan data pembayaran
-			$nm_coa_bank = '';
-			$row_bank = $db_acc->get_where('coa_master', ['no_perkiraan' => $bank_coa])->row();
-			if (!empty($row_bank)) $nm_coa_bank = $row_bank->nama;
-
-			// Hitung total_pph dan total_ppn dari form
-			$total_pph = 0;
-			$total_ppn = 0;
-			$tipe_pph_val = '';
-			if (!empty($post['dt'])) {
-				foreach ($post['dt'] as $detail) {
-					$total_pph += (float)str_replace(',', '', $detail['nilai_pph'] ?? '0');
-					$total_ppn += (float)str_replace(',', '', $detail['nilai_ppn'] ?? '0');
-					$tipe_pph_val = ($detail['tipe_pph'] == 1) ? 'PPH 23' : 'PPH 22';
-				}
-			}
-
-			$this->db->where_in('id', $id_payment_arr);
-			$this->db->update('payment_approve', [
-				'id_payment'            => $id_payment_paid,
-				'status'                => 2,
-				'tgl_bayar'             => $tgl_bayar,
-				'pay_by'                => $this->auth->user_name(),
-				'pay_on'                => date('Y-m-d H:i:s'),
-				'supplier'              => $id_supplier,
-				'keterangan_pembayaran' => $keterangan,
-				'coa_bank'              => $bank_coa,
-				'nm_coa_bank'           => $nm_coa_bank,
-				'mata_uang'             => $mata_uang,
-				'kurs_payment'          => $kurs,
-				'payment_bank'          => $payment_bank,
-				'total_payment'         => $total_doc_idr_paid,
-				'selisih'               => $selisih_total,
-				'total_pph'             => $total_pph,
-				'total_ppn'             => $total_ppn,
-				'tipe_pph'              => $tipe_pph_val,
-				'id_supplier'           => $id_supplier,
-				'nm_supplier'           => $nm_supplier,
-				'link_doc'              => $filenames,
-				'tagihan_idr'           => $total_doc_idr_paid,
-				'dibayar_idr'           => (int)round($payment_bank),
-				'selisih_kurs_idr'      => $selisih_total,
-			]);
-
-			// 3. Generate GL Interface (tipe BUK)
-			// Nominal hutang sudah dihitung di atas: $total_doc_idr_paid
-			$coa_hutang  = '2101-01-02';
-			$coa_selisih = '7201-01-07';
-
-			// Ambil nama COA dari coa_master
-			$nm_hutang  = 'Hutang Usaha';
-			$nm_bank    = $bank_coa;
-			$nm_selisih = 'Selisih Kurs';
-
-			$row_hutang = $db_acc->get_where('coa_master', ['no_perkiraan' => $coa_hutang])->row();
-			if (!empty($row_hutang)) $nm_hutang = $row_hutang->nama;
-
-			$row_bank = $db_acc->get_where('coa_master', ['no_perkiraan' => $bank_coa])->row();
-			if (!empty($row_bank)) $nm_bank = $row_bank->nama;
-
-			$row_selisih = $db_acc->get_where('coa_master', ['no_perkiraan' => $coa_selisih])->row();
-			if (!empty($row_selisih)) $nm_selisih = $row_selisih->nama;
-
-			// Nominal jurnal
-			$nominal_hutang = $total_doc_idr_paid;         // 2101-01-02 DEBET (jumlah PO × kurs)
-			$nominal_bank   = (int)round($payment_bank);   // BANK KREDIT (inputan user)
-			$selisih_kurs   = $nominal_hutang - $nominal_bank; // 7201-01-07
-
-			$keterangan_jv = "Pembayaran PO - " . $id_payment_paid . " | " . $keterangan;
-
-			// Generate nomor JV
-			$cabang = $db_acc->query("SELECT nomorJC FROM pastibisa_tb_cabang WHERE nocab = '101' LIMIT 1")->row();
-			$nomor_urut = (!empty($cabang)) ? (int)$cabang->nomorJC + 1 : 1;
-			$nomor_jv = '101-ABK' . date('ym') . $nomor_urut;
-			$db_acc->query("UPDATE pastibisa_tb_cabang SET nomorJC = nomorJC + 1 WHERE nocab = '101'");
-
-			// Insert header gl_interface
-			$this->db->insert('gl_interface', [
-				'nomor'           => $nomor_jv,
-				'tgl'             => $tgl_bayar,
-				'bulan'           => date('m', strtotime($tgl_bayar)),
-				'tahun'           => date('Y', strtotime($tgl_bayar)),
-				'kdcab'           => '101',
-				'jenis'           => 'BUK',
-				'keterangan'      => $keterangan_jv,
-				'jenis_transaksi' => 'payment po',
-				'status'          => 'pending',
-				'user_id'         => $this->auth->user_id(),
-				'memo'            => json_encode([
-					'id_payment_paid' => $id_payment_paid,
-					'id_supplier'     => $id_supplier,
-					'nm_supplier'     => $nm_supplier,
-					'mata_uang'       => $mata_uang,
-					'kurs'            => $kurs,
-				]),
-			]);
-			$id_gl = $this->db->insert_id();
-
-			$created_on = date('Y-m-d H:i:s');
-
-			// Detail 1: DEBET - Hutang Usaha (2101-01-02)
-			$this->db->insert('gl_interface_detail', [
-				'id_gl_interface' => $id_gl,
-				'no_batch'        => $nomor_jv,
-				'tipe'            => 'BUK',
-				'tanggal'         => $tgl_bayar,
-				'no_perkiraan'    => $coa_hutang,
-				'keterangan'      => $nm_hutang . ' | ' . $keterangan_jv,
-				'no_reff'         => $id_payment_paid,
-				'no_request'      => implode(',', $id_payment_arr),
-				'debet'           => $nominal_hutang,
-				'kredit'          => 0,
-				'created_at'      => $created_on,
-			]);
-
-			// Detail 2: KREDIT - Bank (inputan user)
-			$this->db->insert('gl_interface_detail', [
-				'id_gl_interface' => $id_gl,
-				'no_batch'        => $nomor_jv,
-				'tipe'            => 'BUK',
-				'tanggal'         => $tgl_bayar,
-				'no_perkiraan'    => $bank_coa,
-				'keterangan'      => $nm_bank . ' | ' . $keterangan_jv,
-				'no_reff'         => $id_payment_paid,
-				'no_request'      => implode(',', $id_payment_arr),
-				'debet'           => 0,
-				'kredit'          => $nominal_bank,
-				'created_at'      => $created_on,
-			]);
-
-			// Detail 3: Selisih Kurs (7201-01-07) — selalu ditampilkan
-			$this->db->insert('gl_interface_detail', [
-				'id_gl_interface' => $id_gl,
-				'no_batch'        => $nomor_jv,
-				'tipe'            => 'BUK',
-				'tanggal'         => $tgl_bayar,
-				'no_perkiraan'    => $coa_selisih,
-				'keterangan'      => $nm_selisih . ' | ' . $keterangan_jv,
-				'no_reff'         => $id_payment_paid,
-				'no_request'      => implode(',', $id_payment_arr),
-				'debet'           => ($selisih_kurs < 0) ? abs($selisih_kurs) : 0,
-				'kredit'          => ($selisih_kurs > 0) ? $selisih_kurs : 0,
-				'created_at'      => $created_on,
-			]);
-
-			$this->db->trans_commit();
-
-			$this->output->set_content_type('application/json');
-			echo json_encode([
-				'status' => 1,
-				'pesan'  => 'Payment berhasil disimpan.'
-			]);
-		} catch (Exception $e) {
-			$this->db->trans_rollback();
-			echo json_encode([
-				'status' => 0,
-				'pesan'  => 'Gagal: ' . $e->getMessage()
-			]);
-		}
-	}
-
 	public function view_payment_new($id)
 	{
 		$list_id_payment = [];
 		$get_id_payment = $this->db->select('a.id')->get_where('payment_approve a', ['a.id_payment' => $id])->result();
-
 		foreach ($get_id_payment as $item_id_payment) {
 			$list_id_payment[] = $item_id_payment->id;
 		}
-
 		$list_id_payment = implode(';', $list_id_payment);
+
 		$id_payment = explode(';', $list_id_payment);
+
+		// $dataid = implode("','", $request_id);
+		// $results = $this->pembayaran_material_model->get_data_json_request_payment("id in ('" . $dataid . "')");
+		// $data_Group	= $this->master_model->getArray('groups', array(), 'id', 'name');
+		// $datacoa	= $this->All_model->GetCoaCombo('5', " a.no_perkiraan like '1101%'");
+		// $data = array(
+		// 	'title'			=> 'Form Payment',
+		// 	'action'		=> 'index',
+		// 	'datacoa'		=> $datacoa,
+		// 	'row_group'		=> $data_Group,
+		// 	'akses_menu'	=> $Arr_Akses,
+		// 	'results'		=> $results,
+		// );
+		// history('Form Payment');
+		// $this->load->view('Pembayaran_material/form_payment_new.php', $data);
+
 		$get_payment = $this->db
 			->select('a.*')
 			->from('payment_approve a')
@@ -994,7 +757,7 @@ class Pembayaran_material extends Admin_Controller
 			->get()
 			->result();
 		$get_supplier = $this->db->get('new_supplier')->result();
-		// $get_bank = $this->db->get_where(DBACC . '.coa_master', ['kode_bank <>' => '', 'kode_bank <>' => null])->result();
+		$get_bank = $this->db->get_where(DBACC . '.coa_master', ['kode_bank <>' => '', 'kode_bank <>' => null])->result();
 		$get_mata_uang = $this->db->get_where('mata_uang', ['deleted_by' => 0, 'activation' => 'active'])->result();
 
 		$get_payment_header = $this->db
@@ -1016,7 +779,7 @@ class Pembayaran_material extends Admin_Controller
 			'result_header' => $get_payment_header,
 			'result_payment' => $get_payment,
 			'list_supplier' => $get_supplier,
-			// 'list_bank' => $get_bank,
+			'list_bank' => $get_bank,
 			'list_mata_uang' => $get_mata_uang,
 			'bank_charge' => $bank_charge
 		];
@@ -1497,8 +1260,6 @@ class Pembayaran_material extends Admin_Controller
 			$arr_choosed_payment[] = $item->id_payment;
 		}
 
-		if (ob_get_length()) ob_clean();
-		header('Content-Type: application/json');
 		echo json_encode([
 			'count_choosed_payment' => count($get_choosed_payment),
 			'arr_choosed_payment' => implode(';', $arr_choosed_payment)

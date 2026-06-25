@@ -157,28 +157,28 @@ class Request_payment_model extends BF_Model
     public function GetListDataPaymentList()
     {
         $data = $this->db->query("
-            SELECT id as ids, no_doc, nama, tgl_doc, 'Transportasi' as keperluan, 'transportasi' as tipe, jumlah_expense as jumlah, null as tanggal, no_doc as id, bank_id, accnumber, accname, sts_reject, sts_reject_manage, reject_reason, null as kurang_bayar, null as id_kasbon 
-            FROM tr_transport_req 
-            
-            UNION ALL
-            
-            SELECT id as ids, no_doc, nama, tgl_doc, keperluan, 'kasbon' as tipe, jumlah_kasbon as jumlah, null as tanggal, no_doc as id, bank_id, accnumber, accname, sts_reject, sts_reject_manage, reject_reason, null as kurang_bayar, null as id_kasbon 
-            FROM tr_kasbon
-            
-            UNION ALL
-            
-            SELECT a.id as ids, a.no_doc, a.nama, a.tgl_doc, a.informasi as keperluan, 'expense' as tipe, a.jumlah, null as tanggal, a.no_doc as id, bank_id, accnumber, accname, a.sts_reject, a.sts_reject_manage, a.reject_reason, a.kurang_bayar, a.id_kasbon 
-            FROM tr_expense a 
-            LEFT JOIN " . DBACC . ".coa_master as b ON a.coa = b.no_perkiraan 
-            WHERE (a.jumlah >= 0 OR (a.id_kasbon IS NOT NULL AND a.kurang_bayar IS NOT NULL AND a.kurang_bayar > 0 AND a.status=2))
-            
-            UNION ALL
-            
-            SELECT b.id as ids, a.no_doc, c.nm_lengkap nama, a.tanggal_doc as tgl_doc, b.nama as keperluan, 'periodik' as tipe, b.nilai jumlah, null as tanggal, a.no_doc as id, b.bank_id, b.accnumber, b.accname, b.sts_reject, b.sts_reject_manage, b.reject_reason, null as kurang_bayar, null as id_kasbon 
-            FROM tr_pengajuan_rutin a 
-            JOIN tr_pengajuan_rutin_detail b ON a.no_doc = b.no_doc 
-            JOIN users c ON a.created_by = c.id_user
-        ")->result();
+        SELECT id as ids, no_doc, nama, tgl_doc, 'Transportasi' as keperluan, 'transportasi' as tipe, jumlah_expense as jumlah, null as tanggal, no_doc as id, bank_id, accnumber, accname, sts_reject, sts_reject_manage, reject_reason, null as kurang_bayar, null as id_kasbon 
+        FROM tr_transport_req 
+        
+        UNION ALL
+        
+        SELECT id as ids, no_doc, nama, tgl_doc, keperluan, 'kasbon' as tipe, jumlah_kasbon as jumlah, null as tanggal, no_doc as id, bank_id, accnumber, accname, sts_reject, sts_reject_manage, reject_reason, null as kurang_bayar, null as id_kasbon 
+        FROM tr_kasbon
+        
+        UNION ALL
+        
+        SELECT a.id as ids, a.no_doc, a.nama, a.tgl_doc, a.informasi as keperluan, 'expense' as tipe, a.jumlah, null as tanggal, a.no_doc as id, bank_id, accnumber, accname, a.sts_reject, a.sts_reject_manage, a.reject_reason, a.kurang_bayar, a.id_kasbon 
+        FROM tr_expense a 
+        LEFT JOIN " . DBACC . ".coa_master as b ON a.coa = b.no_perkiraan 
+        WHERE (a.jumlah >= 0 OR (a.id_kasbon IS NOT NULL AND a.kurang_bayar IS NOT NULL AND a.kurang_bayar > 0 AND a.status=2))
+        
+        UNION ALL
+        
+        SELECT b.id as ids, a.no_doc, c.nm_lengkap nama, a.tanggal_doc as tgl_doc, b.nama as keperluan, 'periodik' as tipe, b.nilai jumlah, null as tanggal, a.no_doc as id, b.bank_id, b.accnumber, b.accname, b.sts_reject, b.sts_reject_manage, b.reject_reason, null as kurang_bayar, null as id_kasbon 
+        FROM tr_pengajuan_rutin a 
+        JOIN tr_pengajuan_rutin_detail b ON a.no_doc = b.no_doc 
+        JOIN users c ON a.created_by = c.id_user
+    ")->result();
 
         return $data;
     }
@@ -502,7 +502,7 @@ class Request_payment_model extends BF_Model
 
             $checked = (count($check_added) > 0) ? 'checked' : '';
 
-            $input_tanggal_pembayaran = '<input type="text" class="form-control form-control-sm tanggal" name="tanggal_pembayaran_' . $item->no_dokumen . '" placeholder="Pilih tanggal...">';
+            $input_tanggal_pembayaran = '<input type="date" class="form-control form-control-sm" name="tanggal_pembayaran_' . $item->no_dokumen . '">';
 
             $action = '<input type="checkbox" class="pilih_data" name="pilih[]" value="' . $item->no_dokumen . '" data-kategori="' . $item->kategori . '" ' . $checked . '>';
             $action .= '<input type="hidden" name="kategori_' . $item->no_dokumen . '" value="' . $item->kategori . '">';
@@ -580,7 +580,6 @@ class Request_payment_model extends BF_Model
         $this->db->join('payment_approve b', 'b.no_doc = a.no_doc', 'left');
         $this->db->where('b.no_doc IS NULL');
         $this->db->where('a.tipe <>', 'direct_payment');
-        $this->db->where_not_in('a.tipe', ['invoice_dp', 'invoice_import', 'invoice_local']);
         $get_request_payment = $this->db->get()->result_array();
 
         $no = 0;
@@ -885,7 +884,7 @@ class Request_payment_model extends BF_Model
         }
 
         if (!empty($arr_update_req_payment)) {
-            $this->db->update_batch('request_payment', $arr_update_req_payment, 'no_doc');
+            $this->db->update_batch('request_payment', $arr_update_req_payment);
         }
 
         if ($this->db->trans_status() === false) {

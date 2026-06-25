@@ -184,7 +184,7 @@ class Production_planning_model extends CI_Model
         $this->db->where('c.no_coil IS NOT NULL', null, false);
         $this->db->where("c.no_coil != ''", null, false);
         $this->db->where('c.qty >', 0);
-        $this->db->where('c.kd_gudang', 'PUS');
+        $this->db->where('c.kd_gudang', 'PRO');
         $this->db->where('c.status', 1);
 
         if (!empty($material_ids)) {

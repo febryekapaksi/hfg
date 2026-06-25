@@ -7,20 +7,12 @@ $hide_table_jurnal_petty_cash = 'd-none';
 $kode_supplier = [];
 $nm_supplier = [];
 
+
+
 foreach ($results['result_payment'] as $item) {
 
-	// Untuk tipe invoice PO baru — supplier sudah tersimpan di payment_approve
-	if (in_array($item->tipe, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
-		if (!empty($item->id_supplier)) {
-			$kode_supplier[$item->id_supplier] = $item->id_supplier;
-		}
-		if (!empty($item->nm_supplier)) {
-			$nm_supplier[] = $item->nm_supplier;
-		}
-		continue;
-	}
 
-	$no_po = [];
+
 	$get_rec_invoice = $this->db->get_where('tr_invoice_po', ['id' => $item->no_doc])->row();
 
 	if (!empty($get_rec_invoice)) {
@@ -67,7 +59,6 @@ foreach ($results['result_payment'] as $item) {
 }
 ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.min.css" integrity="sha512-yVvxUQV0QESBt1SyZbNJMAwyKvFTLMyXSyBHDO4BG5t7k/Lw34tyqlSDlKIrIENIzCl+RVUNjmCPG+V/GMesRw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css">
 <style>
 	td {
 		padding: 5px 5px 5px 5px;
@@ -117,7 +108,7 @@ foreach ($results['result_payment'] as $item) {
 							<option value="">- Bank -</option>
 							<?php
 							foreach ($results['list_bank'] as $item_bank) {
-								echo '<option value="' . $item_bank->no_perkiraan . '">' . $item_bank->no_perkiraan . ' - ' . $item_bank->nama . '</option>';
+								echo '<option value="' . $item_bank->id . '">(' . $item_bank->rekening . ' a/n ' . $item_bank->nama . ') - ' . $item_bank->nama_bank . '</option>';
 							}
 							?>
 						</select>
@@ -127,7 +118,7 @@ foreach ($results['result_payment'] as $item) {
 					<td width="15%" style="">Mata Uang</td>
 					<td width="5%" class="text-center">:</td>
 					<td width="25%">
-						<select name="mata_uang" id="" class="form-control form-control-sm mata_uang" data-placeholder="- Pilih Mata Uang -">
+						<select name="mata_uang" id="" class="form-control form-control-sm mata_uang">
 							<option value="">- Mata Uang -</option>
 							<?php
 							foreach ($results['list_mata_uang'] as $item_mata_uang) {
@@ -146,7 +137,7 @@ foreach ($results['result_payment'] as $item) {
 					<td width="15%" style="">Kurs</td>
 					<td width="5%" class="text-center">:</td>
 					<td width="25%">
-						<input type="text" name="kurs_payment" id="" class="form-control form-control-sm text-right auto_num kurs_payment_input" value="" disabled placeholder="Pilih mata uang dulu">
+						<input type="text" name="kurs_payment" id="" class="form-control form-control-sm text-right auto_num">
 					</td>
 				</tr>
 				<!-- <tr>
@@ -181,109 +172,100 @@ foreach ($results['result_payment'] as $item) {
 					$no = 1;
 					foreach ($results['result_payment'] as $item) {
 
-						$nm_supplier_row = '';
-						$kurs_invoice = 1;
-						$ppn = 0;
+						$nm_supplier = [];
+
+						$get_rec_invoice = $this->db->get_where('tr_invoice_po', ['id' => $item->no_doc])->row();
+						if ($get_rec_invoice && isset($get_rec_invoice->kurs)) {
+							$kurs_invoice = $get_rec_invoice->kurs;
+							$ppn = $get_rec_invoice->nilai_ppn;
+						} else {
+							$kurs_invoice = 1;
+							$ppn = 0;
+						}
+
+
 						$nilai_utuh = 0;
 						$persen_progress = 1;
-
-						// Untuk tipe invoice PO baru — supplier langsung dari payment_approve
-						if (in_array($item->tipe, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
-							$nm_supplier_row = $item->nm_supplier ?? '';
-							$kurs_invoice = 1;
-							$ppn = $item->total_pph ?? 0;
-						} else {
-							// Cara lama: resolve via tr_invoice_po
-							$no_po = [];
-							$nm_supplier = [];
-
-							$get_rec_invoice = $this->db->get_where('tr_invoice_po', ['id' => $item->no_doc])->row();
-							if ($get_rec_invoice && isset($get_rec_invoice->kurs)) {
-								$kurs_invoice = $get_rec_invoice->kurs;
-								$ppn = $get_rec_invoice->nilai_ppn;
+						if (!empty($get_rec_invoice) && $get_rec_invoice->id_top !== '') {
+							$get_top = $this->db->get_where('tr_top_po', ['id' => $get_rec_invoice->id_top])->row();
+							if (!empty($get_top)) {
+								$persen_progress = $get_top->progress;
 							}
-
-							if (!empty($get_rec_invoice) && $get_rec_invoice->id_top !== '') {
-								$get_top = $this->db->get_where('tr_top_po', ['id' => $get_rec_invoice->id_top])->row();
-								if (!empty($get_top)) {
-									$persen_progress = $get_top->progress;
-								}
-							}
-							if (!empty($get_rec_invoice)) {
-								if (strpos($get_rec_invoice->no_po, 'TRS1') !== false) {
-									$arr_no_incoming = str_replace(', ', ',', $get_rec_invoice->no_po);
-									$get_no_po = $this->db
-										->select('a.no_ipp')
-										->from('tr_incoming_check a')
-										->where_in('a.kode_trans', explode(',', $arr_no_incoming))
-										->get()
-										->result();
-
-									$arr_no_po = [];
-									foreach ($get_no_po as $item_no_po) {
-										$arr_no_po[] = $item_no_po->no_ipp;
-									}
-
-									$arr_no_po = implode(',', $arr_no_po);
-									$arr_no_po = str_replace(', ', ',', $arr_no_po);
-
-									$get_no_surat = $this->db->query("SELECT a.no_surat FROM tr_purchase_order a WHERE a.no_po IN ('" . str_replace(",", "','", $arr_no_po) . "')")->result();
-									foreach ($get_no_surat as $item_no_surat) {
-										$no_po[] = $item_no_surat->no_surat;
-									}
-
-									$get_incoming_check_detail = $this->db
-										->select('a.qty_order, b.hargasatuan, b.persen_disc as item_disc, c.persen_disc as po_disc')
-										->from('tr_incoming_check_detail a')
-										->join('dt_trans_po b', 'b.id = a.id_po_detail', 'left')
-										->join('tr_purchase_order c', 'c.no_po = b.no_po', 'left')
-										->where_in('a.kode_trans', $arr_no_incoming)
-										->get()
-										->result();
-
-									foreach ($get_incoming_check_detail as $item_detail) {
-										$persen_disc = $item_detail->item_disc;
-										if ($item_detail->item_disc <= 0) {
-											$persen_disc = $item_detail->po_disc;
-										}
-										$nilai_after_disc = $item_detail->hargasatuan;
-										if ($persen_disc > 0) {
-											$nilai_after_disc = ($item_detail->hargasatuan - ($item_detail->hargasatuan * $item_detail->persen_disc / 100));
-										}
-										$nilai_utuh += ($nilai_after_disc * $item_detail->qty_order);
-									}
-								} else {
-									$no_po[] = $get_rec_invoice->no_po;
-
-									$get_nilai_utuh = $this->db
-										->select('a.hargatotal, a.nilai_disc')
-										->from('tr_purchase_order a')
-										->where('a.no_surat', $get_rec_invoice->no_po)
-										->get()
-										->result();
-
-									foreach ($get_nilai_utuh as $item_nilai_utuh) {
-										$nilai_utuh += ($item_nilai_utuh->hargatotal - $item_nilai_utuh->nilai_disc);
-									}
-								}
-							}
-
-							if (!empty($no_po)) {
-								$get_nm_supplier = $this->db
-									->select('b.nama as nm_supplier')
-									->from('tr_purchase_order a')
-									->join('new_supplier b', 'b.kode_supplier = a.id_suplier', 'left')
-									->where_in('a.no_surat', $no_po)
-									->group_by('b.nama')
+						}
+						if (!empty($get_rec_invoice)) {
+							if (strpos($get_rec_invoice->no_po, 'TRS1') !== false) {
+								$arr_no_incoming = str_replace(', ', ',', $get_rec_invoice->no_po);
+								$get_no_po = $this->db
+									->select('a.no_ipp')
+									->from('tr_incoming_check a')
+									->where_in('a.kode_trans', explode(',', $arr_no_incoming))
 									->get()
 									->result();
-								foreach ($get_nm_supplier as $item_supplier) {
-									$nm_supplier[] = $item_supplier->nm_supplier;
+
+								$arr_no_po = [];
+								foreach ($get_no_po as $item_no_po) {
+									$arr_no_po[] = $item_no_po->no_ipp;
+								}
+
+								$arr_no_po = implode(',', $arr_no_po);
+								$arr_no_po = str_replace(', ', ',', $arr_no_po);
+
+								$get_no_surat = $this->db->query("SELECT a.no_surat FROM tr_purchase_order a WHERE a.no_po IN ('" . str_replace(",", "','", $arr_no_po) . "')")->result();
+								foreach ($get_no_surat as $item_no_surat) {
+									$no_po[] = $item_no_surat->no_surat;
+								}
+
+								$get_incoming_check_detail = $this->db
+									->select('a.qty_order, b.hargasatuan, b.persen_disc as item_disc, c.persen_disc as po_disc')
+									->from('tr_incoming_check_detail a')
+									->join('dt_trans_po b', 'b.id = a.id_po_detail', 'left')
+									->join('tr_purchase_order c', 'c.no_po = b.no_po', 'left')
+									->where_in('a.kode_trans', $arr_no_incoming)
+									->get()
+									->result();
+
+								foreach ($get_incoming_check_detail as $item_detail) {
+									$persen_disc = $item_detail->item_disc;
+									if ($item_detail->item_disc <= 0) {
+										$persen_disc = $item_detail->po_disc;
+									}
+									$nilai_after_disc = $item_detail->hargasatuan;
+									if ($persen_disc > 0) {
+										$nilai_after_disc = ($item_detail->hargasatuan - ($item_detail->hargasatuan * $item_detail->persen_disc / 100));
+									}
+									$nilai_utuh += ($nilai_after_disc * $item_detail->qty_order);
+								}
+							} else {
+								$no_po[] = $get_rec_invoice->no_po;
+
+								$get_nilai_utuh = $this->db
+									->select('a.hargatotal, a.nilai_disc')
+									->from('tr_purchase_order a')
+									->where('a.no_surat', $get_rec_invoice->no_po)
+									->get()
+									->result();
+
+								foreach ($get_nilai_utuh as $item_nilai_utuh) {
+									$nilai_utuh += ($item_nilai_utuh->hargatotal - $item_nilai_utuh->nilai_disc);
 								}
 							}
-
-							$nm_supplier_row = implode(', ', $nm_supplier);
 						}
+
+						if (!empty($no_po)) {
+							$get_nm_supplier = $this->db
+								->select('b.nama as nm_supplier')
+								->from('tr_purchase_order a')
+								->join('new_supplier b', 'b.kode_supplier = a.id_suplier', 'left')
+								->where_in('a.no_surat', $no_po)
+								->group_by('b.nama')
+								->get()
+								->result();
+							foreach ($get_nm_supplier as $item_supplier) {
+								$nm_supplier[] = $item_supplier->nm_supplier;
+							}
+						}
+
+						$nm_supplier = implode(', ', $nm_supplier);
 
 						if ($ppn != 0) {
 							$nilai_ppn = $ppn;
@@ -291,15 +273,18 @@ foreach ($results['result_payment'] as $item) {
 							$nilai_ppn = 0;
 						}
 
+						// if($nilai_ppn <= 0) {
+						// 	$nilai_ppn = ($item->jumlah * 11 / 100);
+						// }
+
 						echo '<tr>';
-						echo '<td class="text-center">' . $nm_supplier_row . '</td>';
+						echo '<td class="text-center">' . $nm_supplier . '</td>';
 						echo '<td class="text-center">
 						<input type="hidden" name="dt[' . $no . '][id_payment]" value="' . $item->id . '">
 						<input type="hidden" name="dt[' . $no . '][kurs_invoice]" value="' . $kurs_invoice . '">
-						<input type="hidden" class="jumlah_asli_' . $item->id . '" value="' . $item->jumlah . '">
 						
-						' . ($item->no_surat ?? $item->no_doc) . '</td>';
-						echo '<td class="text-right req_payment_col_' . $item->id . '">
+						' . $item->no_doc . '</td>';
+						echo '<td class="text-right">
 					<input type="hidden" class="jumlah_col_' . $item->id . '">
 					<input type="hidden" class="payment_bank_' . $item->id . '" value="' . $item->jumlah . '">
 					' . number_format($item->jumlah, 2) . '
@@ -335,7 +320,7 @@ foreach ($results['result_payment'] as $item) {
 					<tr>
 						<td colspan="5"></td>
 						<td>Total Payment</td>
-						<td class="text-right total_payment_col">
+						<td class="text-right">
 							<?= number_format($total_payment, 2) ?>
 						</td>
 					</tr>
@@ -451,7 +436,7 @@ foreach ($results['result_payment'] as $item) {
 								echo '<td class="text-center">';
 								echo 'Vuca';
 								echo '<input type="hidden" name="jurnal_refill_pettycash[' . $no_jurnal_refill_pettycash . '][id_company]" value="4">';
-								echo '<input type="hidden" name="jurnal_refill_pettycash[' . $no_jurnal_refill_pettycash . '][nm_company]" value="Vuca">';
+								echo '<input type="hidden" name="jurnal_refill_pettycash[' . $no_jurnal_refill_pettycash . ']nm_company]" value="Vuca">';
 								echo '</td>';
 
 								echo '<td class="text-center">';
@@ -514,7 +499,6 @@ foreach ($results['result_payment'] as $item) {
 </form>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.jquery.min.js" integrity="sha512-rMGGF4wg1R73ehtnxXBt5mbUfN9JUJwbk21KMlnLZDJh7BkPmeovBuddZCENJddHYYMkCh9hPFnPmS9sspki8g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
 <script src="<?= base_url('assets/js/autoNumeric.js') ?>"></script>
 
 <script>
@@ -523,39 +507,9 @@ foreach ($results['result_payment'] as $item) {
 
 	$(document).ready(function() {
 		// $('.supplier').chosen();
-		$('.bank').chosen({
-			width: '100%'
-		});
-		$('select[name="mata_uang"]').select2({
-			width: '100%',
-			placeholder: '- Pilih Mata Uang -',
-			allowClear: true
-		});
-		$('.pph').chosen({
-			width: '100%'
-		});
-
-		$('select[name="mata_uang"]').on('change', function() {
-			var mata_uang = $(this).val();
-			var kurs_input = $('input[name="kurs_payment"]');
-
-			if (!mata_uang || mata_uang === '') {
-				// Belum pilih — kosongkan dan disable
-				kurs_input.val('').prop('disabled', true)
-					.attr('placeholder', 'Pilih mata uang dulu');
-			} else if (mata_uang.toUpperCase() === 'IDR') {
-				// IDR — set 1 dan tetap disable
-				kurs_input.val('1').prop('disabled', true)
-					.attr('placeholder', '');
-			} else {
-				// Non-IDR — enable dan minta input kurs
-				kurs_input.val('').prop('disabled', false)
-					.attr('placeholder', 'Masukkan kurs')
-					.focus();
-			}
-
-			recalculate_all_by_kurs();
-		});
+		$('.bank').chosen();
+		$('.mata_uang').chosen();
+		$('.pph').chosen();
 
 		$('.auto_num').autoNumeric();
 
@@ -601,25 +555,23 @@ foreach ($results['result_payment'] as $item) {
 	}
 
 	function hitung_kontrol() {
-		var total_payment = parseFloat($('.total_payment').val()) || 0;
-		var total_pph = parseFloat($('.total_pph').val()) || 0;
-		var total_ppn = parseFloat($('.total_ppn').val()) || 0;
+		var total_payment = parseFloat($('.total_payment').val());
+		var total_pph = parseFloat($('.total_pph').val());
+		var total_ppn = parseFloat($('.total_ppn').val());
 		var total_payment_bank = $('.input_payment_bank').val();
-		if (total_payment_bank !== '' && total_payment_bank !== undefined) {
+		if (total_payment_bank !== '') {
 			total_payment_bank = total_payment_bank.split(',').join('');
-			total_payment_bank = parseFloat(total_payment_bank) || 0;
+			total_payment_bank = parseFloat(total_payment_bank);
 		} else {
 			total_payment_bank = 0;
 		}
 		var bank_charge = $('.bank_charge').val();
-		if (bank_charge !== '' && bank_charge !== undefined) {
+		if (bank_charge !== '') {
 			bank_charge = bank_charge.split(',').join('');
-			bank_charge = parseFloat(bank_charge) || 0;
-		} else {
-			bank_charge = 0;
+			bank_charge = parseFloat(bank_charge);
 		}
 
-		var kontrol = parseFloat((total_payment_bank - total_payment - total_ppn + total_pph - bank_charge).toFixed(2));
+		var kontrol = parseFloat(total_payment_bank - total_payment - total_ppn + total_pph - bank_charge);
 
 		$('.kontrol_col').html(number_format(kontrol, 2));
 		$('.kontrol').val(kontrol);
@@ -676,120 +628,124 @@ foreach ($results['result_payment'] as $item) {
 	}
 
 	$(document).on('change', '.change_nilai_pph', function() {
-		recalculate_all_by_kurs();
+		var id = $(this).data('id');
+		var payment_bank = $('.payment_bank_' + id).val();
+		var nilai_ppn = $('.nilai_ppn_' + id).val();
+		if (nilai_ppn !== '') {
+			nilai_ppn = nilai_ppn.split(',').join('');
+			nilai_ppn = parseFloat(nilai_ppn);
+		} else {
+			nilai_ppn = 0;
+		}
+
+		var nilai_pph = $(this).val();
+		if (nilai_pph !== '') {
+			nilai_pph = nilai_pph.split(',').join('');
+			nilai_pph = parseFloat(nilai_pph);
+		} else {
+			nilai_pph = 0;
+		}
+
+		var ttl_pph = 0;
+		$('.nilai_pph').each(function() {
+			var pph = $(this).val();
+			if (pph !== '') {
+				pph = pph.split(',').join('');
+				pph = parseFloat(pph);
+			} else {
+				pph = 0;
+			}
+
+			ttl_pph += pph;
+		});
+		$('.total_pph').val(ttl_pph);
+		$('.total_pph_col').html(number_format(ttl_pph, 2));
+
+		var nilai_payment = (payment_bank - nilai_pph + nilai_ppn);
+
+		$('.payment_col_' + id).html(number_format(nilai_payment, 2));
+
+		hitung_kontrol();
+		set_jurnal();
 	});
 
 	$(document).on('change', '.change_nilai_ppn', function() {
-		recalculate_all_by_kurs();
+		var id = $(this).data('id');
+		var payment_bank = $('.payment_bank_' + id).val();
+		var nilai_pph = $('.nilai_pph_' + id).val();
+		if (nilai_pph !== '') {
+			nilai_pph = nilai_pph.split(',').join('');
+			nilai_pph = parseFloat(nilai_pph);
+		} else {
+			nilai_pph = 0;
+		}
+
+		var nilai_ppn = $(this).val();
+		if (nilai_ppn !== '') {
+			nilai_ppn = nilai_ppn.split(',').join('');
+			nilai_ppn = parseFloat(nilai_ppn);
+		} else {
+			nilai_ppn = 0;
+		}
+
+		var ttl_ppn = 0;
+		$('.nilai_ppn').each(function() {
+			var ppn = $(this).val();
+			if (ppn !== '') {
+				ppn = ppn.split(',').join('');
+				ppn = parseFloat(ppn);
+			} else {
+				ppn = 0;
+			}
+
+			ttl_ppn += ppn;
+		});
+		$('.total_ppn').val(ttl_ppn);
+		$('.total_ppn_col').html(number_format(ttl_ppn, 2));
+
+		var nilai_payment = (payment_bank - nilai_pph + nilai_ppn);
+
+		$('.payment_col_' + id).html(number_format(nilai_payment, 2));
+
+		hitung_kontrol();
+		set_jurnal();
 	});
 
 	$(document).on('change', '.input_payment_bank', function() {
-		recalculate_all_by_kurs();
-	});
-
-	$(document).on('change keyup', '.input_payment_bank', function() {
-		recalculate_all_by_kurs();
-	});
-
-	$(document).on('change', '.bank_charge', function() {
-		recalculate_all_by_kurs();
-	});
-
-	// Saat kurs diubah, recalculate semua nominal × kurs
-	$(document).on('change keyup', 'input[name="kurs_payment"]', function() {
-		recalculate_all_by_kurs();
-	});
-
-	function recalculate_all_by_kurs() {
-		var kurs_val = $('input[name="kurs_payment"]').val();
-		if (kurs_val !== '' && kurs_val !== undefined) {
-			kurs_val = kurs_val.split(',').join('');
-			kurs_val = parseFloat(kurs_val) || 0;
+		var nilai_payment_bank = $(this).val();
+		if (nilai_payment_bank !== '') {
+			nilai_payment_bank = nilai_payment_bank.split(',').join('');
+			nilai_payment_bank = parseFloat(nilai_payment_bank);
 		} else {
-			kurs_val = 0;
+			nilai_payment_bank = 0;
 		}
-		if (kurs_val <= 0) kurs_val = 1;
 
-		var total_req_payment = 0;
+		var total_payment = $('.total_payment').val();
 
-		// Loop semua row: Request Payment = jumlah_asli × kurs
-		$('[class*="jumlah_asli_"]').each(function() {
-			var className = $(this).attr('class');
-			var id = className.replace('jumlah_asli_', '');
-			var jumlah_asli = parseFloat($(this).val()) || 0;
-			var jumlah_idr = jumlah_asli * kurs_val;
+		var selisih = parseFloat(total_payment - nilai_payment_bank);
 
-			// Update Request Payment column
-			$('.req_payment_col_' + id).html(number_format(jumlah_idr, 2));
-			$('.payment_bank_' + id).val(jumlah_idr);
-
-			total_req_payment += jumlah_idr;
-		});
-
-		// PPh, PPn, Bank Charge — langsung dari input user (IDR, TIDAK dikali kurs)
-		var total_pph = 0;
-		$('.nilai_pph').each(function() {
-			var val = $(this).val().split(',').join('');
-			total_pph += parseFloat(val) || 0;
-		});
-
-		var total_ppn = 0;
-		$('.nilai_ppn').each(function() {
-			var val = $(this).val().split(',').join('');
-			total_ppn += parseFloat(val) || 0;
-		});
-
-		var bank_charge = parseFloat($('.bank_charge').val().split(',').join('')) || 0;
-
-		// DPP per row = (jumlah_asli × kurs) - ppn row
-		$('[class*="jumlah_asli_"]').each(function() {
-			var className = $(this).attr('class');
-			var id = className.replace('jumlah_asli_', '');
-			var jumlah_asli = parseFloat($(this).val()) || 0;
-			var jumlah_idr = jumlah_asli * kurs_val;
-
-			var ppn_row = parseFloat($('.nilai_ppn_' + id).val().split(',').join('')) || 0;
-			var dpp = jumlah_idr - ppn_row;
-			$('.payment_col_' + id).html(number_format(dpp, 2));
-		});
-
-		// Total Payment = total_req_payment (sudah × kurs)
-		var total_payment = total_req_payment;
-
-		// Update hidden values
-		$('.total_payment').val(total_payment);
-		$('.total_ppn').val(total_ppn);
-		$('.total_pph').val(total_pph);
-		$('.total_payment_bank').val(total_req_payment);
-
-		// Update display
-		$('.total_pph_col').html(number_format(total_pph, 2));
-		$('.total_ppn_col').html(number_format(total_ppn, 2));
-		$('.total_payment_col').html(number_format(total_payment, 2));
-
-		// Selisih = total_payment - payment_bank_input
-		var payment_bank_input = parseFloat($('.input_payment_bank').val().split(',').join('')) || 0;
-		var selisih = total_payment - payment_bank_input + total_ppn - total_pph + bank_charge;
 		$('.selisih_col').html(number_format(selisih, 2));
 
 		hitung_kontrol();
-	};
+		set_jurnal();
+	});
+
+	$(document).on('change', '.bank_charge', function() {
+		hitung_kontrol();
+		set_jurnal();
+	});
 	$(document).on('change', '.bank', function() {
 		set_jurnal();
 	})
 
 	$(document).on('submit', '#frm-data', function(e) {
 		e.preventDefault();
-
-		// Re-hitung kontrol sebelum validasi
-		hitung_kontrol();
-
 		var kontrol = $('.kontrol').val();
-		if (kontrol == '' || kontrol == undefined) {
+		if (kontrol == '') {
 			kontrol = 0;
 		} else {
 			kontrol = kontrol.split(',').join('');
-			kontrol = parseFloat(kontrol) || 0;
+			kontrol = parseFloat(kontrol);
 		}
 
 		var mata_uang = $('select[name="mata_uang"]').val();
@@ -799,13 +755,12 @@ foreach ($results['result_payment'] as $item) {
 		var payment_bank = $('.input_payment_bank').val();
 		if (payment_bank !== '') {
 			payment_bank = payment_bank.split(',').join('');
-			payment_bank = parseFloat(payment_bank) || 0;
+			payment_bank = parseFloat(payment_bank);
 		} else {
 			payment_bank = 0;
 		}
 
-		// Toleransi floating point: kontrol harus mendekati 0 (selisih < 1)
-		if (Math.abs(kontrol) > 0.01) {
+		if (kontrol > 0 || kontrol < 0) {
 			swal({
 				title: 'Warning !',
 				text: 'Maaf, Pastikan Kontrol harus 0 sebelum data dibayarkan!',
@@ -868,7 +823,7 @@ foreach ($results['result_payment'] as $item) {
 				if (isConfirm) {
 
 					var formData = new FormData($('#frm-data')[0]);
-					var baseurl = siteurl + active_controller + 'save_payment_po';
+					var baseurl = siteurl + active_controller + 'save_payment';
 					$.ajax({
 						url: baseurl,
 						type: "POST",
