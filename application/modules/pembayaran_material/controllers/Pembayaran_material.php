@@ -136,20 +136,32 @@ class Pembayaran_material extends Admin_Controller
 	//==================================================================================================================
 	public function payment_list()
 	{
-		$results = $this->db
-			->select('a.*')
-			->from('payment_approve a')
-			->join('tr_expense b', 'b.no_doc = a.no_doc')
-			->where('a.status', 2)
-			->where('b.exp_inv_po', 1)
-			->where('a.id_payment <>', null)
-			->where('a.id_payment <>', '')
-			->group_by('a.id_payment')
-			->order_by('a.created_on', 'DESC')
-			->get()
-			->result();
+		// PR: expense dengan exp_inv_po=1 ATAU tipe invoice PO (DP/Import/Local) ATAU tipe Cash
+		$results = $this->db->query("
+			SELECT a.* FROM payment_approve a 
+			LEFT JOIN tr_expense b ON b.no_doc = a.no_doc AND a.tipe = 'expense'
+			WHERE a.status = 2 
+			AND (a.id_payment IS NOT NULL AND a.id_payment <> '')
+			AND (
+				(a.tipe = 'expense' AND b.exp_inv_po = 1)
+				OR a.tipe IN ('invoice_dp', 'invoice_import', 'invoice_local')
+				OR a.tipe = 'Cash'
+			)
+			GROUP BY a.id_payment 
+			ORDER BY a.created_on DESC
+		")->result();
 
-		$results2 = $this->db->query("SELECT a.* FROM payment_approve a LEFT JOIN tr_expense b ON b.no_doc = a.no_doc WHERE a.status = 2 AND a.no_doc NOT LIKE '%INV-%' AND a.no_doc NOT LIKE '%PI-%' AND (a.id_payment IS NOT NULL AND a.id_payment <> '') GROUP BY a.id_payment ORDER BY a.created_on DESC")->result();
+		// Non-PR: sisanya (bukan invoice PO, bukan Cash, bukan expense PO)
+		$results2 = $this->db->query("
+			SELECT a.* FROM payment_approve a 
+			LEFT JOIN tr_expense b ON b.no_doc = a.no_doc AND a.tipe = 'expense'
+			WHERE a.status = 2 
+			AND (a.id_payment IS NOT NULL AND a.id_payment <> '')
+			AND a.tipe NOT IN ('invoice_dp', 'invoice_import', 'invoice_local', 'Cash')
+			AND (a.tipe <> 'expense' OR b.exp_inv_po IS NULL OR b.exp_inv_po <> 1)
+			GROUP BY a.id_payment 
+			ORDER BY a.created_on DESC
+		")->result();
 
 		$data = array(
 			'title'			=> 'Payment List',
@@ -994,8 +1006,23 @@ class Pembayaran_material extends Admin_Controller
 			->get()
 			->result();
 		$get_supplier = $this->db->get('new_supplier')->result();
-		// $get_bank = $this->db->get_where(DBACC . '.coa_master', ['kode_bank <>' => '', 'kode_bank <>' => null])->result();
 		$get_mata_uang = $this->db->get_where('mata_uang', ['deleted_by' => 0, 'activation' => 'active'])->result();
+
+		// Ambil list bank dari coa_master
+		$db_acc = $this->load->database('accounting', TRUE);
+		$db_acc->select('no_perkiraan, nama');
+		$db_acc->from('coa_master');
+		$db_acc->where_in('no_perkiraan', [
+			'1101-01-00','1101-01-01','1101-01-02','1101-01-03','1101-01-04',
+			'1101-01-05','1101-01-06','1101-01-07','1101-01-08',
+			'1101-02-00','1101-02-01','1101-02-02','1101-02-03','1101-02-04',
+			'1101-02-05','1101-02-06','1101-02-07','1101-02-08','1101-02-09',
+			'1101-02-10','1101-02-11','1101-02-12','1101-02-13','1101-02-14',
+			'1101-02-15','1101-02-16','1101-02-17','1101-02-18','1101-02-19',
+			'1101-02-20','1101-02-21','1101-02-22','1101-02-23'
+		]);
+		$db_acc->order_by('no_perkiraan', 'ASC');
+		$get_bank = $db_acc->get()->result();
 
 		$get_payment_header = $this->db
 			->select('a.*')
@@ -1016,7 +1043,7 @@ class Pembayaran_material extends Admin_Controller
 			'result_header' => $get_payment_header,
 			'result_payment' => $get_payment,
 			'list_supplier' => $get_supplier,
-			// 'list_bank' => $get_bank,
+			'list_bank' => $get_bank,
 			'list_mata_uang' => $get_mata_uang,
 			'bank_charge' => $bank_charge
 		];

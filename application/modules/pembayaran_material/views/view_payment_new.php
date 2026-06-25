@@ -2,6 +2,19 @@
 $kode_supplier = [];
 $nm_supplier = [];
 foreach ($results['result_payment'] as $item) {
+
+	// Untuk tipe invoice PO — supplier langsung dari payment_approve
+	if (in_array($item->tipe, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
+		if (!empty($item->id_supplier)) {
+			$kode_supplier[$item->id_supplier] = $item->id_supplier;
+		}
+		if (!empty($item->nm_supplier)) {
+			$nm_supplier[] = $item->nm_supplier;
+		}
+		continue;
+	}
+
+	$no_po = [];
 	$get_rec_invoice = $this->db->get_where('tr_invoice_po', ['id' => $item->no_doc])->row();
 
 	if (!empty($get_rec_invoice)) {
@@ -103,6 +116,11 @@ foreach ($results['result_payment'] as $item) {
 							} ?>
 						</select>
 					</div>
+
+					<div class="mb-3">
+						<label class="form-label fw-semibold small text-muted">Kurs</label>
+						<input type="text" class="form-control bg-light text-end" value="<?= number_format($results['result_header']->kurs_payment ?? 1, 2) ?>" readonly>
+					</div>
 				</div>
 
 				<div class="col-12 col-md-6">
@@ -163,72 +181,87 @@ foreach ($results['result_payment'] as $item) {
 						$total_selisih = 0;
 						$no = 1;
 						foreach ($results['result_payment'] as $item) {
-							$get_rec_invoice = $this->db->get_where('tr_invoice_po', ['id' => $item->no_doc])->row();
-							$nilai_utuh = 0;
-							$persen_progress = 1;
 
-							if (!empty($get_rec_invoice) && $get_rec_invoice->id_top !== '') {
-								$get_top = $this->db->get_where('tr_top_po', ['id' => $get_rec_invoice->id_top])->row();
-								if (!empty($get_top)) {
-									$persen_progress = $get_top->progress;
-								}
-							}
-							if (!empty($get_rec_invoice)) {
-								if (strpos($get_rec_invoice->no_po, 'TRS1') !== false) {
-									$arr_no_incoming = str_replace(', ', ',', $get_rec_invoice->no_po);
-									$get_no_po = $this->db->select('a.no_ipp')->from('tr_incoming_check a')->where_in('a.kode_trans', explode(',', $arr_no_incoming))->get()->result();
-									$arr_no_po = [];
-									foreach ($get_no_po as $item_no_po) {
-										$arr_no_po[] = $item_no_po->no_ipp;
-									}
-									$arr_no_po = implode(',', $arr_no_po);
-									$arr_no_po = str_replace(', ', ',', $arr_no_po);
+							$nm_supplier_row = '';
+							$nilai_ppn = 0;
+							$nilai_pph = 0;
 
-									$get_no_surat = $this->db->query("SELECT a.no_surat FROM tr_purchase_order a WHERE a.no_po IN ('" . str_replace(",", "','", $arr_no_po) . "')")->result();
-									foreach ($get_no_surat as $item_no_surat) {
-										$no_po[] = $item_no_surat->no_surat;
-									}
+							// Untuk tipe invoice PO — data langsung dari payment_approve
+							if (in_array($item->tipe, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
+								$nm_supplier_row = $item->nm_supplier ?? '';
+								$nilai_ppn = (float)($item->total_ppn ?? 0);
+								$nilai_pph = (float)($item->total_pph ?? 0);
+								$jumlah_display = (float)($item->tagihan_idr ?? $item->jumlah);
+							} else {
+								// Cara lama untuk tipe lain
+								$no_po = [];
+								$nm_supplier_arr = [];
+								$get_rec_invoice = $this->db->get_where('tr_invoice_po', ['id' => $item->no_doc])->row();
+								$nilai_utuh = 0;
+								$persen_progress = 1;
 
-									$get_incoming_check_detail = $this->db->select('a.qty_order, b.hargasatuan')->from('tr_incoming_check_detail a')->join('dt_trans_po b', 'b.id = a.id_po_detail', 'left')->where_in('a.kode_trans', $arr_no_incoming)->get()->result();
-									foreach ($get_incoming_check_detail as $item_detail) {
-										$nilai_utuh += ($item_detail->hargasatuan * $item_detail->qty_order);
-									}
-								} else {
-									$no_po[] = $get_rec_invoice->no_po;
-									$get_nilai_utuh = $this->db->select('a.hargatotal')->from('tr_purchase_order a')->where('a.no_surat', $get_rec_invoice->no_po)->get()->result();
-									foreach ($get_nilai_utuh as $item_nilai_utuh) {
-										$nilai_utuh += $item_nilai_utuh->hargatotal;
+								if (!empty($get_rec_invoice) && $get_rec_invoice->id_top !== '') {
+									$get_top = $this->db->get_where('tr_top_po', ['id' => $get_rec_invoice->id_top])->row();
+									if (!empty($get_top)) {
+										$persen_progress = $get_top->progress;
 									}
 								}
-							}
+								if (!empty($get_rec_invoice)) {
+									if (strpos($get_rec_invoice->no_po, 'TRS1') !== false) {
+										$arr_no_incoming = str_replace(', ', ',', $get_rec_invoice->no_po);
+										$get_no_po = $this->db->select('a.no_ipp')->from('tr_incoming_check a')->where_in('a.kode_trans', explode(',', $arr_no_incoming))->get()->result();
+										$arr_no_po = [];
+										foreach ($get_no_po as $item_no_po) {
+											$arr_no_po[] = $item_no_po->no_ipp;
+										}
+										$arr_no_po = implode(',', $arr_no_po);
+										$arr_no_po = str_replace(', ', ',', $arr_no_po);
 
-							if (!empty($no_po)) {
-								$get_nm_supplier = $this->db->select('b.nama as nm_supplier')->from('tr_purchase_order a')->join('new_supplier b', 'b.kode_supplier = a.id_suplier', 'left')->where_in('a.no_surat', $no_po)->group_by('b.nama')->get()->result();
-								foreach ($get_nm_supplier as $item_supplier) {
-									$nm_supplier[] = $item_supplier->nm_supplier;
+										$get_no_surat = $this->db->query("SELECT a.no_surat FROM tr_purchase_order a WHERE a.no_po IN ('" . str_replace(",", "','", $arr_no_po) . "')")->result();
+										foreach ($get_no_surat as $item_no_surat) {
+											$no_po[] = $item_no_surat->no_surat;
+										}
+
+										$get_incoming_check_detail = $this->db->select('a.qty_order, b.hargasatuan')->from('tr_incoming_check_detail a')->join('dt_trans_po b', 'b.id = a.id_po_detail', 'left')->where_in('a.kode_trans', $arr_no_incoming)->get()->result();
+										foreach ($get_incoming_check_detail as $item_detail) {
+											$nilai_utuh += ($item_detail->hargasatuan * $item_detail->qty_order);
+										}
+									} else {
+										$no_po[] = $get_rec_invoice->no_po;
+										$get_nilai_utuh = $this->db->select('a.hargatotal')->from('tr_purchase_order a')->where('a.no_surat', $get_rec_invoice->no_po)->get()->result();
+										foreach ($get_nilai_utuh as $item_nilai_utuh) {
+											$nilai_utuh += $item_nilai_utuh->hargatotal;
+										}
+									}
 								}
-							}
 
-							$nm_supplier = implode(', ', $nm_supplier);
-							$nilai_ppn = (($nilai_utuh * $persen_progress / 100) * 11 / 100);
-							if ($nilai_ppn <= 0) {
-								$nilai_ppn = $item->total_ppn;
+								if (!empty($no_po)) {
+									$get_nm_supplier = $this->db->select('b.nama as nm_supplier')->from('tr_purchase_order a')->join('new_supplier b', 'b.kode_supplier = a.id_suplier', 'left')->where_in('a.no_surat', $no_po)->group_by('b.nama')->get()->result();
+									foreach ($get_nm_supplier as $item_supplier) {
+										$nm_supplier_arr[] = $item_supplier->nm_supplier;
+									}
+								}
+
+								$nm_supplier_row = implode(', ', $nm_supplier_arr);
+								$nilai_ppn = (($nilai_utuh * $persen_progress / 100) * 11 / 100);
+								if ($nilai_ppn <= 0) {
+									$nilai_ppn = (float)($item->total_ppn ?? 0);
+								}
+								$nilai_pph = (float)($item->total_pph ?? 0);
+								$jumlah_display = (float)$item->jumlah;
 							}
-							$nilai_pph = $item->total_pph;
 
 							$selected_pph_23 = ($item->tipe_pph == 'PPH 23') ? 'selected' : '';
 							$selected_pph_22 = ($item->tipe_pph == 'PPH 22') ? 'selected' : '';
 						?>
 							<tr>
-								<td><?= $nm_supplier; ?></td>
+								<td><?= $nm_supplier_row; ?></td>
 								<td class="text-center fw-semibold">
 									<input type="hidden" name="dt[<?= $no ?>][id_payment]" value="<?= $item->id ?>">
-									<?= $item->no_doc; ?>
+									<?= $item->no_surat ?? $item->no_doc; ?>
 								</td>
 								<td class="text-end fw-semibold">
-									<input type="hidden" class="jumlah_col_<?= $item->id ?>">
-									<input type="hidden" class="payment_bank_<?= $item->id ?>" value="<?= $item->jumlah ?>">
-									<?= number_format($item->jumlah, 2); ?>
+									<?= number_format($jumlah_display, 2); ?>
 								</td>
 								<td style="width: 12%;">
 									<select name="dt[<?= $no ?>][tipe_pph]" class="form-select form-select-sm bg-light" disabled>
@@ -237,22 +270,19 @@ foreach ($results['result_payment'] as $item) {
 									</select>
 								</td>
 								<td>
-									<input type="hidden" class="nilai_utuh_<?= $item->id ?>" value="<?= $nilai_utuh ?>">
-									<input type="hidden" class="persen_progress_<?= $item->id ?>" value="<?= $persen_progress ?>">
-									<input type="text" class="form-control form-control-sm text-end" name="dt[<?= $no ?>][nilai_pph]" data-id="<?= $item->id ?>" value="<?= number_format($item->total_pph, 2) ?>" readonly>
+									<input type="text" class="form-control form-control-sm text-end" name="dt[<?= $no ?>][nilai_pph]" value="<?= number_format($nilai_pph, 2) ?>" readonly>
 								</td>
 								<td class="text-end">
-									<input type="hidden" name="dt[<?= $no ?>][nilai_ppn]" class="nilai_ppn_<?= $item->id ?>" value="<?= $nilai_ppn ?>">
 									<?= number_format($nilai_ppn, 2); ?>
 								</td>
-								<td class="text-end fw-bold text-success payment_col_<?= $item->id ?>"><?= number_format($item->jumlah - $nilai_pph + $nilai_ppn, 2); ?></td>
+								<td class="text-end fw-bold text-success"><?= number_format($jumlah_display, 2); ?></td>
 							</tr>
 						<?php
-							$total_payment += ($item->jumlah - $nilai_pph + $nilai_ppn);
-							$total_ppn += ($nilai_ppn);
-							$total_payment_bank += ($item->jumlah);
-							$total_pph += ($item->total_pph);
-							$total_selisih += $item->selisih;
+							$total_payment += $jumlah_display;
+							$total_ppn += $nilai_ppn;
+							$total_payment_bank += $jumlah_display;
+							$total_pph += $nilai_pph;
+							$total_selisih += (float)($item->selisih_kurs_idr ?? $item->selisih ?? 0);
 							$no++;
 						}
 						?>

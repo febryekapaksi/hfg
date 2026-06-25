@@ -5,10 +5,12 @@
         color: #495057;
         font-weight: 500;
     }
+
     .nav-tabs .nav-link.active {
         font-weight: 600;
         border-bottom-color: #fff;
     }
+
     .table thead th {
         background-color: #f8f9fa !important;
         color: #333 !important;
@@ -22,9 +24,9 @@
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white pt-3 border-0 d-flex justify-content-between align-items-center">
         <h5 class="fw-bold text-dark m-0"><?= $title; ?></h5>
-        <button type="button" class="btn btn-sm btn-success choose_payment"><i class="fa fa-money me-1"></i> Payment</button>
+        <button type="button" class="btn btn-sm btn-success choose_payment"><i class="fa fa-plus me-1"></i> Payment</button>
     </div>
-    
+
     <div class="card-body">
         <ul class="nav nav-tabs" id="paymentTabs" role="tablist">
             <li class="nav-item" role="presentation">
@@ -34,9 +36,9 @@
                 <button class="nav-link" id="non_material-tab" data-bs-toggle="tab" data-bs-target="#non_material" type="button" role="tab" aria-controls="non_material" aria-selected="false">Non PR</button>
             </li>
         </ul>
-        
+
         <div class="tab-content pt-3" id="paymentTabsContent">
-            
+
             <div class="tab-pane fade show active" id="material" role="tabpanel" aria-labelledby="material-tab">
                 <div class="table-responsive">
                     <table class="table table-striped table-hover table-bordered align-middle w-100" id="mytabledata">
@@ -52,11 +54,11 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (!empty($results)) : 
+                            <?php if (!empty($results)) :
                                 foreach ($results as $item) : ?>
                                     <tr>
                                         <td class="text-center fw-semibold"><?= $item->id_payment; ?></td>
-                                        <td class="text-center"><?= $item->no_doc; ?></td>
+                                        <td class="text-center"><?= $item->no_surat; ?></td>
                                         <td class="text-center small"><?= date('d F Y', strtotime($item->tgl_bayar)); ?></td>
                                         <td><?= $item->nm_supplier; ?></td>
                                         <td class="text-end fw-semibold text-primary"><?= number_format($item->payment_bank, 2); ?></td>
@@ -70,12 +72,13 @@
                                             </div>
                                         </td>
                                     </tr>
-                            <?php endforeach; endif; ?>
+                            <?php endforeach;
+                            endif; ?>
                         </tbody>
                     </table>
                 </div>
             </div>
-            
+
             <div class="tab-pane fade" id="non_material" role="tabpanel" aria-labelledby="non_material-tab">
                 <div class="table-responsive">
                     <table class="table table-striped table-hover table-bordered align-middle w-100" id="mytabledatanonmaterial">
@@ -91,7 +94,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (!empty($results2)) : 
+                            <?php if (!empty($results2)) :
                                 foreach ($results2 as $item) : ?>
                                     <tr>
                                         <td class="text-center fw-semibold"><?= $item->id_payment; ?></td>
@@ -109,7 +112,8 @@
                                             </div>
                                         </td>
                                     </tr>
-                            <?php endforeach; endif; ?>
+                            <?php endforeach;
+                            endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -152,12 +156,16 @@
     $(document).ready(function() {
         // Init DataTables 2.0+
         $("#mytabledata").DataTable({
-            "order": [[0, "asc"]],
+            "order": [
+                [0, "asc"]
+            ],
             "pageLength": 10
         });
 
         $("#mytabledatanonmaterial").DataTable({
-            "order": [[0, "asc"]],
+            "order": [
+                [0, "asc"]
+            ],
             "pageLength": 10
         });
 

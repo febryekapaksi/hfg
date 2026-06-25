@@ -58,19 +58,19 @@ class Purchase_order_payment extends Admin_Controller
 
 		if ($tipe == 'dp') {
 			$this->db->select('
-				a.no_po, a.no_surat, a.id_suplier, a.tanggal, a.loi, a.status,
-				c.nama as nm_supplier,
-				e.id as id_top, e.progress, e.nilai, e.keterangan as keterangan_top,
-				rid.id as id_receive_dp, rid.status as status_receive_dp, 
-				rp.id as id_request_payment, rp.status as status_request,
-				pa.id_payment as no_payment, pa.status as status_payment
-			');
+    a.no_po, a.no_surat, a.id_suplier, a.tanggal, a.loi, a.status,
+    c.nama as nm_supplier,
+    e.id as id_top, e.progress, e.nilai, e.keterangan as keterangan_top,
+    rid.id as id_receive_dp, rid.status as status_receive_dp, rid.nomor_invoice,
+    rp.id as id_request_payment, rp.status as status_request,
+    pa.id as no_payment, pa.status as status_payment
+');
 			$this->db->from('tr_purchase_order a');
 			$this->db->join('new_supplier c', 'c.kode_supplier = a.id_suplier', 'left');
 			$this->db->join('tr_top_po e', 'e.no_po = a.no_po');
 			$this->db->join('tr_receive_invoice_dp rid', 'rid.id_top = e.id', 'left');
 			$this->db->join('request_payment rp', "rp.no_doc = rid.id AND rp.tipe = 'invoice_dp'", 'left');
-			$this->db->join('payment_approve pa', 'pa.no_doc = rid.id', 'left');
+			$this->db->join('payment_approve pa', "pa.no_doc = rid.no_po AND pa.status = 2", 'left');
 			$this->db->where('e.group_top', 76);
 			$this->db->where('a.status', '2');
 			$this->db->group_by('e.id');
@@ -549,7 +549,7 @@ class Purchase_order_payment extends Admin_Controller
 			->join('tr_purchase_order p', 'p.no_po = r.no_po', 'left')
 			->join('new_supplier s', 's.kode_supplier = p.id_suplier', 'left')
 			->join('tr_top_po e', 'e.id = r.id_top', 'left')
-			->join('payment_approve pa', 'pa.no_doc = r.id', 'left')
+			->join('payment_approve pa', 'pa.no_doc = r.no_po', 'left')
 			->where('r.id', $id)
 			->get()
 			->row_array();

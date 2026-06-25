@@ -1248,39 +1248,6 @@ class New_ros extends Admin_Controller
         $this->load->view('print_qr_label', $data);
     }
 
-    // ─── FINALIZE ROS → Pindah ke Incoming ───────────────────────────
-    // public function finalize()
-    // {
-    //     $id_ros = $this->input->post('id_ros');
-
-    //     // Cek apakah sudah ada coil
-    //     $this->db->select('c.id');
-    //     $this->db->from('tr_ros_material_coil c');
-    //     $this->db->join('tr_ros_material m', 'm.id = c.id_ros_material');
-    //     $this->db->where('m.id_ros', $id_ros);
-    //     $coil_count = $this->db->get()->num_rows();
-
-    //     if ($coil_count == 0) {
-    //         echo json_encode(['status' => 0, 'msg' => 'Upload packing list terlebih dahulu sebelum finalize.']);
-    //         return;
-    //     }
-
-    //     $this->db->trans_begin();
-    //     $this->db->update('tr_ros_header', [
-    //         'status'      => 1,
-    //         'modified_by' => $this->auth->user_id(),
-    //         'modified_on' => date('Y-m-d H:i:s')
-    //     ], ['id' => $id_ros]);
-
-    //     if ($this->db->trans_status() === false) {
-    //         $this->db->trans_rollback();
-    //         echo json_encode(['status' => 0, 'msg' => 'Gagal finalize ROS.']);
-    //     } else {
-    //         $this->db->trans_commit();
-    //         echo json_encode(['status' => 1, 'msg' => 'ROS berhasil di-finalize. Silakan proses di menu Incoming.']);
-    //     }
-    // }
-
     public function finalize()
     {
         $id_ros = $this->input->post('id_ros');
@@ -1753,6 +1720,7 @@ class New_ros extends Admin_Controller
         $coa = [
             'transit' => '1105-01-03',
             'dp'      => '1104-01-02',
+            'hutang_belum_tagih' => '2101-01-06',
             'bm'      => '1108-01-09',
             'ls'      => '1111-01-01',
             'fwd'     => '2104-01-14',
@@ -1821,25 +1789,48 @@ class New_ros extends Admin_Controller
         // 1. DEBET — Persediaan In Transit
         $ins($coa['transit'], $coa_names['transit'] . " | {$keterangan}", $total_inventory, 0);
 
-        // 2. KREDIT — Advance Purchase ($)
-        $ins($coa['dp'], $coa_names['dp'] . " | {$keterangan}", 0, $nilai_dp_rp);
+        // 2. KREDIT — Advance Purchase ($) — dari jumlah_rupiah tr_receive_invoice_dp
+        $total_dp_rupiah = (float)($this->db
+            ->select_sum('jumlah_rupiah')
+            ->where('no_po', $no_po)
+            ->get('tr_receive_invoice_dp')
+            ->row()
+            ->jumlah_rupiah ?? 0);
+        $ins($coa['dp'], $coa_names['dp'] . " | {$keterangan}", 0, $total_dp_rupiah);
 
-        // 3. KREDIT — BM Dibayar Dimuka
+        // 3. KREDIT — Hutang Belum Tertagih (2101-01-06)
+        // Rumus: (nilai_po_usd dari tr_ros_header - SUM nilai dari tr_top_po WHERE group_top=76) × kurs_pib
+        $ros_header = $this->db->get_where('tr_ros_header', ['id' => $id_ros])->row();
+        $nilai_po_usd = (float)($ros_header->nilai_po_usd ?? 0);
+        $kurs_pib_ros = (float)($ros_header->kurs_pib ?? $kurs_pib);
+
+        $sum_top_76 = (float)($this->db
+            ->select_sum('nilai')
+            ->where('no_po', $no_po)
+            ->where('group_top', 76)
+            ->get('tr_top_po')
+            ->row()
+            ->nilai ?? 0);
+
+        $hutang_belum_tagih = ($nilai_po_usd - $sum_top_76) * $kurs_pib_ros;
+        $ins($coa['hutang_belum_tagih'], $coa_names['hutang_belum_tagih'] . " | {$keterangan}", 0, (int)round($hutang_belum_tagih));
+
+        // 4. KREDIT — BM Dibayar Dimuka
         $ins($coa['bm'], $coa_names['bm'] . " | {$keterangan}", 0, $total_bm);
 
-        // 4. KREDIT — Prepaid Expense LS
+        // 5. KREDIT — Prepaid Expense LS
         $ins($coa['ls'], $coa_names['ls'] . " | {$keterangan}", 0, $total_ls);
 
-        // 5. KREDIT — Hutang Biaya Forwarding
+        // 6. KREDIT — Hutang Biaya Forwarding
         $ins($coa['fwd'], $coa_names['fwd'] . " | {$keterangan}", 0, $total_forwarding);
 
-        // 6. KREDIT — Prepaid Expense Insurance
+        // 7. KREDIT — Prepaid Expense Insurance
         $ins($coa['ins'], $coa_names['ins'] . " | {$keterangan}", 0, $total_insurance);
 
-        // 7. KREDIT — Prepaid Expense Other
+        // 8. KREDIT — Prepaid Expense Other
         $ins($coa['oth'], $coa_names['oth'] . " | {$keterangan}", 0, $total_others);
 
-        // 8. DEBET/KREDIT — Selisih Kurs
+        // 9. DEBET/KREDIT — Selisih Kurs
         $ins(
             $coa['kurs'],
             $coa_names['kurs'] . " (PIB: " . number_format($kurs_pib, 0, ',', '.') . ") | {$keterangan}",
@@ -1847,7 +1838,7 @@ class New_ros extends Admin_Controller
             ($selisih_kurs > 0) ? $selisih_kurs       : 0
         );
 
-        // 9. DEBET/KREDIT — Pembulatan
+        // 10. DEBET/KREDIT — Pembulatan
         $ins(
             $coa['round'],
             $coa_names['round'] . " | {$keterangan}",
