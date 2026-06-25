@@ -251,11 +251,12 @@ $ENABLE_DELETE  = has_permission('Purchase_Order.Delete');
                 id_top: $(this).data('id_top'),
                 no_po: $(this).data('no_po'),
                 tipe: tipe,
-                id_dp: $(this).data('id_dp')
+                id_dp: $(this).data('id_dp'),
+                id_ros: $(this).data('id_ros')
             },
             cache: false,
             success: function(result) {
-                setModalTitle(tipe); // ← fix: set judul modal sesuai tipe
+                setModalTitle(tipe);
                 $('.save_btn_modal').show();
                 $('#ModalView').html(result);
                 $('#dialog-popup').modal('show');
@@ -314,9 +315,14 @@ $ENABLE_DELETE  = has_permission('Purchase_Order.Delete');
     $(document).on('submit', '#frm-data', function(e) {
         e.preventDefault();
         var tipe_req = $('#frm-data input[name="tipe_req"]').val();
-        var url_save = tipe_req === 'dp' ?
-            siteurl + active_controller + 'save_dp' :
-            siteurl + active_controller + 'save_il';
+        var url_save;
+        if (tipe_req === 'dp') {
+            url_save = siteurl + active_controller + 'save_dp';
+        } else if (tipe_req === 'import') {
+            url_save = siteurl + active_controller + 'save_import';
+        } else {
+            url_save = siteurl + active_controller + 'save_local';
+        }
 
         var currency = $('#frm-data input[name="currency"]').val();
         var kurs = parseFloat(($('#frm-data input[name="kurs"]').val() || '0').replace(/,/g, ''));

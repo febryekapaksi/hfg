@@ -505,7 +505,7 @@ endforeach;
                                 }
                                 echo '</td>';
                                 echo '<td class="text-center"><div class="d-flex justify-content-center gap-1">';
-                                if ($ENABLE_MANAGE && $item_inv->status == '0' && $item_inv->app_checker === null) {
+                                if ($ENABLE_MANAGE && in_array($item_inv->status, ['0', '1']) && $item_inv->app_checker === null) {
                                     echo '<a href="' . base_url($this->uri->segment(1) . '/approval_payment_checker/?type=' . $item_inv->tipe . '&id=' . $item_inv->id . '&nilai=' . $item_inv->jumlah) . '" class="btn btn-success btn-sm" title="Approve"><i class="fa fa-check-square"></i></a>';
                                 }
                                 echo '</div></td>';

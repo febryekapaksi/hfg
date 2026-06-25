@@ -34,12 +34,12 @@ $url_search = 'search_import';
                 <tr>
                     <th class="text-center">No</th>
                     <th class="text-center">No. PO</th>
+                    <th class="text-center">No. ROS</th>
                     <th class="text-center">No. Invoice</th>
                     <th class="text-center">No. Payment</th>
                     <th class="text-center">Nama Supplier</th>
                     <th class="text-center">Tanggal PO</th>
-                    <th class="text-center">DP Sebelumnya</th>
-                    <th class="text-center">Keterangan</th>
+                    <th class="text-center">DP Sebelumnya (IDR)</th>
                     <th class="text-center">Status</th>
                     <th class="text-center">Action</th>
                 </tr>
@@ -55,19 +55,20 @@ $url_search = 'search_import';
                         $badge = '<span class="badge bg-warning text-dark">Menunggu Pembayaran</span>';
                     }
 
-                    $dp_info = !empty($item['id_dp'])
-                        ? '<span class="badge bg-info text-dark">Ada DP: ' . number_format($item['nilai_dp'], 2) . '</span>'
-                        : '<span class="badge bg-light text-dark">Tidak Ada DP</span>';
+                    $dp_info = ((float)($item['total_dp_rupiah'] ?? 0) > 0)
+                        ? '<span class="badge bg-info text-dark">Rp ' . number_format($item['total_dp_rupiah'], 0) . '</span>'
+                        : '<span class="badge bg-light text-dark border">Tidak Ada DP</span>';
 
                     if (empty($item['id_receive_il'])) {
                         $action_btn = '
                             <button type="button"
                                 class="btn btn-sm btn-primary btn-req-il"
-                                data-id_top="' . $item['id_top'] . '"
+                                data-id_top="' . ($item['id_top'] ?? '') . '"
                                 data-no_po="'  . $item['no_po']  . '"
                                 data-tipe="'   . $tipe_btn       . '"
-                                data-id_dp="'  . ($item['id_dp'] ?? '') . '"
-                                title="Receive Invoice">
+                                data-id_dp=""
+                                data-id_ros="' . ($item['no_ros'] ?? '') . '"
+                                title="Receive Invoice Import">
                                 <i class="fa fa-plus"></i>
                             </button>';
                     } else {
@@ -84,12 +85,12 @@ $url_search = 'search_import';
                 <tr>
                     <td class="text-center"><?= $no++ ?></td>
                     <td class="text-center"><?= $item['no_surat'] ?></td>
+                    <td class="text-center"><?= $item['no_ros'] ?? '-' ?></td>
                     <td class="text-center"><?= $item['nomor_invoice'] ?? '-' ?></td>
                     <td class="text-center"><?= $item['no_payment'] ?? '-' ?></td>
                     <td><?= $item['nm_supplier'] ?></td>
                     <td class="text-center"><?= date('d F Y', strtotime($item['tanggal'])) ?></td>
                     <td class="text-center"><?= $dp_info ?></td>
-                    <td><?= $item['keterangan_top'] ?? '-' ?></td>
                     <td class="text-center"><?= $badge ?></td>
                     <td class="text-center"><?= $action_btn ?></td>
                 </tr>
