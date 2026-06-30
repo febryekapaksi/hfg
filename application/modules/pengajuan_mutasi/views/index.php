@@ -161,15 +161,28 @@ $ENABLE_DELETE = has_permission('Pengajuan_mutasi.Delete');
 			icon: 'question',
 			showCancelButton: true,
 			confirmButtonText: 'Ya, Ajukan',
-			cancelButtonText: 'Batal'
+			cancelButtonText: 'Batal',
+            showLoaderOnConfirm: true
 		}).then(result => {
 			if (result.isConfirmed) {
 				$.post(BASE_URL + '/submit/' + id, function(res) {
-					Swal.fire(res.status == 1 ? 'Berhasil' : 'Gagal', res.message, res.status == 1 ? 'success' : 'error')
-						.then(() => {
-							if (res.status == 1) reloadTab('open');
+					if (res.status == 1) {
+						Swal.fire({
+							title: 'Berhasil',
+							text: res.message,
+							icon: 'success',
+							showConfirmButton: false,
+							timer: 1500,
+							timerProgressBar: true
+						}).then(() => {
+							reloadTab('open');
 						});
-				}, 'json');
+					} else {
+						Swal.fire('Gagal', res.message, 'error');
+					}
+				}, 'json').fail(function() {
+					Swal.fire('Error', 'Terjadi kesalahan pada server.', 'error');
+				});
 			}
 		});
 	}
@@ -180,14 +193,13 @@ $ENABLE_DELETE = has_permission('Pengajuan_mutasi.Delete');
 			title: 'Batalkan Mutasi?',
 			text: 'Masukkan alasan pembatalan mutasi ini:',
 			icon: 'warning',
-			input: 'text', // Mengubah menjadi inputan text
+			input: 'text',
 			inputPlaceholder: 'Alasan pembatalan wajib diisi...',
 			showCancelButton: true,
 			confirmButtonText: 'Ya, Batalkan',
 			cancelButtonText: 'Kembali',
 			confirmButtonColor: '#d33',
 			inputValidator: (value) => {
-				// Validasi client-side: Jika teks kosong, tombol "Ya, Batalkan" tidak bisa diklik
 				if (!value || value.trim() === '') {
 					return 'Alasan pembatalan tidak boleh kosong!';
 				}
@@ -196,21 +208,27 @@ $ENABLE_DELETE = has_permission('Pengajuan_mutasi.Delete');
 			if (result.isConfirmed && result.value) {
 				const reason = result.value.trim();
 
-				// Kirim alasan pembatalan ke backend via POST payload
 				$.post(BASE_URL + '/cancel/' + id, {
 					reject_reason: reason
 				}, function(res) {
-					Swal.fire(
-						res.status == 1 ? 'Berhasil' : 'Gagal',
-						res.message,
-						res.status == 1 ? 'success' : 'error'
-					).then(() => {
-						if (res.status == 1) {
+					if (res.status == 1) {
+						Swal.fire({
+							title: 'Berhasil',
+							text: res.message,
+							icon: 'success',
+							showConfirmButton: false,
+							timer: 1500,
+							timerProgressBar: true
+						}).then(() => {
 							reloadTab('open');
 							$('#content-cancel').data('loaded', false);
-						}
-					});
-				}, 'json');
+						});
+					} else {
+						Swal.fire('Gagal', res.message, 'error');
+					}
+				}, 'json').fail(function() {
+					Swal.fire('Error', 'Terjadi kesalahan pada server.', 'error');
+				});
 			}
 		});
 	}
