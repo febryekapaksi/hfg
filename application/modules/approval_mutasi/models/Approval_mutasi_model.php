@@ -2,121 +2,15 @@
 
 class Approval_mutasi_model extends BF_Model
 {
-    protected $ENABLE_ADD;
-    protected $ENABLE_MANAGE;
-    protected $ENABLE_VIEW;
-    protected $ENABLE_DELETE;
-
     public function __construct()
     {
         parent::__construct();
-
-        $this->ENABLE_ADD    = has_permission('Approval_mutasi.Add');
-        $this->ENABLE_MANAGE = has_permission('Approval_mutasi.Manage');
-        $this->ENABLE_VIEW   = has_permission('Approval_mutasi.View');
-        $this->ENABLE_DELETE = has_permission('Approval_mutasi.Delete');
     }
 
     // ---------------------------------------------------------------
-    // NUMBERING
+    // LIST
     // ---------------------------------------------------------------
 
-    /**
-     * Generate nomor mutasi format: MUTYYMMXXX (reset per bulan)
-     */
-    public function generate_mutation_number()
-    {
-        $yymm = date('ym'); // e.g. 2506
-        $prefix = 'MUT' . $yymm;
-
-        $query = $this->db->query("
-            SELECT mutation_number 
-            FROM material_mutations 
-            WHERE mutation_number LIKE '{$prefix}%' 
-            ORDER BY mutation_number DESC 
-            LIMIT 1
-        ");
-
-        if ($query->num_rows() > 0) {
-            $last   = $query->row()->mutation_number;
-            $seq    = (int) substr($last, -3);
-            $next   = $seq + 1;
-        } else {
-            $next = 1;
-        }
-
-        return $prefix . str_pad($next, 3, '0', STR_PAD_LEFT);
-    }
-
-    // ---------------------------------------------------------------
-    // WAREHOUSE
-    // ---------------------------------------------------------------
-
-    public function get_all_warehouse()
-    {
-        return $this->db->select('id, kd_gudang, nm_gudang')
-            ->from('warehouse')
-            ->get()->result_array();
-    }
-
-    // ---------------------------------------------------------------
-    // MATERIAL
-    // ---------------------------------------------------------------
-
-    /**
-     * Get material list berdasarkan gudang (untuk dropdown form)
-     */
-    public function get_material_by_gudang($id_gudang)
-    {
-        return $this->db->select('
-                ws.id,
-                ws.code_incoming,
-                ws.nm_material,
-                ws.trade_name,
-                ws.code_lv1,
-                ws.code_lv2,
-                ws.code_lv3,
-                ws.code_lv4,
-                ws.id_unit,
-                ws.qty_free,
-                ws.harga_beli
-            ')
-            ->from('warehouse_stock ws')
-            ->where('ws.id_gudang', $id_gudang)
-            ->where('ws.qty_free >', 0)
-            ->get()->result_array();
-    }
-
-    /**
-     * Get coil list berdasarkan id_material dan id_gudang
-     */
-    public function get_coil_by_material($code_lv4)
-    {
-        return $this->db->select('
-                wsc.id,
-                wsc.no_coil,
-                wsc.no_ipp,
-                wsc.no_po,
-                wsc.no_ros,
-                wsc.gross_weight,
-				wsc.kode_internal,
-                wsc.net_weight,
-                wsc.length,
-                wsc.harga_beli,
-                wsc.total_nilai
-            ')
-            ->from('warehouse_stock_coil wsc')
-            ->where('wsc.id_material', $code_lv4)
-            ->get()->result_array();
-    }
-
-    // ---------------------------------------------------------------
-    // CRUD MUTASI
-    // ---------------------------------------------------------------
-
-    // ---------------------------------------------------------------
-    // GET LIST DATA MUTASI BERDASARKAN STATUS
-    // ---------------------------------------------------------------
     public function get_list($status_list = [])
     {
         $this->db->select('
@@ -124,24 +18,19 @@ class Approval_mutasi_model extends BF_Model
             mm.mutation_number,
             mm.mutation_date,
             mm.no_berita_acara,
-            mm.file_name_original,
-            mm.file_name_hash,
-            mm.id_gudang_from,
-            mm.kd_gudang_from,
             mm.nm_gudang_from,
-            mm.id_gudang_to,
-            mm.kd_gudang_to,
             mm.nm_gudang_to,
             mm.description,
             mm.status,
             mm.reject_reason,
+            mm.approved_by,
+            mm.approved_date,
             mm.create_by,
             mm.create_date
         ');
         $this->db->from('material_mutations mm');
         $this->db->where('mm.is_delete', 0);
 
-        // Membaca array [1] yang dikirim dari controller
         if (!empty($status_list)) {
             $this->db->where_in('mm.status', $status_list);
         }
@@ -150,6 +39,10 @@ class Approval_mutasi_model extends BF_Model
 
         return $this->db->get()->result_array();
     }
+
+    // ---------------------------------------------------------------
+    // DETAIL
+    // ---------------------------------------------------------------
 
     public function get_detail($id)
     {
@@ -203,72 +96,323 @@ class Approval_mutasi_model extends BF_Model
         return $header;
     }
 
-    public function save_mutation($data, $details)
+    // ---------------------------------------------------------------
+    // APPROVE — pindah stock + catat history + summary + per_day
+    // ---------------------------------------------------------------
+
+    public function approve_mutation($id, $approved_by, $approved_date)
     {
         $this->db->trans_start();
 
-        // Insert header
-        $this->db->insert('material_mutations', $data);
-        $id_mutation = $this->db->insert_id();
+        // Update status header
+        $this->db->where('id', $id);
+        $this->db->where('status', 1);
+        $this->db->update('material_mutations', [
+            'status'        => 2,
+            'approved_by'   => $approved_by,
+            'approved_date' => $approved_date,
+            'update_by'     => $approved_by,
+            'update_date'   => $approved_date,
+        ]);
 
-        foreach ($details as $detail) {
-            $coils = isset($detail['coils']) ? $detail['coils'] : [];
-            unset($detail['coils']);
-
-            $detail['id_material_mutation'] = $id_mutation;
-            $this->db->insert('material_mutation_details', $detail);
-            $id_detail = $this->db->insert_id();
-
-            foreach ($coils as $coil) {
-                $coil['id_mutation_detail'] = $id_detail;
-                $this->db->insert('material_mutation_details_coil', $coil);
-            }
-        }
-
-        $this->db->trans_complete();
-
-        if ($this->db->trans_status() === FALSE) {
+        if ($this->db->affected_rows() == 0) {
+            $this->db->trans_rollback();
             return false;
         }
 
-        return $id_mutation;
-    }
+        // Ambil data mutasi untuk proses stock
+        $mutation = $this->get_detail($id);
 
-    public function update_mutation($id, $data, $details)
-    {
-        $this->db->trans_start();
+        $now   = date('Y-m-d H:i:s');
+        $today = date('Y-m-d');
 
-        // Update header
-        $this->db->where('id', $id);
-        $this->db->update('material_mutations', $data);
+        $id_gudang_from = $mutation['id_gudang_from'];
+        $kd_gudang_from = $mutation['kd_gudang_from'];
+        $id_gudang_to   = $mutation['id_gudang_to'];
+        $kd_gudang_to   = $mutation['kd_gudang_to'];
 
-        // Hapus detail & coil lama
-        $old_details = $this->db->select('id')
-            ->from('material_mutation_details')
-            ->where('id_material_mutation', $id)
-            ->get()->result_array();
+        // Summary map untuk warehouse_incoming_summary (per material per gudang tujuan)
+        $summary_map = [];
 
-        foreach ($old_details as $od) {
-            $this->db->where('id_mutation_detail', $od['id'])
-                ->delete('material_mutation_details_coil');
+        foreach ($mutation['details'] as $detail) {
+            $id_material = $detail['code_lv4'];  // code_lv4 = key material di warehouse_stock & warehouse_stock_coil
+            $nm_material = $detail['nm_material'];
+            $code_lv4    = $detail['code_lv4'];
+
+            foreach ($detail['coils'] as $coil) {
+                // Ambil data terkini langsung dari warehouse_stock_coil
+                $live_coil = $this->db->query("
+                    SELECT * FROM warehouse_stock_coil
+                    WHERE id = ? LIMIT 1 FOR UPDATE
+                ", [$coil['id_warehouse_stock_coil']])->row();
+
+                // Gunakan harga_beli dari warehouse_stock_coil (harga asli per coil)
+                $net_weight    = (float) ($live_coil ? $live_coil->net_weight : ($coil['net_weight'] ?? 0));
+                $gross_weight  = (float) ($live_coil ? $live_coil->gross_weight : ($coil['gross_weight'] ?? 0));
+                $length        = (float) ($live_coil ? $live_coil->length : ($coil['length'] ?? 0));
+                $harga_beli    = (float) ($live_coil ? $live_coil->harga_beli : ($coil['harga_beli'] ?? 0));
+                $kode_internal = $live_coil ? $live_coil->kode_internal : ($coil['kode_internal'] ?? '');
+                $no_coil       = $live_coil ? $live_coil->no_coil : ($coil['no_coil'] ?? '');
+                $no_ipp        = $live_coil ? $live_coil->no_ipp : ($coil['no_ipp'] ?? '');
+
+                // ═══════════════════════════════════════════════════════════
+                // A. GUDANG ASAL — kurangi stock
+                // ═══════════════════════════════════════════════════════════
+
+                $stock_from = $this->db->query("
+                    SELECT * FROM warehouse_stock
+                    WHERE code_lv4 = ? AND id_gudang = ?
+                    LIMIT 1 FOR UPDATE
+                ", [$id_material, $id_gudang_from])->row();
+
+                if ($stock_from) {
+                    $qty_awal_from      = (float) $stock_from->qty_stock;
+                    $qty_free_from      = (float) $stock_from->qty_free;
+                    $saldo_awal_from    = (float) $stock_from->total_nilai;
+                    $harga_lama_from    = (float) $stock_from->harga_beli;
+                    $outgoing_from      = (float) $stock_from->outgoing;
+
+                    $qty_akhir_from     = $qty_awal_from - $net_weight;
+                    // Nilai keluar berdasarkan harga_beli dari warehouse_stock_coil
+                    $nilai_keluar       = $harga_beli * $net_weight;
+                    $saldo_akhir_from   = $saldo_awal_from - $nilai_keluar;
+                    $costbook_from      = $qty_akhir_from > 0
+                        ? ($saldo_akhir_from / $qty_akhir_from)
+                        : $harga_lama_from;
+
+                    $this->db->update('warehouse_stock', [
+                        'outgoing'    => $outgoing_from + $net_weight,
+                        'qty_stock'   => $qty_akhir_from,
+                        'qty_free'    => $qty_free_from - $net_weight,
+                        'harga_beli'  => $costbook_from,
+                        'total_nilai' => $saldo_akhir_from,
+                        'update_by'   => $approved_by,
+                        'update_date' => $now,
+                    ], ['id' => $stock_from->id]);
+
+                    // warehouse_stock_per_day (gudang asal)
+                    $this->_upsert_stock_per_day(
+                        $id_material, $nm_material, $id_gudang_from, $kd_gudang_from,
+                        $qty_akhir_from, (float) $stock_from->qty_booking,
+                        $qty_free_from - $net_weight, $costbook_from,
+                        $saldo_akhir_from, $now, $approved_by
+                    );
+
+                    // warehouse_history (gudang asal - OUT)
+                    $this->db->insert('warehouse_history', [
+                        'id_material'     => $id_material,
+                        'nm_material'     => $nm_material,
+                        'no_coil'         => $no_coil,
+                        'nm_category'     => 'Mutasi Keluar',
+                        'id_gudang'       => $id_gudang_from,
+                        'kd_gudang'       => $kd_gudang_from,
+                        'id_gudang_dari'  => $id_gudang_from,
+                        'kd_gudang_dari'  => $kd_gudang_from,
+                        'id_gudang_ke'    => $id_gudang_to,
+                        'kd_gudang_ke'    => $kd_gudang_to,
+                        'qty_stock_awal'  => $qty_awal_from,
+                        'qty_stock_akhir' => $qty_akhir_from,
+                        'no_ipp'          => $no_ipp,
+                        'jumlah_mat'      => $net_weight,
+                        'ket'             => 'Mutasi Keluar ' . $mutation['mutation_number'] . ' ke ' . $mutation['nm_gudang_to'],
+                        'harga_beli'      => $harga_beli,
+                        'total_harga'     => $nilai_keluar,
+                        'saldo_awal'      => $saldo_awal_from,
+                        'saldo_akhir'     => $saldo_akhir_from,
+                        'harga_baru'      => $costbook_from,
+                        'harga_lama'      => $harga_lama_from,
+                        'update_by'       => $approved_by,
+                        'update_date'     => $now,
+                    ]);
+                }
+
+                // ═══════════════════════════════════════════════════════════
+                // B. GUDANG TUJUAN — tambah stock
+                // ═══════════════════════════════════════════════════════════
+
+                $stock_to = $this->db->query("
+                    SELECT * FROM warehouse_stock
+                    WHERE code_lv4 = ? AND id_gudang = ?
+                    LIMIT 1 FOR UPDATE
+                ", [$id_material, $id_gudang_to])->row();
+
+                $qty_awal_to   = $stock_to ? (float) $stock_to->qty_stock   : 0;
+                $saldo_awal_to = $stock_to ? (float) $stock_to->total_nilai : 0;
+                $harga_lama_to = $stock_to ? (float) $stock_to->harga_beli  : 0;
+                $incoming_to   = $stock_to ? (float) $stock_to->incoming    : 0;
+                $qty_free_to   = $stock_to ? (float) $stock_to->qty_free    : 0;
+                $qty_book_to   = $stock_to ? (float) $stock_to->qty_booking : 0;
+
+                // Harga masuk = harga_beli dari warehouse_stock_coil (harga asli per coil)
+                $price_in        = $harga_beli;
+                $nilai_masuk     = $price_in * $net_weight;
+                $qty_akhir_to    = $qty_awal_to + $net_weight;
+                $saldo_akhir_to  = $saldo_awal_to + $nilai_masuk;
+                $costbook_to     = $qty_akhir_to > 0
+                    ? ($saldo_akhir_to / $qty_akhir_to)
+                    : $price_in;
+
+                if (empty($stock_to)) {
+                    // Ambil info tambahan dari warehouse_stock gudang asal
+                    $this->db->insert('warehouse_stock', [
+                        'code_lv1'        => $stock_from->code_lv1 ?? '',
+                        'code_lv2'        => $stock_from->code_lv2 ?? '',
+                        'code_lv3'        => $stock_from->code_lv3 ?? '',
+                        'code_lv4'        => $id_material,
+                        'code_incoming'   => $mutation['mutation_number'],
+                        'nm_material'     => $nm_material,
+                        'trade_name'      => $detail['trade_name'] ?? '',
+                        'id_gudang'       => $id_gudang_to,
+                        'kd_gudang'       => $kd_gudang_to,
+                        'id_unit'         => $stock_from->id_unit ?? null,
+                        'id_unit_packing' => $stock_from->id_unit_packing ?? null,
+                        'begining'        => 0,
+                        'incoming'        => $net_weight,
+                        'outgoing'        => 0,
+                        'qty_stock'       => $qty_akhir_to,
+                        'qty_booking'     => 0,
+                        'qty_free'        => $qty_akhir_to,
+                        'use_qty_free'    => 0,
+                        'harga_beli'      => $costbook_to,
+                        'total_nilai'     => $saldo_akhir_to,
+                        'update_by'       => $approved_by,
+                        'update_date'     => $now,
+                    ]);
+                } else {
+                    $this->db->update('warehouse_stock', [
+                        'incoming'    => $incoming_to + $net_weight,
+                        'qty_stock'   => $qty_akhir_to,
+                        'qty_free'    => $qty_free_to + $net_weight,
+                        'harga_beli'  => $costbook_to,
+                        'total_nilai' => $saldo_akhir_to,
+                        'update_by'   => $approved_by,
+                        'update_date' => $now,
+                    ], ['id' => $stock_to->id]);
+                }
+
+                // warehouse_stock_per_day (gudang tujuan)
+                $this->_upsert_stock_per_day(
+                    $id_material, $nm_material, $id_gudang_to, $kd_gudang_to,
+                    $qty_akhir_to, $qty_book_to,
+                    $qty_free_to + $net_weight, $costbook_to,
+                    $saldo_akhir_to, $now, $approved_by
+                );
+
+                // warehouse_history (gudang tujuan - IN)
+                $this->db->insert('warehouse_history', [
+                    'id_material'     => $id_material,
+                    'nm_material'     => $nm_material,
+                    'no_coil'         => $no_coil,
+                    'nm_category'     => 'Mutasi Masuk',
+                    'id_gudang'       => $id_gudang_to,
+                    'kd_gudang'       => $kd_gudang_to,
+                    'id_gudang_dari'  => $id_gudang_from,
+                    'kd_gudang_dari'  => $kd_gudang_from,
+                    'id_gudang_ke'    => $id_gudang_to,
+                    'kd_gudang_ke'    => $kd_gudang_to,
+                    'qty_stock_awal'  => $qty_awal_to,
+                    'qty_stock_akhir' => $qty_akhir_to,
+                    'no_ipp'          => $no_ipp,
+                    'jumlah_mat'      => $net_weight,
+                    'ket'             => 'Mutasi Masuk ' . $mutation['mutation_number'] . ' dari ' . $mutation['nm_gudang_from'],
+                    'harga_beli'      => $price_in,
+                    'total_harga'     => $nilai_masuk,
+                    'saldo_awal'      => $saldo_awal_to,
+                    'saldo_akhir'     => $saldo_akhir_to,
+                    'harga_baru'      => $costbook_to,
+                    'harga_lama'      => $harga_lama_to,
+                    'update_by'       => $approved_by,
+                    'update_date'     => $now,
+                ]);
+
+                // ═══════════════════════════════════════════════════════════
+                // C. UPDATE warehouse_stock_coil — pindah gudang
+                // ═══════════════════════════════════════════════════════════
+
+                $this->db->where('id', $coil['id_warehouse_stock_coil']);
+                $this->db->update('warehouse_stock_coil', [
+                    'id_gudang' => $id_gudang_to,
+                    'kd_gudang' => $kd_gudang_to,
+                ]);
+
+                // ═══════════════════════════════════════════════════════════
+                // D. warehouse_coil_per_day (OUT dari asal, IN ke tujuan)
+                // ═══════════════════════════════════════════════════════════
+
+                // OUT dari gudang asal
+                $this->_upsert_coil_per_day(
+                    $id_material, $nm_material, $id_gudang_from, $kd_gudang_from,
+                    $no_coil, $kode_internal, $gross_weight, $net_weight, $length,
+                    'OUT', $now, $approved_by
+                );
+
+                // IN ke gudang tujuan
+                $this->_upsert_coil_per_day(
+                    $id_material, $nm_material, $id_gudang_to, $kd_gudang_to,
+                    $no_coil, $kode_internal, $gross_weight, $net_weight, $length,
+                    'IN', $now, $approved_by
+                );
+
+                // ═══════════════════════════════════════════════════════════
+                // E. warehouse_incoming_summary_detail
+                // ═══════════════════════════════════════════════════════════
+
+                $this->db->insert('warehouse_incoming_summary_detail', [
+                    'no_ipp'         => $mutation['mutation_number'],
+                    'id_material'    => $id_material,
+                    'nm_material'    => $nm_material,
+                    'id_gudang'      => $id_gudang_to,
+                    'kd_gudang'      => $kd_gudang_to,
+                    'no_coil'        => $no_coil,
+                    'kode_internal'  => $kode_internal,
+                    'gross_weight'   => $gross_weight,
+                    'net_weight'     => $net_weight,
+                    'length'         => $length,
+                    'price_per_coil' => $nilai_masuk,
+                    'cost_book'      => $costbook_to,
+                    'status_qc'      => '',
+                    'created_at'     => $now,
+                ]);
+
+                // ═══════════════════════════════════════════════════════════
+                // F. Aggregate untuk warehouse_incoming_summary
+                // ═══════════════════════════════════════════════════════════
+
+                $summary_key = $id_material . '_' . $id_gudang_to;
+                if (!isset($summary_map[$summary_key])) {
+                    $summary_map[$summary_key] = [
+                        'no_ipp'        => $mutation['mutation_number'],
+                        'id_material'   => $id_material,
+                        'nm_material'   => $nm_material,
+                        'id_gudang'     => $id_gudang_to,
+                        'kd_gudang'     => $kd_gudang_to,
+                        'tanggal'       => $today,
+                        'jumlah_coil'   => 0,
+                        'qty_awal'      => $qty_awal_to,
+                        'qty_transaksi' => 0,
+                        'qty_akhir'     => 0,
+                        'costbook'      => 0,
+                        'total_harga'   => 0,
+                        'saldo_awal'    => $saldo_awal_to,
+                        'saldo_akhir'   => 0,
+                        'harga_lama'    => $harga_lama_to,
+                        'created_by'    => $approved_by,
+                        'created_at'    => $now,
+                    ];
+                }
+
+                $summary_map[$summary_key]['jumlah_coil']++;
+                $summary_map[$summary_key]['qty_transaksi'] += $net_weight;
+                $summary_map[$summary_key]['total_harga']   += $nilai_masuk;
+                $summary_map[$summary_key]['qty_akhir']      = $qty_akhir_to;
+                $summary_map[$summary_key]['costbook']       = $costbook_to;
+                $summary_map[$summary_key]['saldo_akhir']    = $saldo_akhir_to;
+            }
         }
 
-        $this->db->where('id_material_mutation', $id)
-            ->delete('material_mutation_details');
-
-        // Insert detail & coil baru
-        foreach ($details as $detail) {
-            $coils = isset($detail['coils']) ? $detail['coils'] : [];
-            unset($detail['coils']);
-
-            $detail['id_material_mutation'] = $id;
-            $this->db->insert('material_mutation_details', $detail);
-            $id_detail = $this->db->insert_id();
-
-            foreach ($coils as $coil) {
-                $coil['id_mutation_detail'] = $id_detail;
-                $this->db->insert('material_mutation_details_coil', $coil);
-            }
+        // Insert warehouse_incoming_summary (aggregated per material)
+        foreach ($summary_map as $s) {
+            $this->db->insert('warehouse_incoming_summary', $s);
         }
 
         $this->db->trans_complete();
@@ -276,61 +420,119 @@ class Approval_mutasi_model extends BF_Model
         return $this->db->trans_status() !== FALSE;
     }
 
-    /**
-     * Ubah status ke 1 (ajukan / pending approval)
-     */
-    public function submit_mutation($id, $update_by)
-    {
-        $this->db->where('id', $id);
-        $this->db->where('status', 0); // hanya yang open
-        $this->db->update('material_mutations', [
-            'status'      => 1,
-            'update_by'   => $update_by,
-            'update_date' => date('Y-m-d H:i:s'),
-        ]);
+    // ---------------------------------------------------------------
+    // HELPER: Upsert warehouse_stock_per_day
+    // ---------------------------------------------------------------
 
-        return $this->db->affected_rows() > 0;
+    private function _upsert_stock_per_day(
+        $id_material, $nm_material, $id_gudang, $kd_gudang,
+        $qty_stock, $qty_booking, $qty_free, $harga_beli,
+        $total_nilai, $now, $user
+    ) {
+        $today = date('Y-m-d');
+
+        $snap = $this->db->query("
+            SELECT id FROM warehouse_stock_per_day
+            WHERE id_material = ? AND id_gudang = ? AND DATE(hist_date) = ?
+            LIMIT 1
+        ", [$id_material, $id_gudang, $today])->row();
+
+        $snap_data = [
+            'qty_stock'   => $qty_stock,
+            'qty_booking' => $qty_booking,
+            'qty_free'    => $qty_free,
+            'harga_beli'  => $harga_beli,
+            'total_nilai' => $total_nilai,
+            'kd_gudang'   => $kd_gudang,
+            'hist_date'   => $now,
+            'hist_by'     => $user,
+        ];
+
+        if (empty($snap)) {
+            $this->db->insert('warehouse_stock_per_day', array_merge([
+                'id_material' => $id_material,
+                'nm_material' => $nm_material,
+                'id_gudang'   => $id_gudang,
+            ], $snap_data));
+        } else {
+            $this->db->update('warehouse_stock_per_day', $snap_data, ['id' => $snap->id]);
+        }
     }
 
-    /**
-     * Cancel mutasi (status = 5)
-     */
-    public function cancel_mutation($id, $update_by)
-    {
-        $this->db->where('id', $id);
-        $this->db->where_in('status', [0]);
-        $this->db->update('material_mutations', [
-            'status'      => 5,
-            'update_by'   => $update_by,
-            'update_date' => date('Y-m-d H:i:s'),
-        ]);
+    // ---------------------------------------------------------------
+    // HELPER: Upsert warehouse_coil_per_day
+    // ---------------------------------------------------------------
 
-        return $this->db->affected_rows() > 0;
+    private function _upsert_coil_per_day(
+        $id_material, $nm_material, $id_gudang, $kd_gudang,
+        $no_coil, $kode_internal, $gross_weight, $net_weight, $length,
+        $status, $now, $user
+    ) {
+        $today = date('Y-m-d');
+
+        $coil_snap = $this->db->query("
+            SELECT id FROM warehouse_coil_per_day
+            WHERE id_material = ? AND id_gudang = ? AND no_coil = ? AND DATE(hist_date) = ?
+            LIMIT 1
+        ", [$id_material, $id_gudang, $no_coil, $today])->row();
+
+        $coil_snap_data = [
+            'nm_material'   => $nm_material,
+            'kd_gudang'     => $kd_gudang,
+            'kode_internal' => $kode_internal,
+            'gross_weight'  => $gross_weight,
+            'net_weight'    => $net_weight,
+            'length'        => $length,
+            'status'        => $status,
+            'hist_date'     => $now,
+            'hist_by'       => $user,
+        ];
+
+        if (empty($coil_snap)) {
+            $this->db->insert('warehouse_coil_per_day', array_merge([
+                'id_material' => $id_material,
+                'id_gudang'   => $id_gudang,
+                'no_coil'     => $no_coil,
+            ], $coil_snap_data));
+        } else {
+            $this->db->update('warehouse_coil_per_day', $coil_snap_data, ['id' => $coil_snap->id]);
+        }
     }
 
-    /**
-     * Hitung total nilai mutasi dari semua detail (regular + coil)
-     */
-    public function get_total_nilai($id_mutation)
-    {
-        // Total dari detail regular
-        $q1 = $this->db->query("
-            SELECT COALESCE(SUM(total_nilai_mutasi), 0) as total
-            FROM material_mutation_details
-            WHERE id_material_mutation = {$id_mutation}
-        ")->row();
+    // ---------------------------------------------------------------
+    // REJECT — tolak permanen (status → 3)
+    // ---------------------------------------------------------------
 
-        return (float) $q1->total;
-    }
-
-    /**
-     * Update status keputusan approval (Hanya Approve atau dikembalikan untuk Revisi)
-     */
-    public function update_approval_status($id, $update_data)
+    public function reject_mutation($id, $rejected_by, $rejected_date, $reason)
     {
         $this->db->where('id', $id);
         $this->db->where('status', 1);
-        $this->db->update('material_mutations', $update_data);
+        $this->db->update('material_mutations', [
+            'status'        => 3,
+            'reject_reason' => $reason,
+            'approved_by'   => $rejected_by,
+            'approved_date' => $rejected_date,
+            'update_by'     => $rejected_by,
+            'update_date'   => $rejected_date,
+        ]);
+
+        return $this->db->affected_rows() > 0;
+    }
+
+    // ---------------------------------------------------------------
+    // REVISI — kembalikan untuk perbaikan (status → 6)
+    // ---------------------------------------------------------------
+
+    public function revision_mutation($id, $revised_by, $revised_date, $reason)
+    {
+        $this->db->where('id', $id);
+        $this->db->where('status', 1);
+        $this->db->update('material_mutations', [
+            'status'        => 6,
+            'reject_reason' => $reason,
+            'update_by'     => $revised_by,
+            'update_date'   => $revised_date,
+        ]);
 
         return $this->db->affected_rows() > 0;
     }

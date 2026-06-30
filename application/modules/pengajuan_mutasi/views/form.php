@@ -224,7 +224,6 @@ $details = $m['details'] ?? [];
                                 </th>
                                 <th>Kode Internal</th>
                                 <th>No. Coil</th>
-                                <th>No. IPP</th>
                                 <th>Gross (kg)</th>
                                 <th>Net (kg)</th>
                                 <th>Length (m)</th>
@@ -534,7 +533,7 @@ $details = $m['details'] ?? [];
                 return;
             }
 
-            const selectedIds = rowData.coils.map(c => parseInt(c.id));
+            const selectedIds = rowData.coils.map(c => parseInt(c.id_warehouse_stock_coil || c.id));
             let html = '';
 
             res.data.forEach(function(c) {
@@ -548,7 +547,6 @@ $details = $m['details'] ?? [];
             </td>
             <td class="align-middle"><span class="badge bg-light text-dark border">${escHtml(c.kode_internal || '-')}</span></td>
             <td class="align-middle"><strong>${escHtml(c.no_coil)}</strong></td>
-            <td class="align-middle">${escHtml(c.no_ipp || '-')}</td>
             <td class="align-middle">${formatNum(c.gross_weight, 2)}</td>
             <td class="align-middle">${formatNum(c.net_weight, 2)}</td>
             <td class="align-middle">${formatNum(c.length, 2)}</td>
@@ -605,6 +603,7 @@ $details = $m['details'] ?? [];
         if (rowData) {
             rowData.coils = selectedCoils.map(c => ({
                 id: c.id,
+                id_warehouse_stock_coil: c.id,
                 no_coil: c.no_coil,
                 no_ipp: c.no_ipp,
                 no_po: c.no_po,
@@ -724,7 +723,14 @@ $details = $m['details'] ?? [];
             success: function(res) {
                 $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-save"></i> Simpan');
                 if (res.status == 1) {
-                    Swal.fire('Berhasil', res.message, 'success').then(() => {
+                    Swal.fire({
+                        title: 'Berhasil',
+                        text: res.message,
+                        icon: 'success',
+                        showConfirmButton: false,
+                        timer: 1500,
+                        timerProgressBar: true
+                    }).then(() => {
                         window.location.href = '<?= site_url('pengajuan_mutasi') ?>';
                     });
                 } else {

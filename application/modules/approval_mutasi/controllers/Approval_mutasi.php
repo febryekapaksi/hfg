@@ -4,16 +4,14 @@ defined('BASEPATH') or exit('No direct script access allowed');
 class Approval_mutasi extends Admin_Controller
 {
     protected $viewPermission   = 'Approval_mutasi.View';
-    protected $addPermission    = 'Approval_mutasi.Add';
     protected $managePermission = 'Approval_mutasi.Manage';
-    protected $deletePermission = 'Approval_mutasi.Delete';
 
     public function __construct()
     {
         parent::__construct();
-        $this->load->model('Approval_mutasi/Approval_mutasi_model');
+        $this->load->model('Approval_mutasi/approval_mutasi_model');
         $this->template->title('Approval Mutasi');
-        $this->template->page_icon('fa fa-exchange-alt');
+        $this->template->page_icon('fa fa-check-circle');
 
         date_default_timezone_set('Asia/Bangkok');
 
@@ -25,6 +23,7 @@ class Approval_mutasi extends Admin_Controller
     // ---------------------------------------------------------------
     // INDEX
     // ---------------------------------------------------------------
+
     public function index()
     {
         $this->auth->restrict($this->viewPermission);
@@ -33,99 +32,151 @@ class Approval_mutasi extends Admin_Controller
     }
 
     // ---------------------------------------------------------------
-    // RENDER TABLE DATA (HANYA STATUS = 1)
+    // RENDER PARTIAL TABLE PER TAB (AJAX)
     // ---------------------------------------------------------------
-    public function render_open()
+
+    public function render_pending()
     {
         $this->auth->restrict($this->viewPermission);
+        $data['list'] = $this->approval_mutasi_model->get_list([1]);
+        $this->template->render('table/pending_mutation', $data);
+    }
 
-        // Diubah menjadi [1] saja agar memuat data status = 1 (Waiting Approval)
-        $data['list'] = $this->Approval_mutasi_model->get_list([1]);
+    public function render_approved()
+    {
+        $this->auth->restrict($this->viewPermission);
+        $data['list'] = $this->approval_mutasi_model->get_list([2]);
+        $this->template->render('table/approved_mutation', $data);
+    }
 
-        $this->template->render('table/open_mutation', $data);
+    public function render_rejected()
+    {
+        $this->auth->restrict($this->viewPermission);
+        $data['list'] = $this->approval_mutasi_model->get_list([3]);
+        $this->template->render('table/rejected_mutation', $data);
+    }
+
+    public function render_revision()
+    {
+        $this->auth->restrict($this->viewPermission);
+        $data['list'] = $this->approval_mutasi_model->get_list([6]);
+        $this->template->render('table/revision_mutation', $data);
     }
 
     // ---------------------------------------------------------------
-    // FORM (VIEW / APPROVAL MODE)
+    // FORM VIEW DETAIL
     // ---------------------------------------------------------------
-    public function form($mode = 'view', $id = null)
+
+    public function detail($id = null)
     {
         $this->auth->restrict($this->viewPermission);
 
-        $data['mode']       = $mode;
-        $data['id']         = $id;
-        $data['warehouses'] = $this->Approval_mutasi_model->get_all_warehouse();
-        $data['mutation']   = null;
-
-        if ($id) {
-            $mutation = $this->Approval_mutasi_model->get_detail($id);
-
-            if (!$mutation) {
-                set_flashdata('error', 'Data mutasi tidak ditemukan.');
-                redirect(site_url('Approval_mutasi'));
-            }
-
-            $data['mutation'] = $mutation;
+        if (!$id) {
+            redirect('approval_mutasi');
         }
 
-        $this->template->title(ucfirst($mode) . ' Approval Mutasi');
-        $this->template->render('form', $data);
+        $mutation = $this->approval_mutasi_model->get_detail($id);
+
+        if (!$mutation) {
+            $this->session->set_flashdata('error', 'Data mutasi tidak ditemukan.');
+            redirect('approval_mutasi');
+        }
+
+        $data['mutation'] = $mutation;
+        $data['id']       = $id;
+
+        $this->template->title('Detail Approval Mutasi');
+        $this->template->render('detail', $data);
     }
 
     // ---------------------------------------------------------------
-    // AJAX POST — SUBMIT APPROVAL DECISION
+    // APPROVE (status 1 → 2, pindah stock)
     // ---------------------------------------------------------------
-    public function submit_approval()
+
+    public function approve($id)
     {
         $this->auth->restrict($this->managePermission);
 
-        $id     = $this->input->post('id');
-        $action = $this->input->post('action'); 
-        $reason = $this->input->post('reason');
+        $mutation = $this->approval_mutasi_model->get_detail($id);
 
-        if (!$id || !$action) {
-            return $this->_json(['status' => 0, 'message' => 'Parameter pengenal tidak valid.']);
+        if (!$mutation || $mutation['status'] != 1) {
+            return $this->_json(['status' => 0, 'message' => 'Data tidak valid atau status sudah berubah.']);
         }
 
-        $mutation = $this->Approval_mutasi_model->get_detail($id);
-        if (!$mutation) {
-            return $this->_json(['status' => 0, 'message' => 'Data mutasi tidak ditemukan.']);
+        $result = $this->approval_mutasi_model->approve_mutation($id, $this->username, $this->datetime);
+
+        if ($result) {
+            return $this->_json(['status' => 1, 'message' => 'Mutasi berhasil diapprove. Stock telah dipindahkan.']);
         }
 
-        if ($mutation['status'] != 1) {
-            return $this->_json(['status' => 0, 'message' => 'Status pengajuan ini sudah berubah, tidak dapat diproses lagi.']);
-        }
-
-        // Jalankan mapping status baru
-        // status 2 = Approved, status 6 = Butuh Revisi
-        if ($action === 'approve') {
-            $new_status = 2;
-            $msg_success = 'Pengajuan mutasi berhasil disetujui (Approved).';
-        } elseif ($action === 'revisi') {
-            $new_status = 6;
-            $msg_success = 'Status pengajuan berhasil diubah menjadi butuh Revisi.';
-        } else {
-            return $this->_json(['status' => 0, 'message' => 'Tindakan aksi ilegal atau tidak dikenal.']);
-        }
-
-        $update = $this->Approval_mutasi_model->update_approval_status($id, [
-            'status'        => $new_status,
-            'reject_reason' => (!empty($reason)) ? $reason : null,
-            'approved_by'   => $this->username,
-            'approved_date' => $this->datetime
-        ]);
-
-        if ($update) {
-            return $this->_json(['status' => 1, 'message' => $msg_success]);
-        } else {
-            return $this->_json(['status' => 0, 'message' => 'Gagal memperbarui status data ke database.']);
-        }
+        return $this->_json(['status' => 0, 'message' => 'Gagal melakukan approval.']);
     }
+
+    // ---------------------------------------------------------------
+    // REJECT (status 1 → 3, permanen ditolak)
+    // ---------------------------------------------------------------
+
+    public function reject($id)
+    {
+        $this->auth->restrict($this->managePermission);
+
+        $reason = $this->input->post('reject_reason');
+
+        if (empty(trim($reason))) {
+            return $this->_json(['status' => 0, 'message' => 'Alasan reject wajib diisi.']);
+        }
+
+        $mutation = $this->approval_mutasi_model->get_detail($id);
+
+        if (!$mutation || $mutation['status'] != 1) {
+            return $this->_json(['status' => 0, 'message' => 'Data tidak valid atau status sudah berubah.']);
+        }
+
+        $result = $this->approval_mutasi_model->reject_mutation($id, $this->username, $this->datetime, $reason);
+
+        if ($result) {
+            return $this->_json(['status' => 1, 'message' => 'Mutasi berhasil ditolak.']);
+        }
+
+        return $this->_json(['status' => 0, 'message' => 'Gagal melakukan reject.']);
+    }
+
+    // ---------------------------------------------------------------
+    // REVISI (status 1 → 6, dikembalikan untuk perbaikan)
+    // ---------------------------------------------------------------
+
+    public function revision($id)
+    {
+        $this->auth->restrict($this->managePermission);
+
+        $reason = $this->input->post('reject_reason');
+
+        if (empty(trim($reason))) {
+            return $this->_json(['status' => 0, 'message' => 'Catatan revisi wajib diisi.']);
+        }
+
+        $mutation = $this->approval_mutasi_model->get_detail($id);
+
+        if (!$mutation || $mutation['status'] != 1) {
+            return $this->_json(['status' => 0, 'message' => 'Data tidak valid atau status sudah berubah.']);
+        }
+
+        $result = $this->approval_mutasi_model->revision_mutation($id, $this->username, $this->datetime, $reason);
+
+        if ($result) {
+            return $this->_json(['status' => 1, 'message' => 'Mutasi dikembalikan untuk revisi.']);
+        }
+
+        return $this->_json(['status' => 0, 'message' => 'Gagal mengembalikan untuk revisi.']);
+    }
+
+    // ---------------------------------------------------------------
+    // HELPERS
+    // ---------------------------------------------------------------
 
     private function _json($data)
     {
-        $this->output
-            ->set_content_type('application/json')
+        return $this->output->set_content_type('application/json')
             ->set_output(json_encode($data));
     }
 }

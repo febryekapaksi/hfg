@@ -317,7 +317,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                     <input type="text" id="dpp_ls" class="form-control form-control-sm readonly-field" readonly tabindex="-1" placeholder="0">
                 </div>
                 <div class="col-md-3">
-                    <label>Total Biaya LS <small class="text-muted">(DPP + PPN - PPH)</small></label>
+                    <label>Total Biaya LS <small class="text-muted">(LS Cost + PPN - PPH)</small></label>
                     <input type="text" id="total_biaya_ls" class="form-control form-control-sm readonly-field" readonly tabindex="-1" placeholder="0">
                 </div>
             </div>
@@ -862,10 +862,11 @@ $list_po_data = isset($list_po) ? $list_po : [];
         });
 
         function calcTotalBiayaLS() {
-            var dpp = getAutoVal('#biaya_ls') * (11 / 12);
+            var biaya_ls = getAutoVal('#biaya_ls');
+            var dpp = biaya_ls * (11 / 12);
             var ppn = getAutoVal('#ppn_ls');
             var pph = getAutoVal('#pph_ls');
-            var total = dpp + ppn - pph;
+            var total = biaya_ls + ppn - pph;
 
             $('#dpp_ls').val(dpp.toLocaleString('en-US', {
                 minimumFractionDigits: 0,

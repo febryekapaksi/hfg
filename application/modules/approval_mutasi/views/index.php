@@ -1,8 +1,6 @@
 <?php
-$ENABLE_ADD    = has_permission('Approval_mutasi.Add');
 $ENABLE_MANAGE = has_permission('Approval_mutasi.Manage');
 $ENABLE_VIEW   = has_permission('Approval_mutasi.View');
-$ENABLE_DELETE = has_permission('Approval_mutasi.Delete');
 ?>
 
 <style>
@@ -28,59 +26,123 @@ $ENABLE_DELETE = has_permission('Approval_mutasi.Delete');
     }
 
     @keyframes shimmer {
-        0% {
-            background-position: 200% 0;
-        }
-
-        100% {
-            background-position: -200% 0;
-        }
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
     }
 </style>
 
 <div class="card">
     <div class="card-body">
-        <div id="skeleton-approval">
-            <div class="skeleton skeleton-line medium"></div>
-            <div class="skeleton skeleton-line"></div>
-            <div class="skeleton skeleton-line short"></div>
-        </div>
+        <ul class="nav nav-tabs mb-3" id="ApprovalTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="pending-tab" data-bs-toggle="tab"
+                    data-bs-target="#tab-pending" type="button" role="tab">
+                    <i class="fa-solid fa-clock text-warning"></i> Menunggu Approval
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="approved-tab" data-bs-toggle="tab"
+                    data-bs-target="#tab-approved" type="button" role="tab">
+                    <i class="fa-solid fa-check-circle text-success"></i> Approved
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="revision-tab" data-bs-toggle="tab"
+                    data-bs-target="#tab-revision" type="button" role="tab">
+                    <i class="fa-solid fa-rotate-left text-info"></i> Revisi
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="rejected-tab" data-bs-toggle="tab"
+                    data-bs-target="#tab-rejected" type="button" role="tab">
+                    <i class="fa-solid fa-times-circle text-danger"></i> Rejected
+                </button>
+            </li>
+        </ul>
 
-        <div id="approval-content" style="display:none;"></div>
+        <div class="tab-content" id="ApprovalTabsContent">
+
+            <div class="tab-pane fade show active" id="tab-pending" role="tabpanel">
+                <div id="skeleton-pending">
+                    <div class="skeleton skeleton-line medium"></div>
+                    <div class="skeleton skeleton-line"></div>
+                    <div class="skeleton skeleton-line short"></div>
+                </div>
+                <div id="content-pending" style="display:none;"></div>
+            </div>
+
+            <div class="tab-pane fade" id="tab-approved" role="tabpanel">
+                <div id="skeleton-approved">
+                    <div class="skeleton skeleton-line medium"></div>
+                    <div class="skeleton skeleton-line"></div>
+                    <div class="skeleton skeleton-line short"></div>
+                </div>
+                <div id="content-approved" style="display:none;"></div>
+            </div>
+
+            <div class="tab-pane fade" id="tab-revision" role="tabpanel">
+                <div id="skeleton-revision">
+                    <div class="skeleton skeleton-line medium"></div>
+                    <div class="skeleton skeleton-line"></div>
+                    <div class="skeleton skeleton-line short"></div>
+                </div>
+                <div id="content-revision" style="display:none;"></div>
+            </div>
+
+            <div class="tab-pane fade" id="tab-rejected" role="tabpanel">
+                <div id="skeleton-rejected">
+                    <div class="skeleton skeleton-line medium"></div>
+                    <div class="skeleton skeleton-line"></div>
+                    <div class="skeleton skeleton-line short"></div>
+                </div>
+                <div id="content-rejected" style="display:none;"></div>
+            </div>
+
+        </div>
     </div>
 </div>
 
-<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.js"></script>
 
 <script>
     const BASE_URL = siteurl + active_controller;
 
-    function loadApprovalList() {
-        const skeleton = $('#skeleton-approval');
-        const content = $('#approval-content');
+    function loadTab(tab) {
+        const skeleton = $('#skeleton-' + tab);
+        const content = $('#content-' + tab);
+
+        if (content.data('loaded')) return;
 
         skeleton.show();
         content.hide();
 
-        $.get(BASE_URL + '/render_open', function(html) {
+        $.get(BASE_URL + '/render_' + tab, function(html) {
             skeleton.hide();
             content.html(html).show();
+            content.data('loaded', true);
         });
     }
+
     $(document).ready(function() {
-        loadApprovalList();
+        loadTab('pending');
+
+        $('#approved-tab').on('shown.bs.tab', function() { loadTab('approved'); });
+        $('#revision-tab').on('shown.bs.tab', function() { loadTab('revision'); });
+        $('#rejected-tab').on('shown.bs.tab', function() { loadTab('rejected'); });
     });
 
-    function reloadTable() {
-        loadApprovalList();
+    function reloadTab(tab) {
+        $('#content-' + tab).data('loaded', false);
+        loadTab(tab);
+    }
+
+    function reloadAllTabs() {
+        ['pending', 'approved', 'revision', 'rejected'].forEach(function(tab) {
+            $('#content-' + tab).data('loaded', false);
+        });
+        loadTab('pending');
     }
 </script>
