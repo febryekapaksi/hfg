@@ -11,10 +11,10 @@ class Pengajuan_mutasi_model extends BF_Model
     {
         parent::__construct();
 
-        $this->ENABLE_ADD    = has_permission('Pengajuan_mutasi.Add');
-        $this->ENABLE_MANAGE = has_permission('Pengajuan_mutasi.Manage');
-        $this->ENABLE_VIEW   = has_permission('Pengajuan_mutasi.View');
-        $this->ENABLE_DELETE = has_permission('Pengajuan_mutasi.Delete');
+        $this->ENABLE_ADD    = has_permission('Request_Mutation.Add');
+        $this->ENABLE_MANAGE = has_permission('Request_Mutation.Manage');
+        $this->ENABLE_VIEW   = has_permission('Request_Mutation.View');
+        $this->ENABLE_DELETE = has_permission('Request_Mutation.Delete');
     }
 
     // ---------------------------------------------------------------

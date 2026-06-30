@@ -1,8 +1,8 @@
 <?php
-$ENABLE_ADD    = has_permission('Pengajuan_mutasi.Add');
-$ENABLE_MANAGE = has_permission('Pengajuan_mutasi.Manage');
-$ENABLE_VIEW   = has_permission('Pengajuan_mutasi.View');
-$ENABLE_DELETE = has_permission('Pengajuan_mutasi.Delete');
+$ENABLE_ADD    = has_permission('Request_Mutation.Add');
+$ENABLE_MANAGE = has_permission('Request_Mutation.Manage');
+$ENABLE_VIEW   = has_permission('Request_Mutation.View');
+$ENABLE_DELETE = has_permission('Request_Mutation.Delete');
 ?>
 
 <style>
@@ -44,7 +44,7 @@ $ENABLE_DELETE = has_permission('Pengajuan_mutasi.Delete');
 			<p></p>
 			<?php if ($ENABLE_ADD): ?>
 				<a href="<?= site_url('pengajuan_mutasi/form/add') ?>" class="btn btn-primary btn-sm">
-					<i class="fa-solid fa-plus"></i> Buat Pengajuan Mutasi
+					<i class="fa-solid fa-plus"></i> Create Mutation Request
 				</a>
 			<?php endif; ?>
 		</div>
@@ -59,13 +59,13 @@ $ENABLE_DELETE = has_permission('Pengajuan_mutasi.Delete');
 			<li class="nav-item" role="presentation">
 				<button class="nav-link" id="close-tab" data-bs-toggle="tab"
 					data-bs-target="#tab-close" type="button" role="tab">
-					<i class="fa-solid fa-check-double text-success"></i> Close
+					<i class="fa-solid fa-check-double text-success"></i> Closed
 				</button>
 			</li>
 			<li class="nav-item" role="presentation">
 				<button class="nav-link" id="cancel-tab" data-bs-toggle="tab"
 					data-bs-target="#tab-cancel" type="button" role="tab">
-					<i class="fa-solid fa-ban text-danger"></i> Cancel
+					<i class="fa-solid fa-ban text-danger"></i> Cancelled
 				</button>
 			</li>
 		</ul>
@@ -156,19 +156,19 @@ $ENABLE_DELETE = has_permission('Pengajuan_mutasi.Delete');
 	// Konfirmasi ajukan
 	function confirmSubmit(id) {
 		Swal.fire({
-			title: 'Ajukan Mutasi?',
-			text: 'Data akan dikirim untuk proses approval.',
+			title: 'Submit Mutation?',
+			text: 'This request will be sent for approval.',
 			icon: 'question',
 			showCancelButton: true,
-			confirmButtonText: 'Ya, Ajukan',
-			cancelButtonText: 'Batal',
+			confirmButtonText: 'Yes, Submit',
+			cancelButtonText: 'Cancel',
             showLoaderOnConfirm: true
 		}).then(result => {
 			if (result.isConfirmed) {
 				$.post(BASE_URL + '/submit/' + id, function(res) {
 					if (res.status == 1) {
 						Swal.fire({
-							title: 'Berhasil',
+							title: 'Success',
 							text: res.message,
 							icon: 'success',
 							showConfirmButton: false,
@@ -178,10 +178,10 @@ $ENABLE_DELETE = has_permission('Pengajuan_mutasi.Delete');
 							reloadTab('open');
 						});
 					} else {
-						Swal.fire('Gagal', res.message, 'error');
+						Swal.fire('Failed', res.message, 'error');
 					}
 				}, 'json').fail(function() {
-					Swal.fire('Error', 'Terjadi kesalahan pada server.', 'error');
+					Swal.fire('Error', 'A server error occurred.', 'error');
 				});
 			}
 		});
@@ -190,18 +190,18 @@ $ENABLE_DELETE = has_permission('Pengajuan_mutasi.Delete');
 	// Konfirmasi cancel
 	function confirmCancel(id) {
 		Swal.fire({
-			title: 'Batalkan Mutasi?',
-			text: 'Masukkan alasan pembatalan mutasi ini:',
+			title: 'Cancel Mutation?',
+			text: 'Please enter the cancellation reason:',
 			icon: 'warning',
 			input: 'text',
-			inputPlaceholder: 'Alasan pembatalan wajib diisi...',
+			inputPlaceholder: 'Cancellation reason is required...',
 			showCancelButton: true,
-			confirmButtonText: 'Ya, Batalkan',
-			cancelButtonText: 'Kembali',
+			confirmButtonText: 'Yes, Cancel It',
+			cancelButtonText: 'Back',
 			confirmButtonColor: '#d33',
 			inputValidator: (value) => {
 				if (!value || value.trim() === '') {
-					return 'Alasan pembatalan tidak boleh kosong!';
+					return 'Cancellation reason cannot be empty!';
 				}
 			}
 		}).then(result => {
@@ -213,7 +213,7 @@ $ENABLE_DELETE = has_permission('Pengajuan_mutasi.Delete');
 				}, function(res) {
 					if (res.status == 1) {
 						Swal.fire({
-							title: 'Berhasil',
+							title: 'Success',
 							text: res.message,
 							icon: 'success',
 							showConfirmButton: false,
@@ -224,10 +224,10 @@ $ENABLE_DELETE = has_permission('Pengajuan_mutasi.Delete');
 							$('#content-cancel').data('loaded', false);
 						});
 					} else {
-						Swal.fire('Gagal', res.message, 'error');
+						Swal.fire('Failed', res.message, 'error');
 					}
 				}, 'json').fail(function() {
-					Swal.fire('Error', 'Terjadi kesalahan pada server.', 'error');
+					Swal.fire('Error', 'A server error occurred.', 'error');
 				});
 			}
 		});

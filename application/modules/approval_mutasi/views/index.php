@@ -1,6 +1,6 @@
 <?php
-$ENABLE_MANAGE = has_permission('Approval_mutasi.Manage');
-$ENABLE_VIEW   = has_permission('Approval_mutasi.View');
+$ENABLE_MANAGE = has_permission('Approval_mutation.Manage');
+$ENABLE_VIEW   = has_permission('Approval_mutation.View');
 ?>
 
 <style>
@@ -37,7 +37,7 @@ $ENABLE_VIEW   = has_permission('Approval_mutasi.View');
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="pending-tab" data-bs-toggle="tab"
                     data-bs-target="#tab-pending" type="button" role="tab">
-                    <i class="fa-solid fa-clock text-warning"></i> Menunggu Approval
+                    <i class="fa-solid fa-clock text-warning"></i> Waiting Approval
                 </button>
             </li>
             <li class="nav-item" role="presentation">

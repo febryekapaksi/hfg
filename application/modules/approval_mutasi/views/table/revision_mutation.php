@@ -1,5 +1,5 @@
 <?php
-$ENABLE_VIEW = has_permission('Approval_mutasi.View');
+$ENABLE_VIEW = has_permission('Approval_mutation.View');
 ?>
 
 <div class="table-responsive">
@@ -7,14 +7,14 @@ $ENABLE_VIEW = has_permission('Approval_mutasi.View');
         <thead class="table-light">
             <tr>
                 <th>#</th>
-                <th>No. Mutasi</th>
-                <th>Tanggal</th>
-                <th>Gudang Asal</th>
-                <th>Gudang Tujuan</th>
-                <th>Keterangan</th>
-                <th>Catatan Revisi</th>
-                <th>Pengajuan Oleh</th>
-                <th width="20">Aksi</th>
+                <th>Mutation No.</th>
+                <th>Date</th>
+                <th>Source Warehouse</th>
+                <th>Destination Warehouse</th>
+                <th>Description</th>
+                <th>Revision Notes</th>
+                <th>Requested By</th>
+                <th width="20">Action</th>
             </tr>
         </thead>
         <tbody>
@@ -32,7 +32,7 @@ $ENABLE_VIEW = has_permission('Approval_mutasi.View');
                         </span>
                     </td>
                     <td><?= $row['create_by'] ?? '-' ?></td>
-                    <td>
+                    <td class="text-center">
                         <?php if ($ENABLE_VIEW): ?>
                             <a href="<?= site_url('approval_mutasi/detail/' . $row['id']) ?>"
                                 class="btn btn-sm btn-info text-white" title="View Detail">
