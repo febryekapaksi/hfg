@@ -31,7 +31,7 @@ $ENABLE_VIEW   = has_permission('Approval_mutation.View');
                     <td><?= $row['nm_gudang_to'] ?></td>
                     <td><?= $row['description'] ?? '-' ?></td>
                     <td class="text-center">
-                        <div class="d-flex gap-1 flex-wrap">
+                        <div class="d-flex gap-1 flex-wrap justify-content-center">
                             <?php if ($ENABLE_VIEW): ?>
                                 <a href="<?= site_url('approval_mutasi/detail/' . $row['id']) ?>"
                                     class="btn btn-sm btn-primary" title="Review & Approve">

@@ -119,12 +119,17 @@ class Pengajuan_mutasi extends Admin_Controller
     public function get_coil()
     {
         $code_lv4  = $this->input->get('code_lv4');
+        $id_gudang = $this->input->get('id_gudang');
 
         if (!$code_lv4) {
             return $this->_json(['status' => 0, 'message' => 'code_lv4 wajib diisi']);
         }
 
-        $coils = $this->pengajuan_mutasi_model->get_coil_by_material($code_lv4);
+        if (!$id_gudang) {
+            return $this->_json(['status' => 0, 'message' => 'id_gudang wajib diisi']);
+        }
+
+        $coils = $this->pengajuan_mutasi_model->get_coil_by_material($code_lv4, $id_gudang);
 
         return $this->_json(['status' => 1, 'data' => $coils]);
     }

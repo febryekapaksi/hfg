@@ -499,6 +499,180 @@ class Approval_mutasi_model extends BF_Model
         }
     }
 
+    
+
+    // ---------------------------------------------------------------
+    // GENERATE JURNAL MUTASI → GL INTERFACE
+    // ---------------------------------------------------------------
+
+    public function _generate_jurnal_mutasi($mutation)
+    {
+        $tgl_inv    = date('Y-m-d');
+        $created_on = date('Y-m-d H:i:s');
+        $user_id    = $this->auth->user_id();
+
+        // Hitung total nilai mutasi (sum net_weight × harga_beli per coil)
+        $total_nilai = 0;
+        foreach ($mutation['details'] as $detail) {
+            foreach ($detail['coils'] as $coil) {
+                // Ambil harga dari warehouse_stock_coil
+                $live_coil = $this->db->query("
+                    SELECT harga_beli, net_weight FROM warehouse_stock_coil WHERE id = ? LIMIT 1
+                ", [$coil['id_warehouse_stock_coil']])->row();
+
+                if ($live_coil) {
+                    $total_nilai += (float)$live_coil->harga_beli * (float)$live_coil->net_weight;
+                } else {
+                    $total_nilai += (float)($coil['harga_beli'] ?? 0) * (float)($coil['net_weight'] ?? 0);
+                }
+            }
+        }
+
+        if ($total_nilai <= 0) return;
+
+        // Tentukan COA berdasarkan arah mutasi
+        // Produksi = 1105-01-01, Slitting = 1105-01-02
+        $id_gudang_from = $mutation['id_gudang_from'];
+        $id_gudang_to   = $mutation['id_gudang_to'];
+
+        // Gudang Produksi (id=1) → 1105-01-01
+        // Gudang Slitting (id=2) → 1105-01-02
+        $coa_produksi = '1105-01-01';
+        $coa_slitting = '1105-01-02';
+
+        if ($id_gudang_from == 1) {
+            // Produksi → Slitting
+            $coa_debet  = $coa_slitting;  // Slitting bertambah
+            $coa_kredit = $coa_produksi;  // Produksi berkurang
+        } else {
+            // Slitting → Produksi
+            $coa_debet  = $coa_produksi;  // Produksi bertambah
+            $coa_kredit = $coa_slitting;  // Slitting berkurang
+        }
+
+        // Validate COA names from coa_master
+        $coa_list = [
+            'debet'  => $coa_debet,
+            'kredit' => $coa_kredit,
+        ];
+        $coa_check = $this->_validate_and_get_coa_names($coa_list);
+        if (!$coa_check['valid']) {
+            throw new Exception('COA not found in Master: ' . implode(', ', $coa_check['not_found']));
+        }
+        $coa_names = $coa_check['names'];
+
+        $keterangan = "Mutation: {$mutation['mutation_number']} | {$mutation['nm_gudang_from']} ke {$mutation['nm_gudang_to']}";
+        $nomor_jv   = $this->_generate_nomor_jv();
+
+        // Insert header GL Interface
+        $this->db->insert('gl_interface', [
+            'nomor'           => $nomor_jv,
+            'tgl'             => $tgl_inv,
+            'bulan'           => date('m'),
+            'tahun'           => date('Y'),
+            'kdcab'           => '101',
+            'jenis'           => 'JV',
+            'keterangan'      => $keterangan,
+            'jenis_transaksi' => 'mutation',
+            'status'          => 'pending',
+            'user_id'         => $user_id,
+            'memo'            => json_encode([
+                'mutation_number' => $mutation['mutation_number'],
+                'gudang_from'     => $mutation['nm_gudang_from'],
+                'gudang_to'       => $mutation['nm_gudang_to'],
+            ]),
+        ]);
+        $id_gl = $this->db->insert_id();
+
+        // DEBET — gudang tujuan bertambah
+        $this->db->insert('gl_interface_detail', [
+            'id_gl_interface' => $id_gl,
+            'no_batch'        => $nomor_jv,
+            'tipe'            => 'JV',
+            'tanggal'         => $tgl_inv,
+            'no_perkiraan'    => $coa_debet,
+            'id_material'     => null,
+            'nm_material'     => null,
+            'id_gudang'       => $id_gudang_to,
+            'no_coil'         => null,
+            'keterangan'      => $coa_names['debet'] .  " | " .$mutation['nm_gudang_to'] ." BERTAMBAH",
+            'no_reff'         => $mutation['mutation_number'],
+            'no_request'      => $mutation['mutation_number'],
+            'debet'           => (int) round($total_nilai),
+            'kredit'          => 0,
+            'created_at'      => $created_on,
+        ]);
+
+        // KREDIT — gudang asal berkurang
+        $this->db->insert('gl_interface_detail', [
+            'id_gl_interface' => $id_gl,
+            'no_batch'        => $nomor_jv,
+            'tipe'            => 'JV',
+            'tanggal'         => $tgl_inv,
+            'no_perkiraan'    => $coa_kredit,
+            'id_material'     => null,
+            'nm_material'     => null,
+            'id_gudang'       => $id_gudang_from,
+            'no_coil'         => null,
+            'keterangan'      => $coa_names['kredit'] . " | " .$mutation['nm_gudang_from'] ." BERKURANG",
+            'no_reff'         => $mutation['mutation_number'],
+            'no_request'      => $mutation['mutation_number'],
+            'debet'           => 0,
+            'kredit'          => (int) round($total_nilai),
+            'created_at'      => $created_on,
+        ]);
+    }
+
+    // ---------------------------------------------------------------
+    // VALIDATE COA NAMES FROM DBACC
+    // ---------------------------------------------------------------
+
+    private function _validate_and_get_coa_names(array $coa_list)
+    {
+        $db_acc    = $this->load->database(DBACC, TRUE);
+        $not_found = [];
+        $names     = [];
+
+        foreach ($coa_list as $key => $no_perkiraan) {
+            $row = $db_acc->get_where('coa_master', ['no_perkiraan' => $no_perkiraan])->row();
+            if (!$row) {
+                $not_found[] = $no_perkiraan;
+            } else {
+                $names[$key] = $row->nama;
+            }
+        }
+
+        return [
+            'valid'     => empty($not_found),
+            'names'     => $names,
+            'not_found' => $not_found,
+        ];
+    }
+
+    // ---------------------------------------------------------------
+    // GENERATE NOMOR JV
+    // ---------------------------------------------------------------
+
+    private function _generate_nomor_jv()
+    {
+        $cabang = $this->db->query(
+            "SELECT nomorJC FROM " . DBACC . ".pastibisa_tb_cabang WHERE nocab = '101' LIMIT 1 FOR UPDATE"
+        )->row();
+
+        if (empty($cabang)) {
+            throw new Exception('Branch data not found for generating JV number!');
+        }
+
+        $nomor_urut = (int) $cabang->nomorJC + 1;
+        $nomor_jv   = '101-AJV' . date('ym') . $nomor_urut;
+
+        $this->db->query(
+            "UPDATE " . DBACC . ".pastibisa_tb_cabang SET nomorJC = nomorJC + 1 WHERE nocab = '101'"
+        );
+
+        return $nomor_jv;
+    }
+
     // ---------------------------------------------------------------
     // REJECT — tolak permanen (status → 3)
     // ---------------------------------------------------------------

@@ -48,7 +48,7 @@ $details = $m['details'] ?? [];
                                 <?php
                                 $status_map = [
                                     0 => ['Open',            'primary'],
-                                    1 => ['Waiting Approval','warning'],
+                                    1 => ['Waiting Approval', 'warning'],
                                     2 => ['Approved',        'success'],
                                     3 => ['Rejected',        'danger'],
                                     4 => ['Done',            'dark'],
@@ -561,7 +561,9 @@ $details = $m['details'] ?? [];
         $('#checkAllCoil').prop('checked', false);
         $('#modalCoil').modal('show');
 
-        $.get(BASE_URL + '/get_coil?code_lv4=' + rowData.material.code_lv4, function(res) {
+        const idGudang = $('#id_gudang_from').val();
+
+        $.get(BASE_URL + '/get_coil?code_lv4=' + rowData.material.code_lv4 + '&id_gudang=' + idGudang, function(res) {
             $('#coilLoading').hide();
 
             if (res.status != 1 || !res.data.length) {

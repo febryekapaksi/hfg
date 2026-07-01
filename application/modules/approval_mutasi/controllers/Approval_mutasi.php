@@ -106,6 +106,19 @@ class Approval_mutasi extends Admin_Controller
         $result = $this->approval_mutasi_model->approve_mutation($id, $this->username, $this->datetime);
 
         if ($result) {
+            // Generate jurnal mutasi
+            $jurnal_error = null;
+            try {
+                $this->approval_mutasi_model->_generate_jurnal_mutasi($mutation);
+            } catch (Exception $e) {
+                $jurnal_error = $e->getMessage();
+                log_message('error', 'GL error approval_mutasi ' . $mutation['mutation_number'] . ': ' . $jurnal_error);
+            }
+
+            if ($jurnal_error) {
+                return $this->_json(['status' => 1, 'message' => 'Mutation approved. Stock transferred, but GL Interface failed: ' . $jurnal_error]);
+            }
+
             return $this->_json(['status' => 1, 'message' => 'Mutation approved successfully. Stock has been transferred.']);
         }
 
@@ -176,6 +189,7 @@ class Approval_mutasi extends Admin_Controller
 
     private function _json($data)
     {
+        if (ob_get_length()) ob_clean();
         return $this->output->set_content_type('application/json')
             ->set_output(json_encode($data));
     }
