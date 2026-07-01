@@ -246,6 +246,7 @@
                             <th>No</th>
                             <th>Date</th>
                             <th>No. Transaksi</th>
+                            <th class="text-center">Status</th>
                             <th class="text-center">Coil Count</th>
                             <th class="text-end">Qty Awal (Kg)</th>
                             <th class="text-end">Qty Transaksi (Kg)</th>
@@ -653,10 +654,19 @@
             }
             var html = '';
             $.each(data, function(i, r) {
+                // Determine IN/OUT status
+                var status = 'IN';
+                var statusBadge = '<span class="badge bg-success">IN</span>';
+                if (parseFloat(r.qty_akhir) < parseFloat(r.qty_awal)) {
+                    status = 'OUT';
+                    statusBadge = '<span class="badge bg-danger">OUT</span>';
+                }
+
                 html += '<tr>' +
                     '<td class="text-center">' + (i + 1) + '</td>' +
                     '<td>' + (r.tanggal || '-') + '</td>' +
                     '<td>' + (r.no_ipp || '-') + '</td>' +
+                    '<td class="text-center">' + statusBadge + '</td>' +
                     // Jumlah coil — klik → drill-down
                     '<td class="text-center">' +
                     '<a href="javascript:void(0)" class="badge bg-primary" ' +

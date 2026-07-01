@@ -544,7 +544,7 @@ class Finalize_incoming extends Admin_Controller
                 'length'        => $d['panjang'],
                 'price_per_coil' => $d['price_per_coil'],
                 'cost_book'     => $d['cost_book'],
-                'status_qc'     => $d['status_qc'],
+                'status_qc'     => 'IN',
                 'created_at'    => date('Y-m-d H:i:s'),
             ]);
         }
