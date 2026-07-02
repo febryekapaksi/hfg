@@ -146,10 +146,10 @@ if ($type == 'expense') {
                     </div>
                 </div>
                 <div class="row mb-3 align-items-start">
-                    <label class="col-sm-4 col-form-label text-md-end fw-semibold small text-danger">Reject Reason</label>
+                    <!-- <label class="col-sm-4 col-form-label text-md-end fw-semibold small text-danger">Reject Reason</label>
                     <div class="col-sm-8">
                         <textarea name="reject_reason" class="form-control reject_reason" rows="2" placeholder="Wajib diisi jika menolak pengajuan..."></textarea>
-                    </div>
+                    </div> -->
                 </div>
             </div>
         </div>
@@ -509,9 +509,9 @@ if ($type == 'expense') {
                 <a href="<?= base_url($this->uri->segment(1) . '/list_approve_checker'); ?>" class="btn btn-secondary">
                     <i class="fa fa-reply me-1"></i> Kembali
                 </a>
-                <button type="button" class="btn btn-danger" id="reject">
+                <!-- <button type="button" class="btn btn-danger" id="reject">
                     <i class="fa fa-close me-1"></i> Reject
-                </button>
+                </button> -->
                 <button type="button" class="btn btn-success" id="process">
                     <i class="fa fa-check me-1"></i> Approve & Process
                 </button>

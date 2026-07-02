@@ -146,8 +146,8 @@ if ($type == 'expense') {
 				</div>
 
 				<div class="bg-light p-3 rounded border border-warning">
-					<label class="form-label fw-bold text-danger small mb-1"><i class="fa fa-exclamation-triangle me-1"></i> Alasan Penolakan (Wajib diisi jika Reject)</label>
-					<textarea name="reject_reason" class="form-control reject_reason" rows="2" placeholder="Tulis alasan penolakan di sini..."></textarea>
+					<!-- <label class="form-label fw-bold text-danger small mb-1"><i class="fa fa-exclamation-triangle me-1"></i> Alasan Penolakan (Wajib diisi jika Reject)</label>
+					<textarea name="reject_reason" class="form-control reject_reason" rows="2" placeholder="Tulis alasan penolakan di sini..."></textarea> -->
 				</div>
 			</div>
 		</div>
@@ -558,7 +558,7 @@ if ($type == 'expense') {
 
 	<div class="col-12 col-md-7 d-flex align-items-end justify-content-end gap-2 mb-4">
 		<a href="<?= base_url($this->uri->segment(1) . '/list_approve_management'); ?>" class="btn btn-secondary px-3"><i class="fa fa-reply me-1"></i> Kembali</a>
-		<button type="button" class="btn btn-danger px-3" id="reject"><i class="fa fa-close me-1"></i> Tolak (Reject)</button>
+		<!-- <button type="button" class="btn btn-danger px-3" id="reject"><i class="fa fa-close me-1"></i> Tolak (Reject)</button> -->
 		<button type="button" class="btn btn-success px-4" id="process"><i class="fa fa-save me-1"></i> Setujui (Approve)</button>
 	</div>
 </div>
