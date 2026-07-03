@@ -1831,19 +1831,37 @@ class New_ros extends Admin_Controller
         $ins($coa['oth'], $coa_names['oth'] . " | {$keterangan}", 0, $total_others);
 
         // 9. DEBET/KREDIT — Selisih Kurs
+        // Hitung selisih kurs berdasarkan nilai DP yang benar-benar di-kredit-kan (total_dp_rupiah)
+        // vs nilai DP pada kurs PIB/ROS (nilai_dp_rp).
+        // Jika kurs saat bayar DP berbeda dengan kurs PIB, selisihnya masuk ke akun selisih kurs.
+        $selisih_kurs_actual = ($total_dp_rupiah > 0) ? ($nilai_dp_rp - $total_dp_rupiah) : 0;
         $ins(
             $coa['kurs'],
             $coa_names['kurs'] . " (PIB: " . number_format($kurs_pib, 0, ',', '.') . ") | {$keterangan}",
-            ($selisih_kurs < 0) ? abs($selisih_kurs) : 0,
-            ($selisih_kurs > 0) ? $selisih_kurs       : 0
+            ($selisih_kurs_actual < 0) ? abs($selisih_kurs_actual) : 0,
+            ($selisih_kurs_actual > 0) ? $selisih_kurs_actual       : 0
         );
 
         // 10. DEBET/KREDIT — Pembulatan
+        // Hitung ulang pembulatan berdasarkan nilai aktual yang diposting agar jurnal balance
+        $total_debet_posted  = $total_inventory
+            + (($selisih_kurs_actual < 0) ? abs($selisih_kurs_actual) : 0);
+        $total_kredit_posted = $total_dp_rupiah
+            + (int)round($hutang_belum_tagih)
+            + $total_bm
+            + $total_ls
+            + $total_forwarding
+            + $total_insurance
+            + $total_others
+            + (($selisih_kurs_actual > 0) ? $selisih_kurs_actual : 0);
+
+        $pembulatan_actual = $total_kredit_posted - $total_debet_posted;
+        // Jika kredit > debet, pembulatan di sisi debet (positif). Jika debet > kredit, pembulatan di sisi kredit (negatif).
         $ins(
             $coa['round'],
             $coa_names['round'] . " | {$keterangan}",
-            ($pembulatan > 0) ? $pembulatan       : 0,
-            ($pembulatan < 0) ? abs($pembulatan)  : 0
+            ($pembulatan_actual > 0) ? $pembulatan_actual       : 0,
+            ($pembulatan_actual < 0) ? abs($pembulatan_actual)  : 0
         );
     }
 
