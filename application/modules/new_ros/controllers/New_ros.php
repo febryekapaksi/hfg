@@ -549,6 +549,9 @@ class New_ros extends Admin_Controller
             }
         }
 
+        // ── Hitung dan simpan GL Values ke tr_ros_header ──
+        $this->_calculate_and_save_gl_values($id_ros);
+
         if ($this->db->trans_status() === false) {
             $this->db->trans_rollback();
             echo json_encode(['status' => 0, 'msg' => 'Failed to save ROS data.']);
@@ -1351,161 +1354,188 @@ class New_ros extends Admin_Controller
         }
     }
 
-    private function _generate_gl_interface($no_ros, $no_po, $total_rp, $id_supplier, $materials = [], $kurs_pib = 0)
+    // ─── CALCULATE & SAVE GL VALUES ke tr_ros_header ─────────────────
+    /**
+     * Menghitung 10 nilai COA dan menyimpannya ke kolom gl_* di tr_ros_header.
+     * Dipanggil setiap kali save() ROS (insert maupun update).
+     *
+     * COA yang dihitung:
+     *  1. 1105-01-03 - PERSEDIAAN BAHAN BAKU INTRANSIT (gl_persediaan_intransit)
+     *  2. 1104-01-02 - ADVANCE PURCHASE               (gl_advance_purchase)
+     *  3. 2101-01-06 - HUTANG BELUM TERTAGIH           (gl_unbill)
+     *  4. 1108-01-09 - BM DIBAYAR DIMUKA               (gl_bm_dibayar_dimuka)
+     *  5. 1111-01-01 - PREPAID EXPENSE LS              (gl_prepaid_ls)
+     *  6. 2104-01-14 - HUTANG BIAYA FORWADING          (gl_hutang_forwarding)
+     *  7. 1111-01-02 - PREPAID EXPENSE INSURANCE       (gl_prepaid_insurance)
+     *  8. 1111-01-03 - PREPAID EXPENSE OTHER           (gl_prepaid_other)
+     *  9. 7201-01-07 - B. SELISIH KURS                 (gl_selisih_kurs)
+     * 10. 7201-01-05 - B. PEMBULATAN                   (gl_pembulatan)
+     */
+    private function _calculate_and_save_gl_values($id_ros)
     {
-        $tgl_inv       = date('Y-m-d');
-        $supplier      = $this->db->get_where('new_supplier', ['kode_supplier' => $id_supplier])->row();
-        $supplier_name = $supplier ? $supplier->nama : '';
+        // ── Ambil data header ──
+        $header = $this->db->get_where('tr_ros_header', ['id' => $id_ros])->row_array();
+        if (!$header) {
+            return;
+        }
 
-        $po_data  = $this->db->get_where('tr_purchase_order', ['no_po' => $no_po])->row();
-        $currency = $po_data ? strtoupper(trim($po_data->matauang)) : 'IDR';
+        $no_po       = $header['no_po'];
+        $kurs_pib    = (float) $header['kurs_pib'];
+        $nilai_dp_rp = (float) $header['nilai_po_pib_rp'];
+        $biaya_ls    = (float) $header['biaya_ls'];
+        $insurance   = (float) $header['insurance'];
 
-        $coa_dp      = ($currency === 'IDR') ? '1104-01-01' : '1104-01-02';
-        $coa_unbill  = '2101-01-06';
-        $coa_bm      = '1108-01-09';
-        $coa_forward = '2104-01-13';
+        // ── Ambil data materials ──
+        $materials = $this->db->get_where('tr_ros_material', ['id_ros' => $id_ros])->result_array();
 
-        $coa_persediaan_map     = ['PUS' => '1105-01-01', 'PEN' => '1105-01-03'];
-        $coa_persediaan_default = '1105-01-01';
+        // ── 1. PERSEDIAAN BAHAN BAKU INTRANSIT (1105-01-03) ──
+        // SUM total_nilai_inventory dari semua material
+        $gl_persediaan_intransit = 0;
+        $gl_bm_dibayar_dimuka    = 0;
+        $gl_hutang_forwarding    = 0;
 
-        $keterangan = "Finalize ROS: {$no_ros} | PO: {$no_po}";
-        $user_id    = $this->auth->user_id();
-        $created_on = date('Y-m-d H:i:s');
-
-        $total_biaya_masuk = array_sum(array_column($materials, 'biaya_masuk'));
-        $total_forwarding  = array_sum(array_column($materials, 'forwarding'));
-        $total_unbill      = $total_rp - $total_biaya_masuk - $total_forwarding;
-
-        $nomor_jv = $this->_generate_nomor_jv_ros();
-
-        // Insert header GL Interface
-        $this->db->insert('gl_interface', [
-            'nomor'           => $nomor_jv,
-            'tgl'             => $tgl_inv,
-            'bulan'           => date('m'),
-            'tahun'           => date('Y'),
-            'kdcab'           => '101',
-            'jenis'           => 'JV',
-            'keterangan'      => $keterangan,
-            'jenis_transaksi' => 'finalize ros',
-            'status'          => 'pending',
-            'user_id'         => $user_id,
-            'memo'            => json_encode([
-                'id_supplier'   => $id_supplier,
-                'nama_supplier' => $supplier_name,
-                'no_reff'       => $no_po,
-                'no_request'    => $no_ros,
-            ]),
-        ]);
-        $id_gl = $this->db->insert_id();
-
-        // DEBET persediaan per material
         foreach ($materials as $mat) {
-            $kd_gd          = $mat['kd_gudang_ke'] ?? '';
-            $coa_persediaan = $coa_persediaan_map[$kd_gd] ?? $coa_persediaan_default;
-
-            $this->db->insert('gl_interface_detail', [
-                'id_gl_interface' => $id_gl,
-                'no_batch'        => null,
-                'tipe'            => 'JV',
-                'tanggal'         => $tgl_inv,
-                'no_perkiraan'    => $coa_persediaan,
-                'id_material'     => $mat['id_material'],
-                'nm_material'     => $mat['nm_material'],
-                'id_gudang'       => $mat['id_gudang_ke'] ?? null,
-                'no_coil'         => $mat['no_coil'] ?? null,
-                'keterangan'      => "Finalize ROS: {$no_ros} | PO: {$no_po} | {$mat['nm_material']}",
-                'no_reff'         => $no_po,
-                'no_request'      => $no_ros,
-                'debet'           => $mat['total_persediaan'],
-                'kredit'          => 0,
-                'created_at'      => $created_on,
-            ]);
+            $gl_persediaan_intransit += (int) round((float) $mat['total_nilai_inventory']);
+            $gl_bm_dibayar_dimuka    += (int) round((float) $mat['bm_rp']);
+            $gl_hutang_forwarding    += (int) round((float) $mat['forwarding_cost']);
         }
 
-        // KREDIT Unbill
-        if ($total_unbill > 0) {
-            $this->db->insert('gl_interface_detail', [
-                'id_gl_interface' => $id_gl,
-                'no_batch'        => null,
-                'tipe'            => 'JV',
-                'tanggal'         => $tgl_inv,
-                'no_perkiraan'    => $coa_unbill,
-                'id_material'     => null,
-                'nm_material'     => null,
-                'id_gudang'       => null,
-                'no_coil'         => null,
-                'keterangan'      => $keterangan,
-                'no_reff'         => $no_po,
-                'no_request'      => $no_ros,
-                'debet'           => 0,
-                'kredit'          => $total_unbill,
-                'created_at'      => $created_on,
-            ]);
+        // ── 2. ADVANCE PURCHASE (1104-01-02) ──
+        // SUM jumlah_rupiah dari tr_receive_invoice WHERE no_po AND tipe = 'dp'
+        $gl_advance_purchase = (float) ($this->db
+            ->select_sum('jumlah_rupiah')
+            ->where('no_po', $no_po)
+            ->where('tipe', 'dp')
+            ->get('tr_receive_invoice')
+            ->row()
+            ->jumlah_rupiah ?? 0);
+
+        // ── 3. UNBILL / HUTANG BELUM TERTAGIH (2101-01-06) ──
+        // (nilai_po_usd - SUM(tr_top_po.nilai WHERE group_top=76)) × kurs_pib
+        $nilai_po_usd = (float) ($header['nilai_po_usd'] ?? 0);
+
+        $sum_top_76 = (float) ($this->db
+            ->select_sum('nilai')
+            ->where('no_po', $no_po)
+            ->where('group_top', 76)
+            ->get('tr_top_po')
+            ->row()
+            ->nilai ?? 0);
+
+        $gl_unbill = (int) round(($nilai_po_usd - $sum_top_76) * $kurs_pib);
+
+        // ── 4. BM DIBAYAR DIMUKA (1108-01-09) ──
+        // Sudah dihitung di loop materials di atas
+
+        // ── 5. PREPAID EXPENSE LS (1111-01-01) ──
+        $gl_prepaid_ls = (int) round($biaya_ls);
+
+        // ── 6. HUTANG BIAYA FORWARDING (2104-01-14) ──
+        // Sudah dihitung di loop materials di atas
+
+        // ── 7. PREPAID EXPENSE INSURANCE (1111-01-02) ──
+        $gl_prepaid_insurance = (int) round($insurance);
+
+        // ── 8. PREPAID EXPENSE OTHER (1111-01-03) ──
+        $others_sum = $this->db
+            ->select_sum('nilai')
+            ->where('id_ros', $id_ros)
+            ->get('tr_ros_others')
+            ->row();
+        $gl_prepaid_other = (int) round((float) ($others_sum->nilai ?? 0));
+
+        // ── 9. B. SELISIH KURS (7201-01-07) ──
+        // Rumus: (kurs_pib_form - kurs_receive_invoice) × nilai_invoice
+        // Data diambil dari tr_receive_invoice WHERE no_po = no_po AND tipe = 'dp'
+        $receive_invoice_dp = $this->db
+            ->select('kurs, nilai_invoice')
+            ->where('no_po', $no_po)
+            ->where('tipe', 'dp')
+            ->get('tr_receive_invoice')
+            ->row();
+
+        $gl_selisih_kurs = 0;
+        $gl_advance_purchase_kurs = 0;
+
+        if ($receive_invoice_dp) {
+            $kurs_ri       = (float) $receive_invoice_dp->kurs;
+            $nilai_invoice = (float) $receive_invoice_dp->nilai_invoice;
+
+            // $gl_selisih_kurs = (int) round(($kurs_pib - $kurs_ri) * $nilai_invoice);
+            $gl_selisih_kurs = (int) round(($kurs_ri - $kurs_pib) * $nilai_invoice);
+            $gl_advance_purchase_kurs = $nilai_invoice;
         }
 
-        // KREDIT Prepaid BM
-        if ($total_biaya_masuk > 0) {
-            $this->db->insert('gl_interface_detail', [
-                'id_gl_interface' => $id_gl,
-                'no_batch'        => null,
-                'tipe'            => 'JV',
-                'tanggal'         => $tgl_inv,
-                'no_perkiraan'    => $coa_bm,
-                'id_material'     => null,
-                'nm_material'     => null,
-                'id_gudang'       => null,
-                'no_coil'         => null,
-                'keterangan'      => $keterangan,
-                'no_reff'         => $no_po,
-                'no_request'      => $no_ros,
-                'debet'           => 0,
-                'kredit'          => $total_biaya_masuk,
-                'created_at'      => $created_on,
-            ]);
-        }
+        // Hitung unbill kurs
+        $gl_unbill_kurs = $nilai_po_usd - $gl_advance_purchase_kurs;
 
-        // KREDIT Hutang Forwarder
-        if ($total_forwarding > 0) {
-            $this->db->insert('gl_interface_detail', [
-                'id_gl_interface' => $id_gl,
-                'no_batch'        => null,
-                'tipe'            => 'JV',
-                'tanggal'         => $tgl_inv,
-                'no_perkiraan'    => $coa_forward,
-                'id_material'     => null,
-                'nm_material'     => null,
-                'id_gudang'       => null,
-                'no_coil'         => null,
-                'keterangan'      => $keterangan,
-                'no_reff'         => $no_po,
-                'no_request'      => $no_ros,
-                'debet'           => 0,
-                'kredit'          => $total_forwarding,
-                'created_at'      => $created_on,
-            ]);
-        }
+        // ── 10. B. PEMBULATAN (7201-01-05) ──
+        // Hitung balance: total debet vs total kredit
+        // Kondisi debet/kredit ikut dibalik
+        $total_debet_calc = $gl_persediaan_intransit
+            + (($gl_selisih_kurs > 0) ? $gl_selisih_kurs : 0);
+
+        $total_kredit_calc = $gl_advance_purchase
+            + $gl_unbill
+            + $gl_bm_dibayar_dimuka
+            + $gl_prepaid_ls
+            + $gl_hutang_forwarding
+            + $gl_prepaid_insurance
+            + $gl_prepaid_other
+            + (($gl_selisih_kurs < 0) ? abs($gl_selisih_kurs) : 0);
+
+        // Positif = debet (kredit > debet), Negatif = kredit (debet > kredit)
+        $gl_pembulatan = (int) round($total_kredit_calc - $total_debet_calc);
+
+        // ── Update tr_ros_header dengan GL values ──
+        // $gl_data = [
+        //     'gl_persediaan_intransit'  => $gl_persediaan_intransit,
+        //     'gl_advance_purchase'      => $gl_advance_purchase,
+        //     'gl_unbill'                => $gl_unbill,
+        //     'gl_bm_dibayar_dimuka'     => $gl_bm_dibayar_dimuka,
+        //     'gl_prepaid_ls'            => $gl_prepaid_ls,
+        //     'gl_hutang_forwarding'     => $gl_hutang_forwarding,
+        //     'gl_prepaid_insurance'     => $gl_prepaid_insurance,
+        //     'gl_prepaid_other'         => $gl_prepaid_other,
+        //     'gl_selisih_kurs'          => $gl_selisih_kurs,
+        //     'gl_pembulatan'            => $gl_pembulatan,
+        //     'gl_unbill_kurs'           => $gl_unbill_kurs,
+        //     'gl_advance_purchase_kurs' => $gl_advance_purchase_kurs,
+        // ];
+
+        // echo '<pre>';
+        // echo '=== GL VALUES DEBUG ===<br>';
+        // echo 'id_ros: ' . $id_ros . '<br>';
+        // echo 'no_po: ' . $no_po . '<br>';
+        // echo 'kurs_pib: ' . $kurs_pib . '<br>';
+        // echo 'nilai_po_usd: ' . $nilai_po_usd . '<br>';
+        // echo 'sum_top_76: ' . $sum_top_76 . '<br>';
+        // echo 'gl_advance_purchase_kurs (nilai_invoice DP): ' . $gl_advance_purchase_kurs . '<br>';
+        // echo 'gl_unbill_kurs: ' . $gl_unbill_kurs . '<br>';
+        // echo 'kurs_receive_invoice (DP): ' . ($kurs_ri ?? 'N/A') . '<br>';
+        // echo 'total_debet_calc: ' . $total_debet_calc . '<br>';
+        // echo 'total_kredit_calc: ' . $total_kredit_calc . '<br>';
+        // echo '<br>';
+        // var_dump($gl_data);
+        // echo '</pre>';
+        // die;
+
+        $this->db->update('tr_ros_header', [
+            'gl_persediaan_intransit'  => $gl_persediaan_intransit,
+            'gl_advance_purchase'      => $gl_advance_purchase,
+            'gl_unbill'                => $gl_unbill,
+            'gl_bm_dibayar_dimuka'     => $gl_bm_dibayar_dimuka,
+            'gl_prepaid_ls'            => $gl_prepaid_ls,
+            'gl_hutang_forwarding'     => $gl_hutang_forwarding,
+            'gl_prepaid_insurance'     => $gl_prepaid_insurance,
+            'gl_prepaid_other'         => $gl_prepaid_other,
+            'gl_selisih_kurs'          => $gl_selisih_kurs,
+            'gl_pembulatan'            => $gl_pembulatan,
+            'gl_unbill_kurs'           => $gl_unbill_kurs,
+            'gl_advance_purchase_kurs' => $gl_advance_purchase_kurs,
+        ], ['id' => $id_ros]);
     }
-
-    private function _generate_nomor_jv_ros()
-    {
-        $cabang = $this->db->query(
-            "SELECT nomorJC FROM " . DBACC . ".pastibisa_tb_cabang WHERE nocab = '101' LIMIT 1 FOR UPDATE"
-        )->row();
-
-        if (empty($cabang)) {
-            throw new Exception('Branch data not found for generating JV number!');
-        }
-
-        $nomor_urut = (int) $cabang->nomorJC + 1;
-        $nomor_jv   = '101-AJV' . date('ym') . $nomor_urut;
-
-        $this->db->query(
-            "UPDATE " . DBACC . ".pastibisa_tb_cabang SET nomorJC = nomorJC + 1 WHERE nocab = '101'"
-        );
-
-        return $nomor_jv;
-    }
+    // function _generate_gl_interface dan _generate_nomor_jv_ros dihapus karena sudah tidak terpakai
 
     // ─── AJAX: Get Coils data for view after upload ──────────────────
     public function get_coils_data()
@@ -1538,71 +1568,8 @@ class New_ros extends Admin_Controller
         $materials = $this->New_ros_model->get_materials($id_ros);
         $others    = $this->New_ros_model->get_others($id_ros);
 
-        // ── total komponen biaya ──
-        $total_inventory  = 0;
-        $total_bm         = 0;
-        $total_forwarding = 0;
-        $total_ls          = (int) round((float) $header['biaya_ls']);
-        $total_insurance   = (int) round((float) $header['insurance']);
-        $total_others_val = 0;
-
-        foreach ($materials as $mat) {
-            $total_inventory  += (int) round((float) $mat['total_nilai_inventory']);
-            $total_bm         += (int) round((float) $mat['bm_rp']);
-            $total_forwarding += (int) round((float) $mat['forwarding_cost']);
-        }
-        foreach ($others as $ot) {
-            $total_others_val += (int) round((float) $ot['nilai']);
-        }
-
-        // ── Nilai DP ──
-        $po_data          = $this->db->get_where('tr_purchase_order', ['no_po' => $header['no_po']])->row();
-        $uang_muka_idr_po = $po_data ? (float) $po_data->uang_muka_idr : 0;
-        $nilai_dp_rp      = (float) $header['nilai_po_pib_rp'];
-        $kurs_pib         = (float) $header['kurs_pib'];
-
-        // ── Selisih Kurs ──
-        $selisih_kurs     = ($uang_muka_idr_po > 0) ? ($nilai_dp_rp - $uang_muka_idr_po) : 0;
-        $selisih_kurs_abs = abs($selisih_kurs);
-
-        // ── Pembulatan ──
-        $total_kredit = $nilai_dp_rp
-            + $total_bm
-            + $total_ls
-            + $total_forwarding
-            + $total_insurance
-            + $total_others_val
-            + ($selisih_kurs > 0 ? $selisih_kurs_abs : 0);
-
-        $total_debet = $total_inventory
-            + ($selisih_kurs < 0 ? $selisih_kurs_abs : 0);
-
-        $pembulatan = $total_kredit - $total_debet;
-
-        // ── Validasi COA sebelum proses ──
-        if ($total_inventory > 0) {
-            $coa = [
-                'transit' => '1105-01-03',
-                'dp'      => '1104-01-02',
-                'bm'      => '1108-01-09',
-                'ls'      => '1111-01-01',
-                'fwd'     => '2104-01-14',
-                'ins'     => '1111-01-02',
-                'oth'     => '1111-01-03',
-                'kurs'    => '7201-01-07',
-                'round'   => '7201-01-05',
-            ];
-
-            $coa_check = $this->_validate_and_get_coa_names($coa);
-            if (!$coa_check['valid']) {
-                echo json_encode([
-                    'status' => 3,
-                    'msg'    => 'The following COA numbers are not registered in the Master COA and must be added first: '
-                        . implode(', ', $coa_check['not_found']),
-                ]);
-                return;
-            }
-        }
+        // (Perhitungan manual komponen biaya, selisih kurs, dan validasi COA lama dihapus
+        //  karena sudah menggunakan gl_* di tr_ros_header dan template JV005)
 
         // ── Update status ROS ──
         $this->db->trans_begin();
@@ -1659,25 +1626,12 @@ class New_ros extends Admin_Controller
         }
 
         // ── Generate Jurnal GL Interface ──
-        if ($total_inventory > 0) {
+        if (isset($header['gl_persediaan_intransit']) && $header['gl_persediaan_intransit'] > 0) {
             try {
-                $this->_generate_jurnal_ros(
-                    $id_ros,
-                    $header['no_po'],
-                    $header['no_surat'],
-                    $header['id_supplier'],
-                    $total_inventory,
-                    $nilai_dp_rp,
-                    $uang_muka_idr_po,
-                    $total_bm,
-                    $total_ls,
-                    $total_forwarding,
-                    $total_insurance,
-                    $total_others_val,
-                    $selisih_kurs,
-                    $pembulatan,
-                    $kurs_pib
-                );
+                $this->load->model('gl_interface/Gl_interface_model');
+                $data_source = $header;
+                $data_source['tanggal'] = date('Y-m-d');
+                $this->Gl_interface_model->generate_jurnal_dari_template('JV006', $data_source);
                 ob_clean();
                 header('Content-Type: application/json');
                 echo json_encode(['status' => 1, 'msg' => 'ROS closed successfully and JV journal has been created.']);
@@ -1696,174 +1650,7 @@ class New_ros extends Admin_Controller
         }
     }
 
-    private function _generate_jurnal_ros(
-        $id_ros,
-        $no_po,
-        $no_surat,
-        $id_supplier,
-        $total_inventory,
-        $nilai_dp_rp,
-        $uang_muka_idr_po,
-        $total_bm,
-        $total_ls,
-        $total_forwarding,
-        $total_insurance,
-        $total_others,
-        $selisih_kurs,
-        $pembulatan,
-        $kurs_pib
-    ) {
-        $tgl_inv    = date('Y-m-d');
-        $created_on = date('Y-m-d H:i:s');
-        $user_id    = $this->auth->user_id();
-
-        $coa = [
-            'transit' => '1105-01-03',
-            'dp'      => '1104-01-02',
-            'hutang_belum_tagih' => '2101-01-06',
-            'bm'      => '1108-01-09',
-            'ls'      => '1111-01-01',
-            'fwd'     => '2104-01-14',
-            'ins'     => '1111-01-02',
-            'oth'     => '1111-01-03',
-            'kurs'    => '7201-01-07',
-            'round'   => '7201-01-05',
-        ];
-
-        // ── nama COA dari DBACC ──
-        $coa_check = $this->_validate_and_get_coa_names($coa);
-        if (!$coa_check['valid']) {
-            throw new Exception('COA not found in Master: ' . implode(', ', $coa_check['not_found']));
-        }
-        $coa_names = $coa_check['names'];
-
-        $keterangan = "ROS: {$id_ros} | PO: {$no_surat}";
-        $nomor_jv   = $this->_generate_nomor_jv_ros();
-
-        // ── Insert header GL Interface ──
-        $this->db->insert('gl_interface', [
-            'nomor'           => $nomor_jv,
-            'tgl'             => $tgl_inv,
-            'bulan'           => date('m'),
-            'tahun'           => date('Y'),
-            'kdcab'           => '101',
-            'jenis'           => 'JV',
-            'keterangan'      => $keterangan,
-            'jenis_transaksi' => 'ros',
-            'status'          => 'pending',
-            'user_id'         => $user_id,
-            'memo'            => json_encode([
-                'id_supplier' => $id_supplier,
-                'no_reff'     => $no_surat,
-                'no_request'  => $id_ros,
-                'kurs_pib'    => $kurs_pib,
-                'nilai_dp_rp' => $nilai_dp_rp,
-                'dp_dibayar'  => $uang_muka_idr_po,
-            ]),
-        ]);
-        $id_gl = $this->db->insert_id();
-
-        // ── Helper insert detail ──
-        $ins = function ($no_coa, $desc, $debet, $kredit) use ($id_gl, $tgl_inv, $no_surat, $id_ros, $created_on, $nomor_jv) {
-            $this->db->insert('gl_interface_detail', [
-                'id_gl_interface' => $id_gl,
-                'no_batch'        => $nomor_jv,
-                'tipe'            => 'JV',
-                'tanggal'         => $tgl_inv,
-                'no_perkiraan'    => $no_coa,
-                'id_material'     => null,
-                'nm_material'     => null,
-                'id_gudang'       => null,
-                'no_coil'         => null,
-                'keterangan'      => $desc,
-                'no_reff'         => $no_surat,
-                'no_request'      => $id_ros,
-                'debet'           => (int) round($debet),
-                'kredit'          => (int) round($kredit),
-                'created_at'      => $created_on,
-            ]);
-        };
-
-        // ── Insert detail jurnal ──
-
-        // 1. DEBET — Persediaan In Transit
-        $ins($coa['transit'], $coa_names['transit'] . " | {$keterangan}", $total_inventory, 0);
-
-        // 2. KREDIT — Advance Purchase ($) — dari jumlah_rupiah tr_receive_invoice_dp
-        $total_dp_rupiah = (float)($this->db
-            ->select_sum('jumlah_rupiah')
-            ->where('no_po', $no_po)
-            ->get('tr_receive_invoice_dp')
-            ->row()
-            ->jumlah_rupiah ?? 0);
-        $ins($coa['dp'], $coa_names['dp'] . " | {$keterangan}", 0, $total_dp_rupiah);
-
-        // 3. KREDIT — Hutang Belum Tertagih (2101-01-06)
-        // Rumus: (nilai_po_usd dari tr_ros_header - SUM nilai dari tr_top_po WHERE group_top=76) × kurs_pib
-        $ros_header = $this->db->get_where('tr_ros_header', ['id' => $id_ros])->row();
-        $nilai_po_usd = (float)($ros_header->nilai_po_usd ?? 0);
-        $kurs_pib_ros = (float)($ros_header->kurs_pib ?? $kurs_pib);
-
-        $sum_top_76 = (float)($this->db
-            ->select_sum('nilai')
-            ->where('no_po', $no_po)
-            ->where('group_top', 76)
-            ->get('tr_top_po')
-            ->row()
-            ->nilai ?? 0);
-
-        $hutang_belum_tagih = ($nilai_po_usd - $sum_top_76) * $kurs_pib_ros;
-        $ins($coa['hutang_belum_tagih'], $coa_names['hutang_belum_tagih'] . " | {$keterangan}", 0, (int)round($hutang_belum_tagih));
-
-        // 4. KREDIT — BM Dibayar Dimuka
-        $ins($coa['bm'], $coa_names['bm'] . " | {$keterangan}", 0, $total_bm);
-
-        // 5. KREDIT — Prepaid Expense LS
-        $ins($coa['ls'], $coa_names['ls'] . " | {$keterangan}", 0, $total_ls);
-
-        // 6. KREDIT — Hutang Biaya Forwarding
-        $ins($coa['fwd'], $coa_names['fwd'] . " | {$keterangan}", 0, $total_forwarding);
-
-        // 7. KREDIT — Prepaid Expense Insurance
-        $ins($coa['ins'], $coa_names['ins'] . " | {$keterangan}", 0, $total_insurance);
-
-        // 8. KREDIT — Prepaid Expense Other
-        $ins($coa['oth'], $coa_names['oth'] . " | {$keterangan}", 0, $total_others);
-
-        // 9. DEBET/KREDIT — Selisih Kurs
-        // Hitung selisih kurs berdasarkan nilai DP yang benar-benar di-kredit-kan (total_dp_rupiah)
-        // vs nilai DP pada kurs PIB/ROS (nilai_dp_rp).
-        // Jika kurs saat bayar DP berbeda dengan kurs PIB, selisihnya masuk ke akun selisih kurs.
-        $selisih_kurs_actual = ($total_dp_rupiah > 0) ? ($nilai_dp_rp - $total_dp_rupiah) : 0;
-        $ins(
-            $coa['kurs'],
-            $coa_names['kurs'] . " (PIB: " . number_format($kurs_pib, 0, ',', '.') . ") | {$keterangan}",
-            ($selisih_kurs_actual < 0) ? abs($selisih_kurs_actual) : 0,
-            ($selisih_kurs_actual > 0) ? $selisih_kurs_actual       : 0
-        );
-
-        // 10. DEBET/KREDIT — Pembulatan
-        // Hitung ulang pembulatan berdasarkan nilai aktual yang diposting agar jurnal balance
-        $total_debet_posted  = $total_inventory
-            + (($selisih_kurs_actual < 0) ? abs($selisih_kurs_actual) : 0);
-        $total_kredit_posted = $total_dp_rupiah
-            + (int)round($hutang_belum_tagih)
-            + $total_bm
-            + $total_ls
-            + $total_forwarding
-            + $total_insurance
-            + $total_others
-            + (($selisih_kurs_actual > 0) ? $selisih_kurs_actual : 0);
-
-        $pembulatan_actual = $total_kredit_posted - $total_debet_posted;
-        // Jika kredit > debet, pembulatan di sisi debet (positif). Jika debet > kredit, pembulatan di sisi kredit (negatif).
-        $ins(
-            $coa['round'],
-            $coa_names['round'] . " | {$keterangan}",
-            ($pembulatan_actual > 0) ? $pembulatan_actual       : 0,
-            ($pembulatan_actual < 0) ? abs($pembulatan_actual)  : 0
-        );
-    }
+    // function _generate_jurnal_ros telah dihapus karena digantikan oleh generate_jurnal_dari_template('JV005')
 
     // ─── AJAX: Get data ROS untuk preview modal close ────────────────
     public function get_ros_preview()
@@ -1930,25 +1717,5 @@ class New_ros extends Admin_Controller
         ]);
     }
 
-    private function _validate_and_get_coa_names(array $coa_list)
-    {
-        $db_acc    = $this->load->database(DBACC, TRUE);
-        $not_found = [];
-        $names     = [];
-
-        foreach ($coa_list as $key => $no_perkiraan) {
-            $row = $db_acc->get_where('coa_master', ['no_perkiraan' => $no_perkiraan])->row();
-            if (!$row) {
-                $not_found[] = $no_perkiraan;
-            } else {
-                $names[$key] = $row->nama;
-            }
-        }
-
-        return [
-            'valid'     => empty($not_found),
-            'names'     => $names,
-            'not_found' => $not_found,
-        ];
-    }
+    // function _validate_and_get_coa_names dihapus karena sudah tidak terpakai
 }

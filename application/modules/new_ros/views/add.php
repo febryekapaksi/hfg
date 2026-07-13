@@ -1543,7 +1543,9 @@ $list_po_data = isset($list_po) ? $list_po : [];
                                     icon: 'success',
                                     title: 'Success',
                                     text: res.msg,
-                                    confirmButtonText: 'OK'
+                                    confirmButtonText: 'OK',
+                                    timer: 1500,
+                                    showConfirmButton: false,
                                 })
                                 .then(function() {
                                     window.location.href = baseurl + 'new_ros';

@@ -61,13 +61,16 @@ if ($type == 'expense') {
 <style>
     /* Styling Header Tabel Bootstrap 5 */
     .table thead th {
-        background-color: #198754 !important; /* Tema Hijau Success */
+        background-color: #198754 !important;
+        /* Tema Hijau Success */
         color: white !important;
         vertical-align: middle;
     }
+
     .swal2-container {
         z-index: 99999 !important;
     }
+
     /* Menghilangkan border tebal nested table info pengajuan */
     .table-nested td {
         border: none !important;
@@ -82,15 +85,16 @@ if ($type == 'expense') {
 <?= form_open($this->uri->uri_string(), array('id' => 'frm_data', 'name' => 'frm_data', 'role' => 'form')); ?>
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-body p-4">
-        
+
         <input type="hidden" name="id" value="<?= $header->id; ?>">
+        <input type="hidden" name="req_payment_id" value="<?= $data_req_payment['id'] ?? ''; ?>">
         <input type="hidden" name="tipe" value="<?= $type; ?>">
         <input type="hidden" name="tingkat_approval" value="1">
         <?php if (in_array($type, ['invoice_dp', 'invoice_import', 'invoice_local'])) : ?>
             <input type="hidden" name="no_doc" value="<?= $no_doc; ?>">
         <?php endif; ?>
 
-        <div class="row g-3 mb-4">
+        <div class="row g-3">
             <div class="col-12 col-md-6">
                 <div class="row mb-3 align-items-center">
                     <label class="col-sm-4 col-form-label text-md-end fw-semibold small">Nomor Dokumen</label>
@@ -102,13 +106,13 @@ if ($type == 'expense') {
                         <?php endif; ?>
                     </div>
                 </div>
-                <div class="row mb-3 align-items-center">
+                <div class="row align-items-center">
                     <label class="col-sm-4 col-form-label text-md-end fw-semibold small">Keterangan</label>
                     <div class="col-sm-8">
                         <input type="text" name="informasi" class="form-control bg-light" readonly value="<?= ($keterangan) ?: ''; ?>">
                     </div>
                 </div>
-                <div class="row mb-3 align-items-center">
+                <!-- <div class="row mb-3 align-items-center">
                     <label class="col-sm-4 col-form-label text-md-end fw-semibold small">Biaya Admin</label>
                     <div class="col-sm-8">
                         <input type="text" name="admin_bank" class="form-control bg-light text-end fw-bold" readonly value="<?= number_format(($data_req_payment['admin_bank']), 2) ?>">
@@ -129,7 +133,7 @@ if ($type == 'expense') {
                         }
                         ?>
                     </div>
-                </div>
+                </div> -->
             </div>
 
             <div class="col-12 col-md-6">
@@ -181,28 +185,44 @@ if ($type == 'expense') {
                         foreach ($details as $dtl) : $n++;
                             $coa = (isset($dtl->coa)) ? $dtl->coa : '';
                             $nm_coa = (isset($list_coa[$coa]) && $coa !== '') ? $list_coa[$coa] : '';
-                            
+
                             // ------------------------- TYPE EXPENSE -------------------------
                             if ($type == 'expense') :
                                 $harga  = $dtl->harga;
                                 if (isset($dtl->id_kasbon) && $dtl->id_kasbon !== '') {
                                     $harga = $dtl->kasbon * -1;
                                 }
-                                $gTotal += ($data_req_payment['jumlah'] + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']); 
+                                $gTotal += ($data_req_payment['jumlah'] + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']);
                     ?>
                                 <tr>
                                     <td class="text-center"><?= $n; ?></td>
-                                    
+
                                     <td><?= $dtl->deskripsi; ?> <?= (isset($dtl->id_kasbon) && $dtl->id_kasbon !== '') ? '<span class="badge bg-warning text-dark ms-1">Kasbon</span>' : '' ?></td>
                                     <td class="text-center"><?= $dtl->tanggal; ?></td>
                                     <td class="text-center"><?= $dtl->qty; ?></td>
                                     <td class="text-center fw-bold text-primary"><?= $data_req_payment['currency']; ?></td>
                                     <td>
                                         <table class="table table-nested table-sm mb-0 w-100 small">
-                                            <tr><td>Nilai Pengajuan</td><td class="text-center" style="width:10px">:</td><td class="text-end fw-semibold"><?= number_format($data_req_payment['jumlah'], 2) ?></td></tr>
-                                            <tr><td>Nilai PPh</td><td class="text-center">:</td><td class="text-end text-danger"><?= number_format($data_req_payment['total_pph'], 2) ?></td></tr>
-                                            <tr><td>Bank Charge</td><td class="text-center">:</td><td class="text-end"><?= number_format($data_req_payment['admin_bank'], 2) ?></td></tr>
-                                            <tr class="table-light fw-bold"><td>Net Payment</td><td class="text-center">:</td><td class="text-end text-success"><?= number_format(($data_req_payment['jumlah'] + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']), 2) ?></td></tr>
+                                            <tr>
+                                                <td>Nilai Pengajuan</td>
+                                                <td class="text-center" style="width:10px">:</td>
+                                                <td class="text-end fw-semibold"><?= number_format($data_req_payment['jumlah'], 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Nilai PPh</td>
+                                                <td class="text-center">:</td>
+                                                <td class="text-end text-danger"><?= number_format($data_req_payment['total_pph'], 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Bank Charge</td>
+                                                <td class="text-center">:</td>
+                                                <td class="text-end"><?= number_format($data_req_payment['admin_bank'], 2) ?></td>
+                                            </tr>
+                                            <tr class="table-light fw-bold">
+                                                <td>Net Payment</td>
+                                                <td class="text-center">:</td>
+                                                <td class="text-end text-success"><?= number_format(($data_req_payment['jumlah'] + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']), 2) ?></td>
+                                            </tr>
                                         </table>
                                     </td>
                                     <td class="text-center">
@@ -225,14 +245,14 @@ if ($type == 'expense') {
                                     </td>
                                 </tr>
 
-                    <?php 
+                                <?php
                             // ------------------------- TYPE KASBON -------------------------
                             elseif ($type == 'kasbon') :
                                 if ($kasbon_pr == '1') {
-                    ?>
+                                ?>
                                     <tr>
                                         <td class="text-center"><?= $n; ?></td>
-                                        
+
                                         <td><?= $dtl->keperluan; ?></td>
                                         <td class="text-center"><?= $dtl->tgl_doc; ?></td>
                                         <td class="text-center">-</td>
@@ -276,17 +296,33 @@ if ($type == 'expense') {
                                     ?>
                                     <tr>
                                         <td class="text-center"><?= $n; ?></td>
-                                        
+
                                         <td><?= $dtl->keperluan; ?></td>
                                         <td class="text-center"><?= $dtl->tgl_doc; ?></td>
                                         <td class="text-center">1</td>
                                         <td class="text-center fw-bold text-primary"><?= $data_req_payment['currency']; ?></td>
                                         <td>
                                             <table class="table table-nested table-sm mb-0 w-100 small">
-                                                <tr><td>Nilai Pengajuan</td><td class="text-center" style="width:10px">:</td><td class="text-end fw-semibold"><?= number_format($data_req_payment['jumlah'], 2) ?></td></tr>
-                                                <tr><td>Nilai PPh</td><td class="text-center">:</td><td class="text-end text-danger"><?= number_format($data_req_payment['total_pph'], 2) ?></td></tr>
-                                                <tr><td>Bank Charge</td><td class="text-center">:</td><td class="text-end"><?= number_format($data_req_payment['admin_bank'], 2) ?></td></tr>
-                                                <tr class="table-light fw-bold"><td>Net Payment</td><td class="text-center">:</td><td class="text-end text-success"><?= number_format($data_req_payment['jumlah'] + $data_req_payment['admin_bank'] - $data_req_payment['total_pph'], 2) ?></td></tr>
+                                                <tr>
+                                                    <td>Nilai Pengajuan</td>
+                                                    <td class="text-center" style="width:10px">:</td>
+                                                    <td class="text-end fw-semibold"><?= number_format($data_req_payment['jumlah'], 2) ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Nilai PPh</td>
+                                                    <td class="text-center">:</td>
+                                                    <td class="text-end text-danger"><?= number_format($data_req_payment['total_pph'], 2) ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Bank Charge</td>
+                                                    <td class="text-center">:</td>
+                                                    <td class="text-end"><?= number_format($data_req_payment['admin_bank'], 2) ?></td>
+                                                </tr>
+                                                <tr class="table-light fw-bold">
+                                                    <td>Net Payment</td>
+                                                    <td class="text-center">:</td>
+                                                    <td class="text-end text-success"><?= number_format($data_req_payment['jumlah'] + $data_req_payment['admin_bank'] - $data_req_payment['total_pph'], 2) ?></td>
+                                                </tr>
                                             </table>
                                         </td>
                                         <td class="text-center">
@@ -304,26 +340,42 @@ if ($type == 'expense') {
                                             <?php endif; ?>
                                         </td>
                                     </tr>
-                    <?php
+                                <?php
                                 }
-                     
+
                             // ------------------------- TYPE TRANSPORTASI -------------------------
                             elseif ($type == 'transportasi') :
-                                $gTotal += ($dtl->jumlah_kasbon + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']); 
-                    ?>
+                                $gTotal += ($dtl->jumlah_kasbon + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']);
+                                ?>
                                 <tr>
                                     <td class="text-center"><?= $n; ?></td>
-                                    
+
                                     <td><?= $dtl->keperluan; ?></td>
                                     <td class="text-center"><?= $dtl->tgl_doc; ?></td>
                                     <td class="text-center">1</td>
                                     <td class="text-center fw-bold text-primary"><?= $data_req_payment['currency']; ?></td>
                                     <td>
                                         <table class="table table-nested table-sm mb-0 w-100 small">
-                                            <tr><td>Nilai Pengajuan</td><td class="text-center" style="width:10px">:</td><td class="text-end fw-semibold"><?= number_format($dtl->jumlah_kasbon, 2) ?></td></tr>
-                                            <tr><td>Nilai PPh</td><td class="text-center">:</td><td class="text-end text-danger"><?= number_format($data_req_payment['total_pph'], 2) ?></td></tr>
-                                            <tr><td>Bank Charge</td><td class="text-center">:</td><td class="text-end"><?= number_format($data_req_payment['admin_bank'], 2) ?></td></tr>
-                                            <tr class="table-light fw-bold"><td>Net Payment</td><td class="text-center">:</td><td class="text-end text-success"><?= number_format(($dtl->jumlah_kasbon + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']), 2) ?></td></tr>
+                                            <tr>
+                                                <td>Nilai Pengajuan</td>
+                                                <td class="text-center" style="width:10px">:</td>
+                                                <td class="text-end fw-semibold"><?= number_format($dtl->jumlah_kasbon, 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Nilai PPh</td>
+                                                <td class="text-center">:</td>
+                                                <td class="text-end text-danger"><?= number_format($data_req_payment['total_pph'], 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Bank Charge</td>
+                                                <td class="text-center">:</td>
+                                                <td class="text-end"><?= number_format($data_req_payment['admin_bank'], 2) ?></td>
+                                            </tr>
+                                            <tr class="table-light fw-bold">
+                                                <td>Net Payment</td>
+                                                <td class="text-center">:</td>
+                                                <td class="text-end text-success"><?= number_format(($dtl->jumlah_kasbon + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']), 2) ?></td>
+                                            </tr>
                                         </table>
                                     </td>
                                     <td class="text-center">
@@ -344,24 +396,40 @@ if ($type == 'expense') {
                                     </td>
                                 </tr>
 
-                    <?php 
+                            <?php
                             // ------------------------- TYPE NON PO -------------------------
                             elseif ($type == 'nonpo') :
-                                $gTotal += ($dtl->total_request + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']); 
-                    ?>
+                                $gTotal += ($dtl->total_request + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']);
+                            ?>
                                 <tr>
                                     <td class="text-center"><?= $n; ?></td>
-                                    
+
                                     <td><?= $dtl->deskripsi; ?></td>
                                     <td class="text-center"><?= $dtl->tgl_pr; ?></td>
                                     <td class="text-center">1</td>
                                     <td class="text-center fw-bold text-primary"><?= $data_req_payment['currency']; ?></td>
                                     <td>
                                         <table class="table table-nested table-sm mb-0 w-100 small">
-                                            <tr><td>Nilai Pengajuan</td><td class="text-center" style="width:10px">:</td><td class="text-end fw-semibold"><?= number_format($dtl->total_request, 2) ?></td></tr>
-                                            <tr><td>Nilai PPh</td><td class="text-center">:</td><td class="text-end text-danger"><?= number_format($data_req_payment['total_pph'], 2) ?></td></tr>
-                                            <tr><td>Bank Charge</td><td class="text-center">:</td><td class="text-end"><?= number_format($data_req_payment['admin_bank'], 2) ?></td></tr>
-                                            <tr class="table-light fw-bold"><td>Net Payment</td><td class="text-center">:</td><td class="text-end text-success"><?= number_format(($dtl->total_request + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']), 2) ?></td></tr>
+                                            <tr>
+                                                <td>Nilai Pengajuan</td>
+                                                <td class="text-center" style="width:10px">:</td>
+                                                <td class="text-end fw-semibold"><?= number_format($dtl->total_request, 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Nilai PPh</td>
+                                                <td class="text-center">:</td>
+                                                <td class="text-end text-danger"><?= number_format($data_req_payment['total_pph'], 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Bank Charge</td>
+                                                <td class="text-center">:</td>
+                                                <td class="text-end"><?= number_format($data_req_payment['admin_bank'], 2) ?></td>
+                                            </tr>
+                                            <tr class="table-light fw-bold">
+                                                <td>Net Payment</td>
+                                                <td class="text-center">:</td>
+                                                <td class="text-end text-success"><?= number_format(($dtl->total_request + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']), 2) ?></td>
+                                            </tr>
                                         </table>
                                     </td>
                                     <td class="text-center">
@@ -374,24 +442,40 @@ if ($type == 'expense') {
                                     </td>
                                 </tr>
 
-                    <?php 
+                            <?php
                             // ------------------------- TYPE PERIODIK -------------------------
                             elseif ($type == 'periodik') :
-                                $gTotal += ($data_req_payment['jumlah'] + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']); 
-                    ?>
+                                $gTotal += ($data_req_payment['jumlah'] + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']);
+                            ?>
                                 <tr>
                                     <td class="text-center"><?= $n; ?></td>
-                                    
+
                                     <td><?= $dtl->keterangan; ?></td>
                                     <td class="text-center"><?= $dtl->tanggal; ?></td>
                                     <td class="text-center">1</td>
                                     <td class="text-center fw-bold text-primary"><?= $data_req_payment['currency']; ?></td>
                                     <td>
                                         <table class="table table-nested table-sm mb-0 w-100 small">
-                                            <tr><td>Nilai Pengajuan</td><td class="text-center" style="width:10px">:</td><td class="text-end fw-semibold"><?= number_format($data_req_payment['jumlah'], 2) ?></td></tr>
-                                            <tr><td>Nilai PPh</td><td class="text-center">:</td><td class="text-end text-danger"><?= number_format($data_req_payment['total_pph'], 2) ?></td></tr>
-                                            <tr><td>Bank Charge</td><td class="text-center">:</td><td class="text-end"><?= number_format($data_req_payment['admin_bank'], 2) ?></td></tr>
-                                            <tr class="table-light fw-bold"><td>Net Payment</td><td class="text-center">:</td><td class="text-end text-success"><?= number_format(($data_req_payment['jumlah'] + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']), 2) ?></td></tr>
+                                            <tr>
+                                                <td>Nilai Pengajuan</td>
+                                                <td class="text-center" style="width:10px">:</td>
+                                                <td class="text-end fw-semibold"><?= number_format($data_req_payment['jumlah'], 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Nilai PPh</td>
+                                                <td class="text-center">:</td>
+                                                <td class="text-end text-danger"><?= number_format($data_req_payment['total_pph'], 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Bank Charge</td>
+                                                <td class="text-center">:</td>
+                                                <td class="text-end"><?= number_format($data_req_payment['admin_bank'], 2) ?></td>
+                                            </tr>
+                                            <tr class="table-light fw-bold">
+                                                <td>Net Payment</td>
+                                                <td class="text-center">:</td>
+                                                <td class="text-end text-success"><?= number_format(($data_req_payment['jumlah'] + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']), 2) ?></td>
+                                            </tr>
                                         </table>
                                     </td>
                                     <td class="text-center">
@@ -404,14 +488,14 @@ if ($type == 'expense') {
                                     </td>
                                 </tr>
 
-                    <?php 
+                            <?php
                             // ------------------------- TYPE DIRECT PAYMENT -------------------------
                             elseif ($type == 'direct_payment') :
                                 $gTotal += $dtl->grand_total;
-                    ?>
+                            ?>
                                 <tr>
                                     <td class="text-center"><?= $n; ?></td>
-                                    
+
                                     <td><?= $dtl->deskripsi; ?></td>
                                     <td class="text-center"><?= $dtl->tgl_doc; ?></td>
                                     <td class="text-end"><?= number_format($dtl->grand_total, 2) ?></td>
@@ -432,19 +516,21 @@ if ($type == 'expense') {
                                         <?php endif; ?>
                                     </td>
                                 </tr>
-                    <?php 
+                            <?php
                             // ------------------------- TYPE INVOICE PO (DP/IMPORT/LOCAL) -------------------------
                             elseif (in_array($type, ['invoice_dp', 'invoice_import', 'invoice_local'])) :
                                 $kurs_val = (float)($dtl->kurs ?? 1);
                                 if ($kurs_val <= 0) $kurs_val = 1;
-                                $nilai_invoice = ($type == 'invoice_dp') 
-                                    ? ((float)($dtl->value_dp ?? 0) + (float)($dtl->nilai_ppn ?? 0)) * $kurs_val
-                                    : ((float)($dtl->sisa_nilai ?? 0) + (float)($dtl->nilai_ppn ?? 0)) * $kurs_val;
+
+                                $nilai_invoice = ($type == 'invoice_dp')
+                                    ? ((float)($dtl->nilai_invoice ?? 0) + (float)($dtl->nilai_ppn ?? 0)) * $kurs_val
+                                    : ((float)($dtl->nilai_invoice ?? 0) + (float)($dtl->nilai_ppn ?? 0)) * $kurs_val;
+
                                 $gTotal += $nilai_invoice;
-                    ?>
+                            ?>
                                 <tr>
                                     <td class="text-center"><?= $n; ?></td>
-                                    
+
                                     <td><?= $data_req_payment['keperluan'] ?? ($dtl->nomor_invoice ?? '-'); ?></td>
                                     <td class="text-center"><?= $dtl->invoice_date; ?></td>
                                     <td class="text-center">1</td>
@@ -452,13 +538,33 @@ if ($type == 'expense') {
                                     <td>
                                         <table class="table table-nested table-sm mb-0 w-100 small">
                                             <?php if ($type == 'invoice_dp') : ?>
-                                                <tr><td>Value DP</td><td class="text-center" style="width:10px">:</td><td class="text-end fw-semibold"><?= number_format($dtl->value_dp ?? 0, 2) ?></td></tr>
+                                                <tr>
+                                                    <td>Value DP</td>
+                                                    <td class="text-center" style="width:10px">:</td>
+                                                    <td class="text-end fw-semibold"><?= number_format($dtl->jumlah_rupiah ?? 0, 2) ?></td>
+                                                </tr>
                                             <?php else : ?>
-                                                <tr><td>Sisa Nilai</td><td class="text-center" style="width:10px">:</td><td class="text-end fw-semibold"><?= number_format($dtl->sisa_nilai ?? 0, 2) ?></td></tr>
+                                                <tr>
+                                                    <td>Sisa Nilai</td>
+                                                    <td class="text-center" style="width:10px">:</td>
+                                                    <td class="text-end fw-semibold"><?= number_format($dtl->sisa_nilai ?? 0, 2) ?></td>
+                                                </tr>
                                             <?php endif; ?>
-                                            <tr><td>PPN</td><td class="text-center">:</td><td class="text-end"><?= number_format($dtl->nilai_ppn ?? 0, 2) ?></td></tr>
-                                            <tr><td>Kurs</td><td class="text-center">:</td><td class="text-end"><?= number_format($kurs_val, 2) ?></td></tr>
-                                            <tr class="table-light fw-bold"><td>Total (IDR)</td><td class="text-center">:</td><td class="text-end text-success"><?= number_format($nilai_invoice, 2) ?></td></tr>
+                                            <tr>
+                                                <td>PPN</td>
+                                                <td class="text-center">:</td>
+                                                <td class="text-end"><?= number_format($dtl->nilai_ppn ?? 0, 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Kurs</td>
+                                                <td class="text-center">:</td>
+                                                <td class="text-end"><?= number_format($kurs_val, 2) ?></td>
+                                            </tr>
+                                            <tr class="table-light fw-bold">
+                                                <td>Total (IDR)</td>
+                                                <td class="text-center">:</td>
+                                                <td class="text-end text-success"><?= number_format($nilai_invoice, 2) ?></td>
+                                            </tr>
                                         </table>
                                     </td>
                                     <td class="text-center">
@@ -474,7 +580,7 @@ if ($type == 'expense') {
                                         <input type="checkbox" checked value="<?= $dtl->id; ?>" name="item[<?= $n; ?>][id]" class="form-check-input check_item">
                                     </td>
                                 </tr>
-                    <?php 
+                    <?php
                             endif;
                         endforeach;
                     }  ?>
@@ -496,15 +602,27 @@ if ($type == 'expense') {
                     <div class="card-body p-0">
                         <table class="table table-sm table-borderless align-middle m-0 small">
                             <tbody>
-                                <tr class="border-bottom"><td class="ps-3 py-2 text-muted">Bank</td><td class="text-center" style="width:20px">:</td><td class="pe-3 text-end fw-semibold"><?= $bank_id ?></td></tr>
-                                <tr class="border-bottom"><td class="ps-3 py-2 text-muted">Account Number</td><td class="text-center">:</td><td class="pe-3 text-end fw-semibold text-primary"><?= $accnumber ?></td></tr>
-                                <tr><td class="ps-3 py-2 text-muted">Account Name</td><td class="text-center">:</td><td class="pe-3 text-end fw-semibold"><?= $accname ?></td></tr>
+                                <tr class="border-bottom">
+                                    <td class="ps-3 py-2 text-muted">Bank</td>
+                                    <td class="text-center" style="width:20px">:</td>
+                                    <td class="pe-3 text-end fw-semibold"><?= $bank_id ?></td>
+                                </tr>
+                                <tr class="border-bottom">
+                                    <td class="ps-3 py-2 text-muted">Account Number</td>
+                                    <td class="text-center">:</td>
+                                    <td class="pe-3 text-end fw-semibold text-primary"><?= $accnumber ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="ps-3 py-2 text-muted">Account Name</td>
+                                    <td class="text-center">:</td>
+                                    <td class="pe-3 text-end fw-semibold"><?= $accname ?></td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-            
+
             <div class="col-12 col-md-8 text-end d-flex justify-content-md-end justify-content-start gap-2">
                 <a href="<?= base_url($this->uri->segment(1) . '/list_approve_checker'); ?>" class="btn btn-secondary">
                     <i class="fa fa-reply me-1"></i> Kembali
@@ -534,32 +652,40 @@ if ($type == 'expense') {
         $('.check_item').prop('checked', checked);
     });
 
-	$(document).on('click', '.check_item', function() {
-    // Hitung total checkbox item yang ada
-    var total_checkbox = $('.check_item').length;
-    // Hitung berapa checkbox item yang sedang di-centang
-    var total_checked = $('.check_item:checked').length;
+    $(document).on('click', '.check_item', function() {
+        // Hitung total checkbox item yang ada
+        var total_checkbox = $('.check_item').length;
+        // Hitung berapa checkbox item yang sedang di-centang
+        var total_checked = $('.check_item:checked').length;
 
-    // Jika jumlah yang dicentang sama dengan total item, set master_check jadi true (checked)
-    if (total_checkbox === total_checked) {
-        $('.master_check').prop('checked', true);
-    } else {
-        $('.master_check').prop('checked', false);
-    }
-});
+        // Jika jumlah yang dicentang sama dengan total item, set master_check jadi true (checked)
+        if (total_checkbox === total_checked) {
+            $('.master_check').prop('checked', true);
+        } else {
+            $('.master_check').prop('checked', false);
+        }
+    });
 
     // ------------------------- BUTTON APPROVE / PROCESS HANDLER -------------------------
     $(document).on('click', '#process', function(e) {
         e.preventDefault();
-        
+
         if ($("#bank_coa").val() == "0") {
-            Swal.fire({ icon: 'warning', title: 'Warning!', text: 'Bank tidak boleh kosong' });
+            Swal.fire({
+                icon: 'warning',
+                title: 'Warning!',
+                text: 'Bank tidak boleh kosong'
+            });
             return false;
         }
 
         const isAnyChecked = $('.check_item').is(':checked');
         if (!isAnyChecked) {
-            Swal.fire({ icon: 'warning', title: 'Warning!', text: 'Pilih minimal satu item yang akan di Approve!' });
+            Swal.fire({
+                icon: 'warning',
+                title: 'Warning!',
+                text: 'Pilih minimal satu item yang akan di Approve!'
+            });
             return false;
         }
 
@@ -570,7 +696,10 @@ if ($type == 'expense') {
             showCancelButton: true,
             confirmButtonText: "Ya, Approve!",
             cancelButtonText: "Batal",
-            customClass: { confirmButton: 'btn btn-success me-2', cancelButton: 'btn btn-secondary' },
+            customClass: {
+                confirmButton: 'btn btn-success me-2',
+                cancelButton: 'btn btn-secondary'
+            },
             buttonsStyling: false
         }).then((result) => {
             if (result.isConfirmed) {
@@ -584,16 +713,30 @@ if ($type == 'expense') {
                     contentType: false,
                     success: function(msg) {
                         if (msg['save'] == '1') {
-                            Swal.fire({ title: "Sukses!", text: "Data Berhasil Di Approve", icon: "success", timer: 1500, showConfirmButton: false })
-                            .then(() => {
-                                location.href = siteurl + active_controller + 'list_approve_checker';
-                            });
+                            Swal.fire({
+                                    title: "Sukses!",
+                                    text: "Data Berhasil Di Approve",
+                                    icon: "success",
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                })
+                                .then(() => {
+                                    location.href = siteurl + active_controller + 'list_approve_checker';
+                                });
                         } else {
-                            Swal.fire({ title: "Gagal!", text: "Data Gagal Di Approve", icon: "error" });
+                            Swal.fire({
+                                title: "Gagal!",
+                                text: "Data Gagal Di Approve",
+                                icon: "error"
+                            });
                         }
                     },
                     error: function() {
-                        Swal.fire({ title: "Gagal!", text: "Gagal memproses data via AJAX", icon: "error" });
+                        Swal.fire({
+                            title: "Gagal!",
+                            text: "Gagal memproses data via AJAX",
+                            icon: "error"
+                        });
                     }
                 });
             }
@@ -603,15 +746,15 @@ if ($type == 'expense') {
     // ------------------------- BUTTON REJECT HANDLER -------------------------
     $(document).on('click', '#reject', function(e) {
         e.preventDefault();
-        
+
         const isAnyChecked = $('.check_item').is(':checked');
         var reject_reason = $('.reject_reason').val().trim();
 
         if (!isAnyChecked || reject_reason === '') {
-            Swal.fire({ 
-                icon: 'warning', 
-                title: 'Peringatan!', 
-                text: 'Pastikan Anda mencentang item dan mengisi kolom Alasan Penolakan (Reject Reason)!' 
+            Swal.fire({
+                icon: 'warning',
+                title: 'Peringatan!',
+                text: 'Pastikan Anda mencentang item dan mengisi kolom Alasan Penolakan (Reject Reason)!'
             });
             return false;
         }
@@ -623,7 +766,10 @@ if ($type == 'expense') {
             showCancelButton: true,
             confirmButtonText: "Ya, Reject!",
             cancelButtonText: "Batal",
-            customClass: { confirmButton: 'btn btn-danger me-2', cancelButton: 'btn btn-secondary' },
+            customClass: {
+                confirmButton: 'btn btn-danger me-2',
+                cancelButton: 'btn btn-secondary'
+            },
             buttonsStyling: false
         }).then((result) => {
             if (result.isConfirmed) {
@@ -637,16 +783,30 @@ if ($type == 'expense') {
                     contentType: false,
                     success: function(msg) {
                         if (msg['save'] == '1') {
-                            Swal.fire({ title: "Sukses!", text: "Data Berhasil Di Reject", icon: "success", timer: 1500, showConfirmButton: false })
-                            .then(() => {
-                                location.href = siteurl + active_controller + 'list_approve_checker';
-                            });
+                            Swal.fire({
+                                    title: "Sukses!",
+                                    text: "Data Berhasil Di Reject",
+                                    icon: "success",
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                })
+                                .then(() => {
+                                    location.href = siteurl + active_controller + 'list_approve_checker';
+                                });
                         } else {
-                            Swal.fire({ title: "Gagal!", text: "Data Gagal Di Reject", icon: "error" });
+                            Swal.fire({
+                                title: "Gagal!",
+                                text: "Data Gagal Di Reject",
+                                icon: "error"
+                            });
                         }
                     },
                     error: function() {
-                        Swal.fire({ title: "Gagal!", text: "Gagal memproses data penolakan via AJAX", icon: "error" });
+                        Swal.fire({
+                            title: "Gagal!",
+                            text: "Gagal memproses data penolakan via AJAX",
+                            icon: "error"
+                        });
                     }
                 });
             }

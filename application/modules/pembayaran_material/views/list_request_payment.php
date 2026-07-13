@@ -13,6 +13,7 @@
                 <tr>
                     <th class="text-center">No</th>
                     <th class="text-center">No. Dokumen</th>
+                    <th class="text-center">Tipe</th>
                     <th class="text-center">Tgl</th>
                     <th class="text-center">Keperluan</th>
                     <th class="text-center">Currency</th>
@@ -46,6 +47,7 @@
 
     $(document).on('click', '.check_payment', function() {
         var val = $(this).val();
+        var tipe = $(this).data('tipe'); // ← ambil dari data-tipe
 
         var checked = 0;
         if ($(this).is(':checked')) {
@@ -57,7 +59,8 @@
             url: siteurl + active_controller + 'check_payment',
             data: {
                 'id': val,
-                'checked': checked
+                'checked': checked,
+                'tipe': tipe // ← kirim ke controller
             },
             cache: false,
             success: function(result) {},
@@ -105,26 +108,26 @@
     });
 
     $(document).on('click', '.proses_payment', function() {
-        check_choosed_payment().done(function(data) {
-            var choosed_payment = data.count_choosed_payment;
+    check_choosed_payment().done(function(data) {
+        var choosed_payment = data.count_choosed_payment;
 
-            if (choosed_payment > 0) {
-                window.location.href = siteurl + active_controller + 'form_payment_new/?id_payment=' + data.arr_choosed_payment;
-            } else {
-                Swal.fire({
-                    title: 'Warning!',
-                    text: 'Please check at least 1 payment data!',
-                    icon: 'warning'
-                });
-            }
-        }).fail(function(data) {
+        if (choosed_payment > 0) {
+            window.location.href = siteurl + active_controller + 'form_payment_new/?id_payment=' + data.arr_choosed_payment + '&tipe=' + data.arr_tipe;
+        } else {
             Swal.fire({
-                title: 'Error!',
-                text: 'Failed to process payment. Please try again.',
-                icon: 'error'
+                title: 'Warning!',
+                text: 'Please check at least 1 payment data!',
+                icon: 'warning'
             });
+        }
+    }).fail(function(data) {
+        Swal.fire({
+            title: 'Error!',
+            text: 'Failed to process payment. Please try again.',
+            icon: 'error'
         });
     });
+});
 
     function DataTables() {
         var DataTables = $('#table_list_req_payment').dataTable({
@@ -142,28 +145,37 @@
                 }
             },
             columns: [{
-                    data: 'no'
+                    data: 'no',
+                    className: 'text-center'
                 },
                 {
                     data: 'no_dokumen'
                 },
                 {
-                    data: 'tgl'
+                    data: 'tipe', // Menangkap data tipe dari Controller
+                    className: 'text-center'
+                },
+                {
+                    data: 'tgl',
+                    className: 'text-center'
                 },
                 {
                     data: 'keperluan'
                 },
                 {
-                    data: 'currency'
+                    data: 'currency',
+                    className: 'text-center'
                 },
                 {
-                    data: 'total_invoice'
+                    data: 'total_invoice',
+                    className: 'text-right'
                 },
                 {
                     data: 'requestor'
                 },
                 {
-                    data: 'option'
+                    data: 'option',
+                    className: 'text-center'
                 }
             ]
         });

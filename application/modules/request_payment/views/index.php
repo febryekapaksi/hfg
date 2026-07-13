@@ -237,31 +237,6 @@ $ENABLE_VIEW    = has_permission('Request_Payment.View');
 		});
 	}
 
-	$(document).on('click', '.pilih_data', function() {
-		var val_pilih = $(this).val();
-		var kategori = $(this).data('kategori');
-		var isChecked = $(this).is(':checked');
-		var wdo = isChecked ? 1 : 0;
-
-		$.ajax({
-			type: 'post',
-			url: siteurl + active_controller + 'added_pilih_data',
-			data: {
-				'id': val_pilih,
-				'kategori': kategori,
-				'wdo': wdo
-			},
-			cache: false,
-			error: function() {
-				Swal.fire({
-					icon: 'error',
-					title: 'Error !',
-					text: 'Please try again later !'
-				});
-			}
-		});
-	});
-
 	// Save/Update Form Handler
 	$('#frm_data').on('submit', function(e) {
 		e.preventDefault();

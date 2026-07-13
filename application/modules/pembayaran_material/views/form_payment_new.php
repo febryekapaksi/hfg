@@ -4,6 +4,50 @@ $hide_table_jurnal_petty_cash = 'd-none';
 // 	$hide_table_jurnal_petty_cash = '';
 // }
 
+// Tentukan apakah ini PO import atau lokal
+$is_import = false;
+$kurs_receive_invoice = 0;
+$kurs_receive_invoice_per_item = []; // BARU: simpan kurs per baris
+foreach ($results['result_payment'] as $item_check) {
+	if (in_array($item_check->tipe, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
+		$get_po_loi = $this->db->select('loi')->get_where('tr_purchase_order', ['no_po' => $item_check->no_doc])->row();
+		if (empty($get_po_loi)) {
+			$get_po_loi = $this->db->select('loi')->get_where('tr_purchase_order', ['no_surat' => $item_check->no_doc])->row();
+		}
+		if (!empty($get_po_loi) && strtolower(trim($get_po_loi->loi)) === 'import') {
+			$is_import = true;
+		}
+		if ($item_check->tipe === 'invoice_import') {
+			$is_import = true;
+		}
+		if (!empty($item_check->ids)) {
+			$get_kurs_ri = $this->db->select('kurs')->get_where('tr_receive_invoice', ['id' => $item_check->ids])->row();
+			if (!empty($get_kurs_ri) && $get_kurs_ri->kurs > 0) {
+				$kurs_receive_invoice = (float)$get_kurs_ri->kurs;
+				$kurs_receive_invoice_per_item[$item_check->id] = (float)$get_kurs_ri->kurs; // BARU
+			}
+		}
+	} else {
+		$get_inv_po = $this->db->get_where('tr_invoice_po', ['id' => $item_check->no_doc])->row();
+		if (!empty($get_inv_po) && !empty($get_inv_po->no_po)) {
+			$no_po_check = $get_inv_po->no_po;
+			if (strpos($no_po_check, 'TRS1') !== false) {
+				$arr_inc = explode(',', str_replace(', ', ',', $no_po_check));
+				$get_ipp = $this->db->select('no_ipp')->where_in('kode_trans', $arr_inc)->get('tr_incoming_check')->row();
+				if (!empty($get_ipp)) {
+					$no_po_check = $get_ipp->no_ipp;
+				}
+			}
+			$get_po_loi2 = $this->db->select('loi')->get_where('tr_purchase_order', ['no_po' => $no_po_check])->row();
+			if (!empty($get_po_loi2) && strtolower($get_po_loi2->loi) === 'import') {
+				$is_import = true;
+			}
+		}
+	}
+}
+$hide_ppn_pph_class = $is_import ? 'd-none' : '';
+$hide_ppn_pph_style = $is_import ? 'style="display:none !important;"' : '';
+
 $kode_supplier = [];
 $nm_supplier = [];
 
@@ -68,6 +112,7 @@ foreach ($results['result_payment'] as $item) {
 ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.min.css" integrity="sha512-yVvxUQV0QESBt1SyZbNJMAwyKvFTLMyXSyBHDO4BG5t7k/Lw34tyqlSDlKIrIENIzCl+RVUNjmCPG+V/GMesRw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
 	td {
 		padding: 5px 5px 5px 5px;
@@ -86,7 +131,7 @@ foreach ($results['result_payment'] as $item) {
 					<td width="15%" style="">Tgl Bayar</td>
 					<td width="5%" class="text-center">:</td>
 					<td width="25%">
-						<input type="date" name="tgl_bayar" id="" class="form-control form-control-sm tgl_bayar" value="<?= date('Y-m-d') ?>">
+						<input type="text" name="tgl_bayar" id="tgl_bayar" class="form-control form-control-sm tgl_bayar" value="<?= date('Y-m-d') ?>" placeholder="Pilih tanggal">
 					</td>
 					<td width="15%" style="">Supplier</td>
 					<td width="5%" class="text-center">:</td>
@@ -136,7 +181,7 @@ foreach ($results['result_payment'] as $item) {
 							?>
 						</select>
 					</td>
-					<td width="15%" style="">Payment Bank</td>
+					<td width="15%" style="">Nilai Bank</td>
 					<td width="5%" class="text-center">:</td>
 					<td width="25%">
 						<input type="text" name="payment_bank" id="" class="form-control form-control-sm text-right input_payment_bank auto_num" value="0">
@@ -148,26 +193,23 @@ foreach ($results['result_payment'] as $item) {
 					<td width="25%">
 						<input type="text" name="kurs_payment" id="" class="form-control form-control-sm text-right auto_num kurs_payment_input" value="" disabled placeholder="Pilih mata uang dulu">
 					</td>
+					<td width="15%" style="">Nilai Bank IDR</td>
+					<td width="5%" class="text-center">:</td>
+					<td width="25%">
+						<input type="text" name="nilai_bank_idr" id="" class="form-control form-control-sm text-right nilai_bank_idr" value="0" readonly style="background-color: #e9ecef;">
+					</td>
 				</tr>
-				<!-- <tr>
-				<td colspan="3"></td>
-				<td width="15%" style="">Kurs</td>
-				<td width="5%" class="text-center">:</td>
-				<td width="25%">
-					<input type="text" name="kurs" id="" class="form-control form-control-sm text-right auto_num" value="0">
-				</td>
-			</tr> -->
 			</table>
 		</div>
-		<div class="box-body">
+		<div class="box-body" style="margin-bottom: 10px;">
 			<table class="table table-bordered table-striped" id="mytabledata" width='100%'>
 				<thead>
 					<tr class='bg-blue'>
 						<th class="text-center">Supplier</th>
 						<th class="text-center">Nomor Dokumen</th>
-						<th class="text-center">Request Payment</th>
-						<th class="text-center" colspan="2">PPH</th>
-						<th class="text-center">PPN</th>
+						<th class="text-center">Invoice</th>
+						<th class="text-center" colspan="2" <?= $hide_ppn_pph_style ?>>PPH</th>
+						<th class="text-center" <?= $hide_ppn_pph_style ?>>PPN</th>
 						<th class="text-center">DPP</th>
 					</tr>
 				</thead>
@@ -291,12 +333,22 @@ foreach ($results['result_payment'] as $item) {
 							$nilai_ppn = 0;
 						}
 
+						// Fetch jumlah_rupiah dari tr_receive_invoice
+						$id_ri = !empty($item->id_receive_invoice) ? $item->id_receive_invoice : $item->no_doc;
+						$get_ri = $this->db->get_where('tr_receive_invoice', ['id' => $id_ri])->row();
+						$tagihan_idr = ($get_ri) ? $get_ri->jumlah_rupiah : $item->jumlah;
+
 						echo '<tr>';
 						echo '<td class="text-center">' . $nm_supplier_row . '</td>';
 						echo '<td class="text-center">
 						<input type="hidden" name="dt[' . $no . '][id_payment]" value="' . $item->id . '">
 						<input type="hidden" name="dt[' . $no . '][kurs_invoice]" value="' . $kurs_invoice . '">
+						<input type="hidden" name="dt[' . $no . '][no_doc]" value="' . ($item->no_doc ?? '') . '">
+						<input type="hidden" name="dt[' . $no . '][no_surat]" value="' . ($item->no_surat ?? '') . '">
+						<input type="hidden" name="dt[' . $no . '][jumlah]" value="' . $item->jumlah . '">
+						<input type="hidden" name="dt[' . $no . '][ids]" value="' . ($item->ids ?? '') . '">
 						<input type="hidden" class="jumlah_asli_' . $item->id . '" value="' . $item->jumlah . '">
+						<input type="hidden" class="kurs_ri_' . $item->id . '" value="' . ($kurs_receive_invoice_per_item[$item->id] ?? 0) . '">
 						
 						' . ($item->no_surat ?? $item->no_doc) . '</td>';
 						echo '<td class="text-right req_payment_col_' . $item->id . '">
@@ -304,23 +356,23 @@ foreach ($results['result_payment'] as $item) {
 					<input type="hidden" class="payment_bank_' . $item->id . '" value="' . $item->jumlah . '">
 					' . number_format($item->jumlah, 2) . '
 					</td>';
-						echo '<td>';
+						echo '<td ' . $hide_ppn_pph_style . '>';
 						echo '<select name="dt[' . $no . '][tipe_pph]" class="form-control form-control-sm chosen">';
 						echo '<option value="1">PPH 21</option>';
 						echo '</select>';
 						echo '</td>';
-						echo '<td>';
+						echo '<td ' . $hide_ppn_pph_style . '>';
 						echo '<input type="hidden" class="nilai_utuh_' . $item->id . '" value="' . $nilai_utuh . '">';
 						echo '<input type="hidden" class="persen_progress_' . $item->id . '" value="' . $persen_progress . '">';
 						echo '<input type="text" class="form-control form-control-sm text-right auto_num nilai_pph nilai_pph_' . $item->id . ' change_nilai_pph" name="dt[' . $no . '][nilai_pph]" data-id="' . $item->id . '">';
 						echo '</td>';
-						echo '<td class="text-right">';
+						echo '<td class="text-right" ' . $hide_ppn_pph_style . '>';
 						echo '<input type="text" name="dt[' . $no . '][nilai_ppn]" class="form-control form-control-sm text-right auto_num change_nilai_ppn nilai_ppn nilai_ppn_' . $item->id . '" data-id="' . $item->id . '" value="' . $nilai_ppn . '">';
 						echo '</td>';
-						echo '<td class="text-right payment_col_' . $item->id . '">' . number_format($item->jumlah - $nilai_ppn, 2) . '</td>';
+						echo '<td class="text-right payment_col_' . $item->id . '">' . number_format($tagihan_idr, 2) . '</td>';
 						echo '</tr>';
 
-						$total_payment += ($item->jumlah - $nilai_ppn);
+						$total_payment += $tagihan_idr;
 						$total_ppn += ($nilai_ppn);
 						$total_payment_bank += ($item->jumlah);
 						$ttl_bank_charge += ($item->admin_bank);
@@ -332,41 +384,42 @@ foreach ($results['result_payment'] as $item) {
 					?>
 				</tbody>
 				<tbody>
+					<?php $footer_colspan = $is_import ? 2 : 5; ?>
 					<tr>
-						<td colspan="5"></td>
-						<td>Total Payment</td>
+						<td colspan="<?= $footer_colspan ?>"></td>
+						<td>Subtotal</td>
 						<td class="text-right total_payment_col">
 							<?= number_format($total_payment, 2) ?>
 						</td>
 					</tr>
-					<tr>
+					<tr class="ppn_footer_row" <?= $hide_ppn_pph_style ?>>
 						<td colspan="5"></td>
-						<td>Selisih</td>
-						<td class="text-right selisih_col"><?= number_format($total_payment - 0, 2) ?></td>
+						<td>PPN</td>
+						<td class="text-right total_ppn_col"><?= number_format($total_ppn, 2) ?></td>
+					</tr>
+					<tr class="pph_footer_row" <?= $hide_ppn_pph_style ?>>
+						<td colspan="5"></td>
+						<td>PPH</td>
+						<td class="text-right total_pph_col">
+							<?= number_format($total_pph, 2) ?>
+						</td>
 					</tr>
 					<tr>
-						<td colspan="5"></td>
+						<td colspan="<?= $footer_colspan ?>"></td>
 						<td>Bank Charge</td>
 						<td>
 							<input type="text" name="bank_charge" id="" class="form-control form-control-sm text-right auto_num bank_charge" value="<?= $ttl_bank_charge ?>">
 						</td>
 					</tr>
 					<tr>
-						<td colspan="5"></td>
-						<td>PPh</td>
-						<td class="text-right total_pph_col">
-							<?= number_format($total_pph, 2) ?>
-						</td>
+						<td colspan="<?= $footer_colspan ?>"></td>
+						<td><strong>Grand Total Payment</strong></td>
+						<td class="text-right grand_total_payment_col"><strong><?= number_format($total_payment + $total_ppn - $total_pph + $ttl_bank_charge, 2) ?></strong></td>
 					</tr>
-					<tr>
-						<td colspan="5"></td>
-						<td>PPn</td>
-						<td class="text-right total_ppn_col"><?= number_format($total_ppn, 2) ?></td>
-					</tr>
-					<tr>
-						<td colspan="5"></td>
-						<td>Kontrol</td>
-						<td class="text-right kontrol_col"><?= number_format($kontrol, 2) ?></td>
+					<tr class="selisih_kurs_row">
+						<td colspan="<?= $footer_colspan ?>"></td>
+						<td>Selisih Kurs</td>
+						<td class="text-right selisih_kurs_col">0.00</td>
 					</tr>
 				</tbody>
 			</table>
@@ -375,129 +428,13 @@ foreach ($results['result_payment'] as $item) {
 			<input type="hidden" name="total_ppn" class="total_ppn" value="<?= $total_ppn ?>">
 			<input type="hidden" name="total_payment_bank" class="total_payment_bank" value="<?= $total_payment_bank ?>">
 			<input type="hidden" name="kontrol" class="kontrol" value="0">
+			<input type="hidden" class="kurs_receive_invoice" value="<?= $kurs_receive_invoice ?>">
+			<input type="hidden" class="is_import" value="<?= $is_import ? '1' : '0' ?>">
 
 			<div class="col-md-4">
 				<div class="form-group">
 					<input type="file" class="form-control form-control-sm" name="upload_doc" id="" style="margin-top: 15px;">
 				</div>
-			</div>
-
-			<br><br>
-
-			<div class="col-md-12">
-				<h3>Jurnal</h3>
-				<table class="table table-striped">
-					<thead class="bg-primary">
-						<tr>
-							<th class="text-center">Tanggal Jurnal</th>
-							<th class="text-center">Nama Company</th>
-							<th class="text-center">Department</th>
-							<th class="text-center">COA</th>
-							<th class="text-center">Nama Account</th>
-							<th class="text-center">Keterangan</th>
-							<th class="text-center">Debit</th>
-							<th class="text-center">Kredit</th>
-						</tr>
-					</thead>
-					<tbody class="tbody_jurnal"></tbody>
-					<tfoot class="bg-primary">
-						<tr>
-							<th colspan="6" class="text-center">Balancing</th>
-							<th class="text-right th_ttl_debit_jurnal">0</th>
-							<th class="text-right th_ttl_kredit_jurnal">0</th>
-						</tr>
-					</tfoot>
-				</table>
-			</div>
-
-			<br><br>
-
-			<div class="col-md-12 <?= $hide_table_jurnal_petty_cash ?>">
-				<h3>Jurnal Refill Pettycash</h3>
-				<table class="table table-striped">
-					<thead class="bg-primary">
-						<tr>
-							<th class="text-center">Tanggal Jurnal</th>
-							<th class="text-center">Nama Company</th>
-							<th class="text-center">Divisi</th>
-							<th class="text-center">COA</th>
-							<th class="text-center">Nama Account</th>
-							<th class="text-center">Keterangan</th>
-							<th class="text-center">Debit</th>
-							<th class="text-center">Kredit</th>
-						</tr>
-					</thead>
-					<tbody class="tbody_jurnal_refill_pettycash">
-						<?php
-						$ttl_debit_jurnal_refill = 0;
-						$ttl_kredit_jurnal_refill = 0;
-						if (!empty($results['jurnal_refill_petty_cash'])) {
-							$no_jurnal_refill_pettycash = 0;
-							foreach ($results['jurnal_refill_petty_cash'] as $item) {
-								$no_jurnal_refill_pettycash++;
-
-								$get_coa = $this->db->get_where(DBACC . '.coa_master', ['no_perkiraan' => '1010-10-2'])->row();
-
-								$id_coa = (!empty($get_coa)) ? $get_coa->no_perkiraan : '';
-								$nm_coa = (!empty($get_coa)) ? $get_coa->nama : '';
-
-								echo '<tr>';
-
-								echo '<td class="text-center">';
-								echo date('d F Y');
-								echo '<input type="hidden" name="jurnal_refill_pettycash[' . $no_jurnal_refill_pettycash . '][tanggal_jurnal]" value="' . date('Y-m-d') . '">';
-								echo '</td>';
-
-								echo '<td class="text-center">';
-								echo 'Vuca';
-								echo '<input type="hidden" name="jurnal_refill_pettycash[' . $no_jurnal_refill_pettycash . '][id_company]" value="4">';
-								echo '<input type="hidden" name="jurnal_refill_pettycash[' . $no_jurnal_refill_pettycash . '][nm_company]" value="Vuca">';
-								echo '</td>';
-
-								echo '<td class="text-center">';
-								echo 'Driver';
-								echo '</td>';
-
-								echo '<td class="text-center">';
-								echo $id_coa;
-								echo '<input type="hidden" name="jurnal_refill_pettycash[' . $no_jurnal_refill_pettycash . '][coa]" value="' . $id_coa . '">';
-								echo '</td>';
-
-								echo '<td class="text-center">';
-								echo $nm_coa;
-								echo '<input type="hidden" name="jurnal_refill_pettycash[' . $no_jurnal_refill_pettycash . '][nm_account]" value="' . $nm_coa . '">';
-								echo '</td>';
-
-								echo '<td class="text-center">';
-								echo 'Refill Pettycash - ' . $item->no_doc . '';
-								echo '<input type="hidden" name="jurnal_refill_pettycash[' . $no_jurnal_refill_pettycash . '][deskripsi]" value="Refill Pettycash - ' . $item->no_doc . '">';
-								echo '</td>';
-
-								echo '<td class="text-right">';
-								echo number_format($item->jumlah);
-								echo '<input type="hidden" name="jurnal_refill_pettycash[' . $no_jurnal_refill_pettycash . '][debit]" value="' . $item->jumlah . '">';
-								echo '</td>';
-
-								echo '<td class="text-right">';
-								echo 0;
-								echo '<input type="hidden" name="jurnal_refill_pettycash[' . $no_jurnal_refill_pettycash . '][kredit]" value="0">';
-								echo '</td>';
-
-								echo '</tr>';
-
-								$ttl_debit_jurnal_refill += $item->jumlah;
-							}
-						}
-						?>
-					</tbody>
-					<tfoot class="bg-primary">
-						<tr>
-							<th colspan="6" class="text-center">Balancing</th>
-							<th class="text-right ttl_debit_refill"><?= number_format($ttl_debit_jurnal_refill) ?></th>
-							<th class="text-right ttl_kredit_refill"><?= number_format($ttl_kredit_jurnal_refill) ?></th>
-						</tr>
-					</tfoot>
-				</table>
 			</div>
 		</div>
 
@@ -515,6 +452,7 @@ foreach ($results['result_payment'] as $item) {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.jquery.min.js" integrity="sha512-rMGGF4wg1R73ehtnxXBt5mbUfN9JUJwbk21KMlnLZDJh7BkPmeovBuddZCENJddHYYMkCh9hPFnPmS9sspki8g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="<?= base_url('assets/js/autoNumeric.js') ?>"></script>
 
 <script>
@@ -522,6 +460,13 @@ foreach ($results['result_payment'] as $item) {
 	set_jurnal_refill();
 
 	$(document).ready(function() {
+		// Init Flatpickr untuk tanggal bayar
+		flatpickr('#tgl_bayar', {
+			dateFormat: 'Y-m-d',
+			defaultDate: '<?= date('Y-m-d') ?>',
+			allowInput: true
+		});
+
 		// $('.supplier').chosen();
 		$('.bank').chosen({
 			width: '100%'
@@ -619,9 +564,24 @@ foreach ($results['result_payment'] as $item) {
 			bank_charge = 0;
 		}
 
-		var kontrol = parseFloat((total_payment_bank - total_payment - total_ppn + total_pph - bank_charge).toFixed(2));
+		// Kurs untuk hitung nilai bank IDR
+		var kurs_val = $('input[name="kurs_payment"]').val();
+		if (kurs_val !== '' && kurs_val !== undefined) {
+			kurs_val = kurs_val.split(',').join('');
+			kurs_val = parseFloat(kurs_val) || 0;
+		} else {
+			kurs_val = 0;
+		}
+		if (kurs_val <= 0) kurs_val = 1;
 
-		$('.kontrol_col').html(number_format(kontrol, 2));
+		var nilai_bank_idr = total_payment_bank * kurs_val;
+
+		// Grand Total = Subtotal + PPN - PPH + Bank Charge
+		var grand_total = total_payment + total_ppn - total_pph + bank_charge;
+
+		// Kontrol = Nilai Bank IDR - Grand Total Payment
+		var kontrol = parseFloat((nilai_bank_idr - grand_total).toFixed(2));
+
 		$('.kontrol').val(kontrol);
 	}
 
@@ -719,25 +679,29 @@ foreach ($results['result_payment'] as $item) {
 			var jumlah_asli = parseFloat($(this).val()) || 0;
 			var jumlah_idr = jumlah_asli * kurs_val;
 
-			// Update Request Payment column
-			$('.req_payment_col_' + id).html(number_format(jumlah_idr, 2));
+			// Update Request Payment column — tidak diubah, tetap nilai asli
+			// $('.req_payment_col_' + id).html(number_format(jumlah_idr, 2));
 			$('.payment_bank_' + id).val(jumlah_idr);
 
 			total_req_payment += jumlah_idr;
 		});
 
 		// PPh, PPn, Bank Charge — langsung dari input user (IDR, TIDAK dikali kurs)
+		var is_import = parseInt($('.is_import').val()) || 0;
 		var total_pph = 0;
-		$('.nilai_pph').each(function() {
-			var val = $(this).val().split(',').join('');
-			total_pph += parseFloat(val) || 0;
-		});
-
 		var total_ppn = 0;
-		$('.nilai_ppn').each(function() {
-			var val = $(this).val().split(',').join('');
-			total_ppn += parseFloat(val) || 0;
-		});
+
+		if (!is_import) {
+			$('.nilai_pph').each(function() {
+				var val = $(this).val().split(',').join('');
+				total_pph += parseFloat(val) || 0;
+			});
+
+			$('.nilai_ppn').each(function() {
+				var val = $(this).val().split(',').join('');
+				total_ppn += parseFloat(val) || 0;
+			});
+		}
 
 		var bank_charge = parseFloat($('.bank_charge').val().split(',').join('')) || 0;
 
@@ -753,11 +717,11 @@ foreach ($results['result_payment'] as $item) {
 			$('.payment_col_' + id).html(number_format(dpp, 2));
 		});
 
-		// Total Payment = total_req_payment (sudah × kurs)
-		var total_payment = total_req_payment;
+		// Subtotal = total_req_payment (sudah × kurs)
+		var subtotal = total_req_payment;
 
 		// Update hidden values
-		$('.total_payment').val(total_payment);
+		$('.total_payment').val(subtotal);
 		$('.total_ppn').val(total_ppn);
 		$('.total_pph').val(total_pph);
 		$('.total_payment_bank').val(total_req_payment);
@@ -765,12 +729,31 @@ foreach ($results['result_payment'] as $item) {
 		// Update display
 		$('.total_pph_col').html(number_format(total_pph, 2));
 		$('.total_ppn_col').html(number_format(total_ppn, 2));
-		$('.total_payment_col').html(number_format(total_payment, 2));
+		$('.total_payment_col').html(number_format(subtotal, 2));
 
-		// Selisih = total_payment - payment_bank_input
-		var payment_bank_input = parseFloat($('.input_payment_bank').val().split(',').join('')) || 0;
-		var selisih = total_payment - payment_bank_input + total_ppn - total_pph + bank_charge;
-		$('.selisih_col').html(number_format(selisih, 2));
+		// Grand Total Payment = Subtotal + PPN - PPH + Bank Charge
+		var grand_total = subtotal + total_ppn - total_pph + bank_charge;
+		$('.grand_total_payment_col').html('<strong>' + number_format(grand_total, 2) + '</strong>');
+
+		// Selisih Kurs: bandingkan Nilai Bank IDR dengan nilai berdasarkan kurs_receive_invoice
+		// Nilai Bank IDR
+		var nilai_bank_input = parseFloat($('.input_payment_bank').val().split(',').join('')) || 0;
+		var nilai_bank_idr = nilai_bank_input * kurs_val;
+		$('.nilai_bank_idr').val(number_format(nilai_bank_idr, 2));
+
+		// Selisih Kurs = SUM per baris: (kurs_form - kurs_receive_invoice_baris) x nilai_invoice_baris
+		var selisih_kurs = 0;
+		$('[class*="jumlah_asli_"]').each(function() {
+			var className = $(this).attr('class');
+			var id = className.replace('jumlah_asli_', '');
+			var jumlah_asli = parseFloat($(this).val()) || 0;
+			var kurs_ri_row = parseFloat($('.kurs_ri_' + id).val()) || 0;
+
+			if (kurs_ri_row > 0) {
+				selisih_kurs += (kurs_val - kurs_ri_row) * jumlah_asli;
+			}
+		});
+		$('.selisih_kurs_col').html(number_format(selisih_kurs, 2));
 
 		hitung_kontrol();
 	};
@@ -805,19 +788,10 @@ foreach ($results['result_payment'] as $item) {
 		}
 
 		// Toleransi floating point: kontrol harus mendekati 0 (selisih < 1)
-		if (Math.abs(kontrol) > 0.01) {
-			swal({
-				title: 'Warning !',
-				text: 'Maaf, Pastikan Kontrol harus 0 sebelum data dibayarkan!',
-				type: 'warning'
-			});
-
-			return false;
-		}
 		if (payment_bank <= 0) {
 			swal({
 				title: 'Warning !',
-				text: 'Maaf, Payment bank harus diisi dan tidak boleh 0!',
+				text: 'Maaf, Nilai bank harus diisi dan tidak boleh 0!',
 				type: 'warning'
 			});
 
@@ -868,7 +842,7 @@ foreach ($results['result_payment'] as $item) {
 				if (isConfirm) {
 
 					var formData = new FormData($('#frm-data')[0]);
-					
+
 					// Tentukan endpoint berdasarkan tipe payment
 					var tipe_payment = '<?= $results['result_payment'][0]->tipe ?? '' ?>';
 					var baseurl;

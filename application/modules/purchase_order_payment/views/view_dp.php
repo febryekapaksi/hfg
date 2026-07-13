@@ -110,7 +110,7 @@
         <?php
         if (empty($data['no_payment'])) {
             echo '<span class="badge bg-warning text-dark">Menunggu Pembayaran</span>';
-        } elseif ($data['status_payment'] == 2) {
+        } elseif ($data['status_payment'] == 'payment') {
             echo '<span class="badge bg-success">Lunas</span>';
         } else {
             echo '<span class="badge bg-info">Dalam Proses</span>';

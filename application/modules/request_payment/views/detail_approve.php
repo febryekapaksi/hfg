@@ -48,7 +48,7 @@ if ($type == 'expense') {
 	$accname = $header->bank_account;
 } elseif (in_array($type, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
 	$tipe_label = str_replace(['invoice_dp', 'invoice_import', 'invoice_local'], ['Invoice DP', 'Invoice Import', 'Invoice Local'], $type);
-	$keterangan = $tipe_label . ' - ' . $header->no_po . ' - ' . $header->nomor_invoice;
+	$keterangan = $tipe_label . ' - ' . $header->no_surat . ' - ' . $header->nomor_invoice;
 	$no_doc = $header->no_po;
 	$no_surat = $header->no_surat;
 	$tgl_doc = $header->invoice_date;
@@ -105,7 +105,7 @@ if ($type == 'expense') {
 					<input type="text" name="informasi" class="form-control bg-light" readonly value="<?= ($keterangan) ?: ''; ?>">
 				</div>
 
-				<div class="row g-2">
+				<!-- <div class="row g-2">
 					<div class="col-6">
 						<label class="form-label fw-semibold small text-muted">Biaya Admin Bank</label>
 						<input type="text" name="admin_bank" class="form-control bg-light text-end" readonly value="<?= number_format(($data_req_payment['admin_bank']), 2) ?>">
@@ -122,7 +122,7 @@ if ($type == 'expense') {
 							<?php endif; ?>
 						</div>
 					</div>
-				</div>
+				</div> -->
 			</div>
 		</div>
 	</div>
@@ -193,7 +193,7 @@ if ($type == 'expense') {
 					?>
 								<tr>
 									<td class="text-center"><?= $n; ?></td>
-									
+
 									<td><?= $dtl->deskripsi; ?> <?= (isset($dtl->id_kasbon) && $dtl->id_kasbon !== '') ? "<span class='badge bg-warning text-dark'>Kasbon</span>" : null ?></td>
 									<td class="text-center"><?= $dtl->tanggal; ?></td>
 									<td class="text-center"><?= $dtl->qty; ?></td>
@@ -242,12 +242,12 @@ if ($type == 'expense') {
 								if ($kasbon_pr == '1') { ?>
 									<tr>
 										<td class="text-center"><?= $n; ?></td>
-										
+
 										<td><?= $dtl->keperluan; ?></td>
 										<td class="text-center"><?= $dtl->tgl_doc; ?></td>
 										<td class="text-center">-</td>
 										<td class="text-center small"><?= $data_req_payment['currency']; ?></td>
-										
+
 										<td class="text-center"><a href="<?= base_url('assets/expense/') . $dtl->doc_file; ?>" class="btn btn-sm btn-outline-primary" target="_blank"><i class="fa fa-download"></i></a></td>
 										<td class="text-center">
 											<?php if ($dtl->status == '2') : ?>
@@ -286,7 +286,7 @@ if ($type == 'expense') {
 									$gTotal += ($dtl->jumlah_kasbon + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']); ?>
 									<tr>
 										<td class="text-center"><?= $n; ?></td>
-										
+
 										<td><?= $dtl->keperluan; ?></td>
 										<td class="text-center"><?= $dtl->tgl_doc; ?></td>
 										<td class="text-center">1</td>
@@ -370,7 +370,7 @@ if ($type == 'expense') {
 								$gTotal += ($dtl->total_request + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']); ?>
 								<tr>
 									<td class="text-center"><?= $n; ?></td>
-									
+
 									<td><?= $dtl->deskripsi; ?></td>
 									<td class="text-center"><?= $dtl->tgl_pr; ?></td>
 									<td class="text-center">1</td>
@@ -410,7 +410,7 @@ if ($type == 'expense') {
 								$gTotal += ($data_req_payment['jumlah'] + $data_req_payment['admin_bank'] - $data_req_payment['total_pph']); ?>
 								<tr>
 									<td class="text-center"><?= $n; ?></td>
-									
+
 									<td><?= $dtl->keterangan; ?></td>
 									<td class="text-center"><?= $dtl->tanggal; ?></td>
 									<td class="text-center">1</td>
@@ -451,7 +451,7 @@ if ($type == 'expense') {
 							if ($type == 'direct_payment') { ?>
 								<tr>
 									<td class="text-center"><?= $n; ?></td>
-									
+
 									<td><?= $dtl->deskripsi; ?></td>
 									<td class="text-center"><?= $dtl->tgl_doc; ?></td>
 									<td class="text-end fw-semibold"><?= number_format($dtl->grand_total, 2) ?></td>
@@ -466,21 +466,23 @@ if ($type == 'expense') {
 										<?php else : ?><span class="badge bg-secondary">Undefined</span><?php endif; ?>
 									</td>
 								</tr>
-					<?php $gTotal += $dtl->grand_total;
+							<?php $gTotal += $dtl->grand_total;
 							}
 
 							// TIPE 7: INVOICE PO (DP/IMPORT/LOCAL)
 							if (in_array($type, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
 								$kurs_val = (float)($dtl->kurs ?? 1);
 								if ($kurs_val <= 0) $kurs_val = 1;
-								$nilai_invoice = ($type == 'invoice_dp') 
-									? ((float)($dtl->value_dp ?? 0) + (float)($dtl->nilai_ppn ?? 0)) * $kurs_val
-									: ((float)($dtl->sisa_nilai ?? 0) + (float)($dtl->nilai_ppn ?? 0)) * $kurs_val;
+
+								$nilai_invoice = ($type == 'invoice_dp')
+									? ((float)($dtl->nilai_invoice ?? 0) + (float)($dtl->nilai_ppn ?? 0)) * $kurs_val
+									: ((float)($dtl->nilai_invoice ?? 0) + (float)($dtl->nilai_ppn ?? 0)) * $kurs_val;
+
 								$gTotal += $nilai_invoice;
 							?>
 								<tr>
 									<td class="text-center"><?= $n; ?></td>
-									
+
 									<td><?= $data_req_payment['keperluan'] ?? ($dtl->nomor_invoice ?? '-'); ?></td>
 									<td class="text-center"><?= $dtl->invoice_date; ?></td>
 									<td class="text-center">1</td>
@@ -488,18 +490,38 @@ if ($type == 'expense') {
 									<td>
 										<table class="table table-sm mb-0 w-100 small inner-sub-table">
 											<?php if ($type == 'invoice_dp') : ?>
-												<tr><td>Value DP</td><td class="text-center" style="width:10px">:</td><td class="text-end fw-semibold"><?= number_format($dtl->value_dp ?? 0, 2) ?></td></tr>
+												<tr>
+													<td>Value DP</td>
+													<td class="text-center" style="width:10px">:</td>
+													<td class="text-end fw-semibold"><?= number_format($dtl->jumlah_rupiah ?? 0, 2) ?></td>
+												</tr>
 											<?php else : ?>
-												<tr><td>Sisa Nilai</td><td class="text-center" style="width:10px">:</td><td class="text-end fw-semibold"><?= number_format($dtl->sisa_nilai ?? 0, 2) ?></td></tr>
+												<tr>
+													<td>Sisa Nilai</td>
+													<td class="text-center" style="width:10px">:</td>
+													<td class="text-end fw-semibold"><?= number_format($dtl->sisa_nilai ?? 0, 2) ?></td>
+												</tr>
 											<?php endif; ?>
-											<tr><td>PPN</td><td class="text-center">:</td><td class="text-end"><?= number_format($dtl->nilai_ppn ?? 0, 2) ?></td></tr>
-											<tr><td>Kurs</td><td class="text-center">:</td><td class="text-end"><?= number_format($kurs_val, 2) ?></td></tr>
-											<tr class="fw-bold"><td>Total (IDR)</td><td class="text-center">:</td><td class="text-end text-success"><?= number_format($nilai_invoice, 2) ?></td></tr>
+											<tr>
+												<td>PPN</td>
+												<td class="text-center">:</td>
+												<td class="text-end"><?= number_format($dtl->nilai_ppn ?? 0, 2) ?></td>
+											</tr>
+											<tr>
+												<td>Kurs</td>
+												<td class="text-center">:</td>
+												<td class="text-end"><?= number_format($kurs_val, 2) ?></td>
+											</tr>
+											<tr class="fw-bold">
+												<td>Total (IDR)</td>
+												<td class="text-center">:</td>
+												<td class="text-end text-success"><?= number_format($nilai_invoice, 2) ?></td>
+											</tr>
 										</table>
 									</td>
 									<td class="text-center">
 										<?php if (!empty($dtl->file_invoice)) : ?>
-											<?php 
+											<?php
 											$file_path_dp = FCPATH . 'uploads/invoice_dp/' . $dtl->file_invoice;
 											$file_path_il = FCPATH . 'uploads/invoice_il/' . $dtl->file_invoice;
 											if (file_exists($file_path_dp)) : ?>
