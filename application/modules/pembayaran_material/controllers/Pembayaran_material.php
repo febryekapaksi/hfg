@@ -1063,22 +1063,6 @@ class Pembayaran_material extends Admin_Controller
 			// Nilai Bank IDR = Nilai Bank × Kurs Payment
 			$nilai_bank_idr = $payment_bank * $kurs;
 
-			// Upload dokumen
-			$filenames = '';
-			if (!empty($_FILES['upload_doc']['name'])) {
-				$config_upload = [
-					'upload_path'   => FCPATH . 'assets/expense/',
-					'allowed_types' => '*',
-					'remove_spaces' => TRUE,
-					'encrypt_name'  => TRUE
-				];
-				$this->load->library('upload', $config_upload);
-				$this->upload->initialize($config_upload);
-				if ($this->upload->do_upload('upload_doc')) {
-					$filenames = $this->upload->data('file_name');
-				}
-			}
-
 			// Generate no_doc (ID payment_approve) dengan format BK-
 			$db_acc = $this->load->database('accounting', TRUE);
 			$kode_bank = '';
@@ -1096,7 +1080,6 @@ class Pembayaran_material extends Admin_Controller
 					$det_ppn = (float)str_replace(',', '', $detail['nilai_ppn'] ?? '0');
 
 					// Subtotal per baris = jumlah asli PO (dt[n][jumlah]) x kurs form
-					// Sama seperti perhitungan total_bayar_idr di payment_approve_details
 					$det_jumlah_asli = (float)str_replace(',', '', $detail['jumlah'] ?? '0');
 					$det_jumlah_idr  = $det_jumlah_asli * $kurs;
 
@@ -1104,7 +1087,6 @@ class Pembayaran_material extends Admin_Controller
 					$total_ppn += $det_ppn;
 					$subtotal += $det_jumlah_idr;
 
-					// FIX: gunakan null coalescing supaya tidak Undefined index
 					if (!empty($detail['tipe_pph'])) {
 						$tipe_pph_val = ($detail['tipe_pph'] == 1) ? 'PPH 23' : 'PPH 22';
 					}
@@ -1140,46 +1122,9 @@ class Pembayaran_material extends Admin_Controller
 			// id_payment = no_doc dari request_payment (referensi ke PO)
 			$id_payment_val = $first_req->no_doc;
 
-			// DEBUG: var_dump data sebelum insert ke payment_approve
-			// $data_insert_pa = [
-			// 	'no_doc'                => $no_doc_payment,
-			// 	'tipe'                  => $tipe_payment,
-			// 	'tgl_bayar'             => $tgl_bayar,
-			// 	'tgl_doc'               => $tgl_bayar,
-			// 	'pay_by'                => $this->auth->user_name(),
-			// 	'pay_on'                => date('Y-m-d H:i:s'),
-			// 	'created_by'            => $this->auth->user_name(),
-			// 	'created_on'            => date('Y-m-d H:i:s'),
-			// 	'supplier'              => $id_supplier,
-			// 	'keterangan_pembayaran' => $keterangan,
-			// 	'coa_bank'              => $bank_coa,
-			// 	'nm_coa_bank'           => $nm_coa_bank,
-			// 	'mata_uang'             => $mata_uang,
-			// 	'currency'              => $mata_uang,
-			// 	'kurs_payment'          => $kurs,
-			// 	'payment_bank'          => $payment_bank,
-			// 	'total_payment'         => $subtotal,
-			// 	'total_pph'             => $total_pph,
-			// 	'total_ppn'             => $total_ppn,
-			// 	'tipe_pph'              => $tipe_pph_val,
-			// 	'id_supplier'           => $id_supplier,
-			// 	'nm_supplier'           => $nm_supplier,
-			// 	'link_doc'              => $filenames,
-			// 	'bank_charge'           => $bank_charge,
-			// 	'nominal_asli'          => $payment_bank,
-			// 	'nominal_asli_idr'      => $nilai_bank_idr,
-			// 	'tagihan_idr'           => $nominal_kurs_receive,
-			// 	'dibayar_idr'           => (int)round($nilai_bank_idr),
-			// 	'selisih_kurs_idr'      => $selisih_kurs_idr,
-			// 	'selisih'               => 0,
-			// 	'id_payment'            => $id_payment_val,
-			// ];
-			// echo '<pre>';
-			// var_dump($data_insert_pa);
-			// echo '</pre>';
-			// die;
-
 			// INSERT ke payment_approve (header)
+			// NB: 'link_doc' di header TIDAK dipakai lagi — lampiran sekarang
+			// per baris PO, disimpan di payment_approve_details.link_doc
 			$this->db->insert('payment_approve', [
 				'no_doc'                => $no_doc_payment,
 				'tipe'                  => $tipe_payment,
@@ -1204,7 +1149,7 @@ class Pembayaran_material extends Admin_Controller
 				'tipe_pph'              => $tipe_pph_val,
 				'id_supplier'           => $id_supplier,
 				'nm_supplier'           => $nm_supplier,
-				'link_doc'              => $filenames,
+				'link_doc'              => '',
 				'bank_charge'           => $bank_charge,
 				'nominal_asli'          => $payment_bank,
 				'nominal_asli_idr'      => $nilai_bank_idr,
@@ -1219,9 +1164,6 @@ class Pembayaran_material extends Admin_Controller
 
 			// INSERT payment_approve_details per PO
 			if (!empty($post['dt'])) {
-				// Ambil dari form (level header, bukan per baris):
-				// total_bayar_kurs = Nilai Bank inputan user (foreign currency)
-				// total_bayar_idr  = Nilai Bank IDR (hasil kali kurs, sudah dihitung di JS & dikirim readonly)
 				$total_bayar_kurs = $payment_bank; // sudah di-parse dari $post['payment_bank'] di atas
 				$total_bayar_idr  = (float)str_replace(',', '', $post['nilai_bank_idr'] ?? '0');
 
@@ -1242,19 +1184,20 @@ class Pembayaran_material extends Admin_Controller
 						}
 					}
 
+					// BARU: upload lampiran per baris (opsional), key = id_payment baris ini
+					$file_upload_row = $this->upload_doc_per_row($detail['id_payment'] ?? '');
+
 					$this->db->insert('payment_approve_details', [
 						'payment_id'         => $no_doc_payment,
 						'no_doc'             => $detail['no_surat'] ?? '',
 						'no_po'              => $detail['no_doc'] ?? '',
 						'deskripsi'          => 'Payment ' . ($detail['no_surat'] ?? $detail['no_doc'] ?? ''),
 
-						// Sesuai mapping yang diminta
-						'nilai_invoice_kurs' => $nilai_invoice_kurs, // dari tr_receive_invoice.nilai_invoice
-						'nilai_invoice_idr'  => $nilai_invoice_idr,  // dari tr_receive_invoice.jumlah_rupiah
-						'total_bayar_kurs'   => $total_bayar_kurs,   // dari form: payment_bank
-						'total_bayar_idr'    => $total_bayar_idr,    // dari form: nilai_bank_idr
+						'nilai_invoice_kurs' => $nilai_invoice_kurs,
+						'nilai_invoice_idr'  => $nilai_invoice_idr,
+						'total_bayar_kurs'   => $total_bayar_kurs,
+						'total_bayar_idr'    => $total_bayar_idr,
 
-						// Nilai lama tetap disimpan sementara untuk backward compatibility
 						'total'              => $nilai_invoice_idr,
 						'nilai_invoice'      => $nilai_invoice_idr,
 
@@ -1264,6 +1207,8 @@ class Pembayaran_material extends Admin_Controller
 						'kurs_invoice'       => $det_kurs_invoice,
 						'id_receive_invoice' => $detail['ids'] ?? null,
 						'currency'           => $mata_uang,
+						'file_original_name' => $file_upload_row['file_original_name'], // BARU: nama asli file (opsional)
+						'file_hash_name'     => $file_upload_row['file_hash_name'],     // BARU: nama file tersimpan di server (opsional)
 						'created_by'         => $this->auth->user_name(),
 						'created_on'         => date('Y-m-d H:i:s'),
 					]);
@@ -1302,8 +1247,6 @@ class Pembayaran_material extends Admin_Controller
 
 			$this->db->trans_commit();
 
-			// FIX: buang SEMUA output yang mungkin nyasar (notice/warning/whitespace)
-			// sebelum mengirim JSON, baru matikan buffer.
 			ob_end_clean();
 			header('Content-Type: application/json');
 			echo json_encode([
@@ -1314,7 +1257,6 @@ class Pembayaran_material extends Admin_Controller
 		} catch (Exception $e) {
 			$this->db->trans_rollback();
 
-			// FIX: sama seperti di atas, bersihkan buffer sebelum kirim JSON error
 			ob_end_clean();
 			header('Content-Type: application/json');
 			echo json_encode([
@@ -1554,6 +1496,54 @@ class Pembayaran_material extends Admin_Controller
 	// 	}
 	// }
 
+	private function upload_doc_per_row($file_key)
+	{
+		$empty_result = [
+			'file_original_name' => '',
+			'file_hash_name'     => '',
+		];
+
+		if (empty($file_key)) {
+			return $empty_result;
+		}
+
+		// Tidak ada file yang diupload untuk baris ini -> opsional, skip saja
+		if (empty($_FILES['upload_doc']['name'][$file_key])) {
+			return $empty_result;
+		}
+
+		// Susun ulang jadi struktur $_FILES tunggal supaya bisa dipakai
+		// library upload CodeIgniter (yang defaultnya cuma baca 1 file per key)
+		$_FILES['upload_doc_single'] = [
+			'name'     => $_FILES['upload_doc']['name'][$file_key],
+			'type'     => $_FILES['upload_doc']['type'][$file_key],
+			'tmp_name' => $_FILES['upload_doc']['tmp_name'][$file_key],
+			'error'    => $_FILES['upload_doc']['error'][$file_key],
+			'size'     => $_FILES['upload_doc']['size'][$file_key],
+		];
+
+		$config_upload = [
+			'upload_path'   => FCPATH . 'uploads/payment_invoice/',
+			'allowed_types' => '*',
+			'remove_spaces' => TRUE,
+			'encrypt_name'  => TRUE
+		];
+		$this->load->library('upload', $config_upload);
+		$this->upload->initialize($config_upload);
+
+		if ($this->upload->do_upload('upload_doc_single')) {
+			$upload_data = $this->upload->data();
+			return [
+				'file_original_name' => $upload_data['client_name'] ?? $_FILES['upload_doc']['name'][$file_key],
+				'file_hash_name'     => $upload_data['file_name'],
+			];
+		}
+
+		// Gagal upload (misal tipe file aneh) -> jangan gagalkan seluruh transaksi,
+		// cukup dianggap tidak ada lampiran untuk baris ini
+		return $empty_result;
+	}
+
 	public function save_payment_import()
 	{
 		if (ob_get_level()) ob_end_clean();
@@ -1603,22 +1593,6 @@ class Pembayaran_material extends Admin_Controller
 
 			// Nilai Bank IDR = Nilai Bank × Kurs Payment
 			$nilai_bank_idr = $payment_bank * $kurs;
-
-			// Upload dokumen
-			$filenames = '';
-			if (!empty($_FILES['upload_doc']['name'])) {
-				$config_upload = [
-					'upload_path'   => FCPATH . 'assets/expense/',
-					'allowed_types' => '*',
-					'remove_spaces' => TRUE,
-					'encrypt_name'  => TRUE
-				];
-				$this->load->library('upload', $config_upload);
-				$this->upload->initialize($config_upload);
-				if ($this->upload->do_upload('upload_doc')) {
-					$filenames = $this->upload->data('file_name');
-				}
-			}
 
 			// Generate no_doc (ID payment_approve) dengan format BK-
 			$db_acc = $this->load->database('accounting', TRUE);
@@ -1674,33 +1648,9 @@ class Pembayaran_material extends Admin_Controller
 			// id_payment = no_doc dari request_payment (referensi ke PO)
 			$id_payment_val = $first_req->no_doc;
 
-			// DEBUG: var_dump data sebelum insert ke payment_approve (import)
-			// $data_insert_pa_import = [
-			// 	'no_doc'                => $no_doc_payment,
-			// 	'tipe'                  => 'invoice_import',
-			// 	'status'                => 2,
-			// 	'tgl_bayar'             => $tgl_bayar,
-			// 	'kurs_payment'          => $kurs,
-			// 	'payment_bank'          => $payment_bank,
-			// 	'nilai_bank_idr'        => $nilai_bank_idr,
-			// 	'total_payment'         => $subtotal,
-			// 	'total_pph'             => $total_pph,
-			// 	'total_ppn'             => $total_ppn,
-			// 	'bank_charge'           => $bank_charge,
-			// 	'nominal_kurs_receive'  => $nominal_kurs_receive,
-			// 	'selisih_kurs_idr'      => $selisih_kurs_idr,
-			// 	'id_payment'            => $id_payment_val,
-			// 	'id_supplier'           => $id_supplier,
-			// 	'nm_supplier'           => $nm_supplier,
-			// 	'gl_hutang_dagang'      => (int)round($nominal_kurs_receive),
-			// 	'gl_selisih_kurs'       => (int)round($selisih_kurs_idr),
-			// ];
-			// echo '<pre>';
-			// var_dump($data_insert_pa_import);
-			// echo '</pre>';
-			// die;
-
 			// INSERT ke payment_approve (header)
+			// NB: 'link_doc' di header TIDAK dipakai lagi — lampiran sekarang
+			// per baris PO, disimpan di payment_approve_details.link_doc
 			$this->db->insert('payment_approve', [
 				'no_doc'                => $no_doc_payment,
 				'tipe'                  => 'invoice_import',
@@ -1724,7 +1674,7 @@ class Pembayaran_material extends Admin_Controller
 				'tipe_pph'              => $tipe_pph_val,
 				'id_supplier'           => $id_supplier,
 				'nm_supplier'           => $nm_supplier,
-				'link_doc'              => $filenames,
+				'link_doc'              => '',
 				'bank_charge'           => $bank_charge,
 				'nominal_asli'          => $payment_bank,
 				'grand_total_payment'   => $grand_total,
@@ -1739,9 +1689,7 @@ class Pembayaran_material extends Admin_Controller
 			]);
 
 			// INSERT payment_approve_details per PO
-			// INSERT payment_approve_details per PO
 			if (!empty($post['dt'])) {
-				// Nilai Bank (form-level), sama pola dengan save_payment_po
 				$total_bayar_kurs = $payment_bank; // sudah di-parse dari $post['payment_bank'] di atas
 				$total_bayar_idr  = (float)str_replace(',', '', $post['nilai_bank_idr'] ?? '0');
 
@@ -1763,19 +1711,20 @@ class Pembayaran_material extends Admin_Controller
 						}
 					}
 
+					// BARU: upload lampiran per baris (opsional), key = id_payment baris ini
+					$file_upload_row = $this->upload_doc_per_row($detail['id_payment'] ?? '');
+
 					$this->db->insert('payment_approve_details', [
 						'payment_id'         => $no_doc_payment,
 						'no_doc'             => $detail['no_surat'] ?? '',
 						'no_po'              => $detail['no_doc'] ?? '',
 						'deskripsi'          => 'Payment Import ' . ($detail['no_surat'] ?? $detail['no_doc'] ?? ''),
 
-						// Field baru — sama mapping dengan save_payment_po
-						'nilai_invoice_kurs' => $nilai_invoice_kurs, // dari tr_receive_invoice.nilai_invoice
-						'nilai_invoice_idr'  => $nilai_invoice_idr,  // dari tr_receive_invoice.jumlah_rupiah
-						'total_bayar_kurs'   => $total_bayar_kurs,   // dari form: payment_bank
-						'total_bayar_idr'    => $total_bayar_idr,    // dari form: nilai_bank_idr
+						'nilai_invoice_kurs' => $nilai_invoice_kurs,
+						'nilai_invoice_idr'  => $nilai_invoice_idr,
+						'total_bayar_kurs'   => $total_bayar_kurs,
+						'total_bayar_idr'    => $total_bayar_idr,
 
-						// Nilai lama tetap dipertahankan
 						'total'              => $det_jumlah,
 						'nilai_invoice'      => $det_jumlah,
 
@@ -1785,6 +1734,8 @@ class Pembayaran_material extends Admin_Controller
 						'kurs_invoice'       => $det_kurs_invoice,
 						'id_receive_invoice' => $detail['ids'] ?? null,
 						'currency'           => $mata_uang,
+						'file_original_name' => $file_upload_row['file_original_name'], // BARU: nama asli file (opsional)
+						'file_hash_name'     => $file_upload_row['file_hash_name'],     // BARU: nama file tersimpan di server (opsional)
 						'created_by'         => $this->auth->user_name(),
 						'created_on'         => date('Y-m-d H:i:s'),
 					]);

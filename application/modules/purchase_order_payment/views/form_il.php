@@ -104,6 +104,17 @@ if ($is_view) {
     </div>
 
     <div class="col-md-6">
+        <label class="form-label fw-semibold">
+            Kurs <?php if (!$is_view): ?><span class="text-danger">*</span><?php endif; ?>
+        </label>
+        <input type="text" name="kurs" id="input_kurs_il"
+            class="form-control form-control-sm text-end <?= !$is_view ? 'auto_num' : '' ?>"
+            value="<?= $kurs > 0 ? number_format($kurs, 2) : '' ?>"
+            placeholder="<?= !$is_view ? 'Masukkan kurs' : '' ?>"
+            <?= $ro ?>>
+    </div>
+
+    <div class="col-md-6">
         <label class="form-label fw-semibold">Jumlah Invoice (IDR)</label>
         <input type="text" id="jumlah_invoice_idr"
             class="form-control form-control-sm text-end bg-light"
@@ -142,17 +153,6 @@ if ($is_view) {
             value="<?= $nomor_invoice ?>"
             placeholder="<?= !$is_view ? 'Nomor Invoice' : '' ?>"
             <?= $ro ?> <?= !$is_view ? 'required' : '' ?>>
-    </div>
-
-    <div class="col-md-6">
-        <label class="form-label fw-semibold">
-            Kurs <?php if (!$is_view): ?><span class="text-danger">*</span><?php endif; ?>
-        </label>
-        <input type="text" name="kurs" id="input_kurs_il"
-            class="form-control form-control-sm text-end <?= !$is_view ? 'auto_num' : '' ?>"
-            value="<?= $kurs > 0 ? number_format($kurs, 2) : '' ?>"
-            placeholder="<?= !$is_view ? 'Masukkan kurs' : '' ?>"
-            <?= $ro ?>>
     </div>
 
     <div class="col-md-6">

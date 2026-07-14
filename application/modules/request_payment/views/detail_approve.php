@@ -144,11 +144,6 @@ if ($type == 'expense') {
 						</div>
 					</div>
 				</div>
-
-				<div class="bg-light p-3 rounded border border-warning">
-					<!-- <label class="form-label fw-bold text-danger small mb-1"><i class="fa fa-exclamation-triangle me-1"></i> Alasan Penolakan (Wajib diisi jika Reject)</label>
-					<textarea name="reject_reason" class="form-control reject_reason" rows="2" placeholder="Tulis alasan penolakan di sini..."></textarea> -->
-				</div>
 			</div>
 		</div>
 	</div>

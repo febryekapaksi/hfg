@@ -85,6 +85,17 @@ $ro       = $is_view ? 'readonly' : '';
     </div>
 
     <div class="col-md-6">
+        <label class="form-label fw-semibold">
+            Kurs Receiving Invoice <?php if (!$is_view && $currency !== 'IDR'): ?><span class="text-danger">*</span><?php endif; ?>
+        </label>
+        <input type="text" name="kurs" id="input_kurs"
+            class="form-control form-control-sm text-end <?= !$is_view ? 'auto_num' : '' ?>"
+            value="<?= $is_view ? number_format($d['kurs'], 2) : ($currency === 'IDR' ? '1' : '') ?>"
+            placeholder="<?= (!$is_view && $currency !== 'IDR') ? 'Wajib diisi' : '' ?>"
+            <?= $ro ?>>
+    </div>
+
+    <div class="col-md-6">
         <label class="form-label fw-semibold">Jumlah Invoice (IDR)</label>
         <input type="text" name="jumlah_rupiah" id="jumlah_rupiah"
             class="form-control form-control-sm text-end"
@@ -124,17 +135,6 @@ $ro       = $is_view ? 'readonly' : '';
         <input type="text" name="nomor_invoice" class="form-control form-control-sm"
             value="<?= $d['nomor_invoice'] ?>"
             <?= $ro ?> <?= !$is_view ? 'required' : '' ?>>
-    </div>
-
-    <div class="col-md-6">
-        <label class="form-label fw-semibold">
-            Kurs Receiving Invoice <?php if (!$is_view && $currency !== 'IDR'): ?><span class="text-danger">*</span><?php endif; ?>
-        </label>
-        <input type="text" name="kurs" id="input_kurs"
-            class="form-control form-control-sm text-end <?= !$is_view ? 'auto_num' : '' ?>"
-            value="<?= $is_view ? number_format($d['kurs'], 2) : ($currency === 'IDR' ? '1' : '') ?>"
-            placeholder="<?= (!$is_view && $currency !== 'IDR') ? 'Wajib diisi' : '' ?>"
-            <?= $ro ?>>
     </div>
 
     <div class="col-md-6">

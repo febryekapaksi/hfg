@@ -163,6 +163,7 @@ if (!empty($results['result_header']->nm_supplier)) {
 					<th class="text-center">Invoice</th>
 					<th class="text-center" colspan="2" <?= $hide_ppn_pph_style ?>>PPH</th>
 					<th class="text-center" <?= $hide_ppn_pph_style ?>>PPN</th>
+					<th class="text-center">Lampiran</th>
 					<th class="text-center">DPP</th>
 				</tr>
 			</thead>
@@ -216,8 +217,21 @@ if (!empty($results['result_header']->nm_supplier)) {
 					echo '<input type="text" name="dt[' . $no . '][nilai_ppn]" class="form-control form-control-sm text-right auto_num nilai_ppn" readonly value="' . $nilai_ppn . '">';
 					echo '</td>';
 
+					// BARU: kolom Lampiran per baris PO — tampilkan link download kalau ada
+					echo '<td class="text-center">';
+					if (!empty($item->file_hash_name)) {
+						$nama_tampil = !empty($item->file_original_name) ? $item->file_original_name : $item->file_hash_name;
+						echo '<a href="' . base_url('uploads/payment_invoice/' . $item->file_hash_name) . '" target="_blank" class="btn btn-primary btn-sm" title="' . htmlspecialchars($nama_tampil, ENT_QUOTES) . '">';
+						echo '<i class="fa fa-download"></i> Download';
+						echo '</a>';
+					} else {
+						echo '<span class="text-muted">-</span>';
+					}
+					echo '</td>';
 					// DPP column
 					echo '<td class="text-right payment_col_' . $item->id . '">' . number_format($total_bayar_idr, 2) . '</td>';
+
+
 					echo '</tr>';
 
 					$total_payment += $total_bayar_idr;
@@ -228,7 +242,7 @@ if (!empty($results['result_header']->nm_supplier)) {
 				?>
 			</tbody>
 			<tbody>
-				<?php $footer_colspan = $is_import ? 2 : 5; ?>
+				<?php $footer_colspan = $is_import ? 3 : 6; ?>
 				<tr>
 					<td colspan="<?= $footer_colspan ?>"></td>
 					<td>Subtotal</td>
@@ -237,12 +251,12 @@ if (!empty($results['result_header']->nm_supplier)) {
 					</td>
 				</tr>
 				<tr class="ppn_footer_row" <?= $hide_ppn_pph_style ?>>
-					<td colspan="5"></td>
+					<td colspan="6"></td>
 					<td>PPN</td>
 					<td class="text-right total_ppn_col"><?= number_format($results['result_header']->total_ppn, 2) ?></td>
 				</tr>
 				<tr class="pph_footer_row" <?= $hide_ppn_pph_style ?>>
-					<td colspan="5"></td>
+					<td colspan="6"></td>
 					<td>PPH</td>
 					<td class="text-right total_pph_col">
 						<?= number_format($results['result_header']->total_pph, 2) ?>
@@ -275,12 +289,6 @@ if (!empty($results['result_header']->nm_supplier)) {
 		<input type="hidden" name="kontrol" class="kontrol" value="<?= number_format($results['result_header']->payment_bank, 2) ?>" readonly>
 		<input type="hidden" class="kurs_receive_invoice" value="<?= $kurs_receive_invoice ?>">
 		<input type="hidden" class="is_import" value="<?= $is_import ? '1' : '0' ?>">
-
-		<div class="col-md-4">
-			<div class="form-group">
-				<?php if (isset($results['result_header']->link_doc) && $results['result_header']->link_doc != '') { ?><a href="<?= base_url('assets/expense/' . $results['result_header']->link_doc) ?>" class="btn btn-sm btn-primary" target="_blank"><i class="fa fa-download"></i> Download Dokumen</a><?php } ?>
-			</div>
-		</div>
 	</div>
 
 	<div class="box-footer">
@@ -297,7 +305,7 @@ if (!empty($results['result_header']->nm_supplier)) {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.jquery.min.js" integrity="sha512-rMGGF4wg1R73ehtnxXBt5mbUfN9JUJwbk21KMlnLZDJh7BkPmeovBuddZCENJddHYYMkCh9hPFnPmS9sspki8g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 <script src="<?= base_url('assets/js/autoNumeric.js') ?>"></script>
 
 <script>
@@ -460,24 +468,7 @@ if (!empty($results['result_header']->nm_supplier)) {
 	}
 
 	function set_jurnal_refill() {
-		// var id_payment = $('.id_payment').val();
-		// var bank = $('.bank').val();
-
-		// $.ajax({
-		// 	type: 'post',
-		// 	url: siteurl + active_controller + 'set_jurnal_refill',
-		// 	data: {
-		// 		'id_payment': id_payment,
-		// 		'bank': bank
-		// 	},
-		// 	cache: false,
-		// 	dataType: 'json',
-		// 	success: function(result) {
-		// 		$('.tbody_jurnal_refill_pettycash').html(result.hasil);
-		// 		$('.ttl_debit_refill').html(number_format(result.ttl_debit));
-		// 		$('.ttl_kredit_refill').html(number_format(result.ttl_kredit));
-		// 	}
-		// });
+		// (tidak diubah)
 	}
 
 	$(document).on('change', '.change_nilai_pph', function() {

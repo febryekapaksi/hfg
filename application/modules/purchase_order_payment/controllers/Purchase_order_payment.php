@@ -719,13 +719,13 @@ class Purchase_order_payment extends Admin_Controller
             p.no_po, p.no_surat, p.matauang, p.hargatotal,
             s.nama as nm_supplier,
             e.progress as persen_dp, e.nilai, e.keterangan as keterangan_top,
-            pa.id as no_payment, r.status as status_payment
+            pa.no_doc as no_payment, r.status as status_payment, pa.id_payment,
         ')
 			->from('tr_receive_invoice r')
 			->join('tr_purchase_order p', 'p.no_po = r.no_po', 'left')
 			->join('new_supplier s', 's.kode_supplier = p.id_suplier', 'left')
 			->join('tr_top_po e', 'e.id = r.id_top', 'left')
-			->join('payment_approve pa', 'pa.no_doc = r.no_po', 'left')
+			->join('payment_approve pa', 'pa.id_payment = r.no_po', 'left')
 			->where('r.id', $id)
 			->get()
 			->row_array();
@@ -734,6 +734,7 @@ class Purchase_order_payment extends Admin_Controller
 			echo "<div class='alert alert-warning'>Data tidak ditemukan.</div>";
 			return;
 		}
+
 
 		// Hitung DPP = value_dp - nilai_ppn
 		$data['dpp'] = (float)($data['value_dp'] ?? 0) - (float)($data['nilai_ppn'] ?? 0);
@@ -764,14 +765,14 @@ class Purchase_order_payment extends Admin_Controller
             s.nama as nm_supplier,
             e.progress, e.nilai, e.keterangan as keterangan_top,
             rh.gl_advance_purchase as total_dp_rupiah_val,
-            pa.id as no_payment, r.status as status_payment
+            pa.no_doc as no_payment, r.status as status_payment, pa.id_payment
         ')
 			->from('tr_receive_invoice r')
 			->join('tr_purchase_order p', 'p.no_po = r.no_po', 'left')
 			->join('new_supplier s', 's.kode_supplier = p.id_suplier', 'left')
 			->join('tr_top_po e', 'e.id = r.id_top', 'left')
 			->join('tr_ros_header rh', 'rh.id = r.id_ros', 'left')
-			->join('payment_approve pa', "pa.no_doc = r.no_po AND pa.tipe = CONCAT('invoice_', r.tipe)", 'left')
+			->join('payment_approve pa', "pa.id_payment = r.no_po AND pa.tipe = CONCAT('invoice_', r.tipe)", 'left')
 			->where('r.id', $id)
 			->get()
 			->row_array();

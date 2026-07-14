@@ -210,6 +210,7 @@ foreach ($results['result_payment'] as $item) {
 						<th class="text-center">Invoice</th>
 						<th class="text-center" colspan="2" <?= $hide_ppn_pph_style ?>>PPH</th>
 						<th class="text-center" <?= $hide_ppn_pph_style ?>>PPN</th>
+						<th class="text-center">Lampiran</th>
 						<th class="text-center">DPP</th>
 					</tr>
 				</thead>
@@ -369,7 +370,11 @@ foreach ($results['result_payment'] as $item) {
 						echo '<td class="text-right" ' . $hide_ppn_pph_style . '>';
 						echo '<input type="text" name="dt[' . $no . '][nilai_ppn]" class="form-control form-control-sm text-right auto_num change_nilai_ppn nilai_ppn nilai_ppn_' . $item->id . '" data-id="' . $item->id . '" value="' . $nilai_ppn . '">';
 						echo '</td>';
+						echo '<td class="text-center">';
+						echo '<input type="file" name="upload_doc[' . $item->id . ']" class="form-control form-control-sm" title="Opsional">';
+						echo '</td>';
 						echo '<td class="text-right payment_col_' . $item->id . '">' . number_format($tagihan_idr, 2) . '</td>';
+
 						echo '</tr>';
 
 						$total_payment += $tagihan_idr;
@@ -384,7 +389,7 @@ foreach ($results['result_payment'] as $item) {
 					?>
 				</tbody>
 				<tbody>
-					<?php $footer_colspan = $is_import ? 2 : 5; ?>
+					<?php $footer_colspan = $is_import ? 3 : 6; ?>
 					<tr>
 						<td colspan="<?= $footer_colspan ?>"></td>
 						<td>Subtotal</td>
@@ -393,12 +398,12 @@ foreach ($results['result_payment'] as $item) {
 						</td>
 					</tr>
 					<tr class="ppn_footer_row" <?= $hide_ppn_pph_style ?>>
-						<td colspan="5"></td>
+						<td colspan="6"></td>
 						<td>PPN</td>
 						<td class="text-right total_ppn_col"><?= number_format($total_ppn, 2) ?></td>
 					</tr>
 					<tr class="pph_footer_row" <?= $hide_ppn_pph_style ?>>
-						<td colspan="5"></td>
+						<td colspan="6"></td>
 						<td>PPH</td>
 						<td class="text-right total_pph_col">
 							<?= number_format($total_pph, 2) ?>
@@ -430,12 +435,6 @@ foreach ($results['result_payment'] as $item) {
 			<input type="hidden" name="kontrol" class="kontrol" value="0">
 			<input type="hidden" class="kurs_receive_invoice" value="<?= $kurs_receive_invoice ?>">
 			<input type="hidden" class="is_import" value="<?= $is_import ? '1' : '0' ?>">
-
-			<div class="col-md-4">
-				<div class="form-group">
-					<input type="file" class="form-control form-control-sm" name="upload_doc" id="" style="margin-top: 15px;">
-				</div>
-			</div>
 		</div>
 
 		<div class="box-footer">
@@ -452,7 +451,7 @@ foreach ($results['result_payment'] as $item) {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.jquery.min.js" integrity="sha512-rMGGF4wg1R73ehtnxXBt5mbUfN9JUJwbk21KMlnLZDJh7BkPmeovBuddZCENJddHYYMkCh9hPFnPmS9sspki8g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 <script src="<?= base_url('assets/js/autoNumeric.js') ?>"></script>
 
 <script>
@@ -615,24 +614,7 @@ foreach ($results['result_payment'] as $item) {
 	}
 
 	function set_jurnal_refill() {
-		// var id_payment = $('.id_payment').val();
-		// var bank = $('.bank').val();
-
-		// $.ajax({
-		// 	type: 'post',
-		// 	url: siteurl + active_controller + 'set_jurnal_refill',
-		// 	data: {
-		// 		'id_payment': id_payment,
-		// 		'bank': bank
-		// 	},
-		// 	cache: false,
-		// 	dataType: 'json',
-		// 	success: function(result) {
-		// 		$('.tbody_jurnal_refill_pettycash').html(result.hasil);
-		// 		$('.ttl_debit_refill').html(number_format(result.ttl_debit));
-		// 		$('.ttl_kredit_refill').html(number_format(result.ttl_kredit));
-		// 	}
-		// });
+		// (tidak diubah)
 	}
 
 	$(document).on('change', '.change_nilai_pph', function() {
@@ -679,8 +661,6 @@ foreach ($results['result_payment'] as $item) {
 			var jumlah_asli = parseFloat($(this).val()) || 0;
 			var jumlah_idr = jumlah_asli * kurs_val;
 
-			// Update Request Payment column — tidak diubah, tetap nilai asli
-			// $('.req_payment_col_' + id).html(number_format(jumlah_idr, 2));
 			$('.payment_bank_' + id).val(jumlah_idr);
 
 			total_req_payment += jumlah_idr;
@@ -735,13 +715,11 @@ foreach ($results['result_payment'] as $item) {
 		var grand_total = subtotal + total_ppn - total_pph + bank_charge;
 		$('.grand_total_payment_col').html('<strong>' + number_format(grand_total, 2) + '</strong>');
 
-		// Selisih Kurs: bandingkan Nilai Bank IDR dengan nilai berdasarkan kurs_receive_invoice
-		// Nilai Bank IDR
+		// Selisih Kurs
 		var nilai_bank_input = parseFloat($('.input_payment_bank').val().split(',').join('')) || 0;
 		var nilai_bank_idr = nilai_bank_input * kurs_val;
 		$('.nilai_bank_idr').val(number_format(nilai_bank_idr, 2));
 
-		// Selisih Kurs = SUM per baris: (kurs_form - kurs_receive_invoice_baris) x nilai_invoice_baris
 		var selisih_kurs = 0;
 		$('[class*="jumlah_asli_"]').each(function() {
 			var className = $(this).attr('class');
@@ -764,7 +742,6 @@ foreach ($results['result_payment'] as $item) {
 	$(document).on('submit', '#frm-data', function(e) {
 		e.preventDefault();
 
-		// Re-hitung kontrol sebelum validasi
 		hitung_kontrol();
 
 		var kontrol = $('.kontrol').val();
@@ -787,7 +764,6 @@ foreach ($results['result_payment'] as $item) {
 			payment_bank = 0;
 		}
 
-		// Toleransi floating point: kontrol harus mendekati 0 (selisih < 1)
 		if (payment_bank <= 0) {
 			swal({
 				title: 'Warning !',
