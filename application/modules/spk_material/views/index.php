@@ -19,8 +19,13 @@ $ENABLE_VIEW   = has_permission('Spk_Material.View');
     }
 
     @keyframes shimmer {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
+        0% {
+            background-position: 200% 0;
+        }
+
+        100% {
+            background-position: -200% 0;
+        }
     }
 </style>
 
@@ -38,9 +43,9 @@ $ENABLE_VIEW   = has_permission('Spk_Material.View');
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"></h5>
             <?php if ($ENABLE_ADD): ?>
-            <a href="<?= site_url('spk_material/add') ?>" class="btn btn-primary">
-                <i class="fa fa-plus"></i> Create SPK
-            </a>
+                <a href="<?= site_url('spk_material/add') ?>" class="btn btn-sm btn-primary">
+                    <i class="fa fa-plus"></i> Create SPK
+                </a>
             <?php endif; ?>
         </div>
         <div class="card-body">
@@ -65,34 +70,55 @@ $ENABLE_VIEW   = has_permission('Spk_Material.View');
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-$(document).ready(function() {
+    $(document).ready(function() {
 
-    const BASE_URL = siteurl + active_controller;
+        const BASE_URL = siteurl + active_controller;
 
-    // Initialize DataTables
-    var tableSpk = $('#table-spk').DataTable({
-        processing: true,
-        serverSide: true,
-        ajax: {
-            url: BASE_URL + '/data_side',
-            type: 'GET'
-        },
-        columns: [
-            { data: 0, orderable: false, className: 'text-center' },
-            { data: 1 },
-            { data: 2 },
-            { data: 3 },
-            { data: 4, className: 'text-center' },
-            { data: 5, className: 'text-center' },
-            { data: 6, orderable: false, className: 'text-center' }
-        ],
-        order: [[1, 'desc']],
-        initComplete: function() {
-            $('#skeleton-spk').hide();
-            $('#content-spk').fadeIn();
-        }
+        // Initialize DataTables
+        var tableSpk = $('#table-spk').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: BASE_URL + '/data_side',
+                type: 'GET'
+            },
+            columns: [{
+                    data: 0,
+                    orderable: false,
+                    className: 'text-center'
+                },
+                {
+                    data: 1
+                },
+                {
+                    data: 2
+                },
+                {
+                    data: 3
+                },
+                {
+                    data: 4,
+                    className: 'text-center'
+                },
+                {
+                    data: 5,
+                    className: 'text-center'
+                },
+                {
+                    data: 6,
+                    orderable: false,
+                    className: 'text-center'
+                }
+            ],
+            order: [
+                [1, 'desc']
+            ],
+            initComplete: function() {
+                $('#skeleton-spk').hide();
+                $('#content-spk').fadeIn();
+            }
+        });
+
+        // Update Status action (handled in separate module)
     });
-
-    // Update Status action (handled in separate module)
-});
 </script>

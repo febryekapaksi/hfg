@@ -188,33 +188,65 @@ class Spk_material extends Admin_Controller
 
             // Build detail records
             $details = [];
+            $total_target_qty = 0;
+            $total_weight_header = 0;
             foreach ($products as $i => $prod) {
+                $t_qty = (int) $prod['target_qty'];
+                $t_weight = (float) (isset($prod['total_weight']) ? $prod['total_weight'] : 0);
+                
                 $details[] = [
                     'spk_no'        => $spk_no,
                     'urut'          => $i + 1,
                     'id_produk_fg'  => $prod['id_produk_fg'],
                     'nm_produk_fg'  => isset($prod['nm_produk_fg']) ? $prod['nm_produk_fg'] : '',
-                    'target_qty'    => (int) $prod['target_qty'],
+                    'target_qty'    => $t_qty,
                     'berat_per_unit'=> (float) (isset($prod['berat_per_unit']) ? $prod['berat_per_unit'] : 0),
-                    'total_weight'  => (float) (isset($prod['total_weight']) ? $prod['total_weight'] : 0),
+                    'total_weight'  => $t_weight,
                 ];
+                
+                $total_target_qty += $t_qty;
+                $total_weight_header += $t_weight;
             }
             $this->Spk_material_model->insert_spk_details($details);
 
             // Update header
             $this->Spk_material_model->update_spk_header($spk_no, [
-                'tgl_spk'     => $tgl_spk,
-                'due_date'    => !empty($due_date) ? $due_date : null,
-                'shift_ids'   => $shift_ids,
-                'shift_names' => $shift_names,
-                'catatan'     => $catatan,
-                'updated_by'  => $this->id_user,
-                'updated_at'  => $this->datetime,
+                'tgl_spk'      => $tgl_spk,
+                'due_date'     => !empty($due_date) ? $due_date : null,
+                'shift_ids'    => $shift_ids,
+                'shift_names'  => $shift_names,
+                'target_qty'   => $total_target_qty,
+                'total_weight' => $total_weight_header,
+                'catatan'      => $catatan,
+                'updated_by'   => $this->id_user,
+                'updated_at'   => $this->datetime,
             ]);
 
         } else {
             // CREATE MODE
             $spk_no = $this->Spk_material_model->generate_spk_no();
+
+            // Build detail records first to get totals
+            $details = [];
+            $total_target_qty = 0;
+            $total_weight_header = 0;
+            foreach ($products as $i => $prod) {
+                $t_qty = (int) $prod['target_qty'];
+                $t_weight = (float) (isset($prod['total_weight']) ? $prod['total_weight'] : 0);
+                
+                $details[] = [
+                    'spk_no'        => $spk_no,
+                    'urut'          => $i + 1,
+                    'id_produk_fg'  => $prod['id_produk_fg'],
+                    'nm_produk_fg'  => isset($prod['nm_produk_fg']) ? $prod['nm_produk_fg'] : '',
+                    'target_qty'    => $t_qty,
+                    'berat_per_unit'=> (float) (isset($prod['berat_per_unit']) ? $prod['berat_per_unit'] : 0),
+                    'total_weight'  => $t_weight,
+                ];
+                
+                $total_target_qty += $t_qty;
+                $total_weight_header += $t_weight;
+            }
 
             // Insert header
             $this->Spk_material_model->insert_spk_header([
@@ -223,57 +255,16 @@ class Spk_material extends Admin_Controller
                 'due_date'    => !empty($due_date) ? $due_date : null,
                 'shift_ids'   => $shift_ids,
                 'shift_names' => $shift_names,
+                'target_qty'   => $total_target_qty,
+                'total_weight' => $total_weight_header,
                 'catatan'     => $catatan,
                 'status'      => 'Material Requested',
                 'created_by'  => $this->id_user,
                 'created_at'  => $this->datetime,
             ]);
 
-            // Build and insert detail records
-            $details = [];
-            foreach ($products as $i => $prod) {
-                $details[] = [
-                    'spk_no'        => $spk_no,
-                    'urut'          => $i + 1,
-                    'id_produk_fg'  => $prod['id_produk_fg'],
-                    'nm_produk_fg'  => isset($prod['nm_produk_fg']) ? $prod['nm_produk_fg'] : '',
-                    'target_qty'    => (int) $prod['target_qty'],
-                    'berat_per_unit'=> (float) (isset($prod['berat_per_unit']) ? $prod['berat_per_unit'] : 0),
-                    'total_weight'  => (float) (isset($prod['total_weight']) ? $prod['total_weight'] : 0),
-                ];
-            }
+            // Insert details
             $this->Spk_material_model->insert_spk_details($details);
-
-            // Create warehouse request for each product
-            foreach ($products as $prod) {
-                $target_qty = (int) $prod['target_qty'];
-                $bom_details = $this->Spk_material_model->get_bom_details_for_request($prod['id_produk_fg']);
-
-                $request_id = $this->Spk_material_model->insert_warehouse_request_header([
-                    'spk_no'       => $spk_no,
-                    'request_date' => $this->datetime,
-                    'status'       => 'Pending',
-                    'created_by'   => $this->id_user,
-                    'created_at'   => $this->datetime,
-                ]);
-
-                if ($request_id && !empty($bom_details)) {
-                    $request_details = [];
-                    foreach ($bom_details as $mat) {
-                        $request_details[] = [
-                            'request_id'   => $request_id,
-                            'id_produk_fg' => $prod['id_produk_fg'],
-                            'nm_produk_fg' => isset($prod['nm_produk_fg']) ? $prod['nm_produk_fg'] : '',
-                            'id_material'  => $mat['id_material'],
-                            'nm_material'  => $mat['nm_material'],
-                            'qty_needed'   => round((float)$mat['qty'] * $target_qty, 4),
-                            'id_unit'      => isset($mat['id_unit']) ? $mat['id_unit'] : null,
-                            'nm_unit'      => isset($mat['nm_unit']) ? $mat['nm_unit'] : null,
-                        ];
-                    }
-                    $this->Spk_material_model->insert_warehouse_request_details($request_details);
-                }
-            }
         }
 
         $this->db->trans_complete();

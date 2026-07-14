@@ -50,6 +50,7 @@
                                 <th class="text-right">Nett Weight (Kg)</th>
                                 <th class="text-right">Gross Weight (Kg)</th>
                                 <th class="text-right">Length (M)</th>
+                                <th class="text-center" width="8%">QR Code</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -76,6 +77,7 @@
                                 <th class="text-right">Nett Weight (Kg)</th>
                                 <th class="text-right">Gross Weight (Kg)</th>
                                 <th class="text-right">Length (M)</th>
+                                <th class="text-center" width="8%">QR Code</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -150,8 +152,26 @@
     </div>
 </div>
 
+<!-- Modal QR Code -->
+<div class="modal fade" id="modal-qr" tabindex="-1" aria-labelledby="modalQrLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalQrLabel">QR Code Coil</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="qr-container" class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
+                    <i class="fa fa-spinner fa-spin fa-3x text-muted"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
@@ -186,6 +206,11 @@
             {
                 data: 6,
                 className: 'text-end'
+            },
+            {
+                data: 7,
+                className: 'text-center',
+                orderable: false
             },
         ];
 
@@ -375,6 +400,35 @@
 
         $('#btn-excel-slitting').on('click', function() {
             window.location.href = siteurl + 'warehouse/export_excel_stock_coil?kd_gudang=PEN';
+        });
+
+        // ── Tampilkan Modal QR Code ───────────────────────────────────────────
+        var qrModalObj = null;
+
+        $(document).on('click', '.btn-show-qr', function() {
+            var qrText = $(this).data('qr');
+            // Bersihkan container sebelumnya
+            $('#qr-container').empty();
+
+            // Generate QR Code menggunakan qrcode.js
+            new QRCode(document.getElementById("qr-container"), {
+                text: qrText,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            // Tampilkan Modal
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                if (!qrModalObj) {
+                    qrModalObj = new bootstrap.Modal(document.getElementById('modal-qr'));
+                }
+                qrModalObj.show();
+            } else {
+                $('#modal-qr').modal('show');
+            }
         });
 
     });

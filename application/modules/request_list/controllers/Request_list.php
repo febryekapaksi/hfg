@@ -61,36 +61,42 @@ class Request_list extends Admin_Controller
         $no   = $start + 1;
 
         foreach ($rows as $row) {
-            // Determine display status based on SPK Coil
-            $spk_coil_count = $this->Request_list_model->get_spk_coil_count($row['spk_no']);
+            // Mengikuti status langsung dari database
+            $display_status = $row['status'];
 
-            if ($spk_coil_count == 0) {
-                $display_status = 'Not Confirmed';
-                $badge_class    = 'bg-warning text-dark';
-            } else {
-                // Check if SPK Material status is already 'Material Confirmed'
-                if ($row['status'] == 'Material Confirmed') {
-                    $display_status = 'Material Confirmed';
-                    $badge_class    = 'bg-success';
-                } else {
-                    $display_status = 'Material On Load';
-                    $badge_class    = 'bg-info text-dark';
-                }
+            // Menentukan warna badge berdasarkan nilai di database
+            switch ($display_status) {
+                case 'Material Requested':
+                    $badge_class = 'bg-warning text-dark';
+                    break;
+                case 'Material On Load':
+                    $badge_class = 'bg-info text-dark';
+                    break;
+                case 'Material Confirmed':
+                    $badge_class = 'bg-success';
+                    break;
+                case 'Released':
+                    $badge_class = 'bg-secondary';
+                    break;
+                case 'Cancelled':
+                    $badge_class = 'bg-danger';
+                    break;
+                default:
+                    $badge_class = 'bg-dark';
+                    break;
             }
 
             $status_html = "<span class='badge rounded-pill " . $badge_class . "'>" . $display_status . "</span>";
-
             // Action buttons
-            $btn_view = '<a href="' . site_url('spk_material/view/' . $row['spk_no']) . '" class="btn btn-sm btn-info" title="View"><i class="fa fa-eye"></i></a>';
+            $btn_view = '<a href="' . site_url('request_list/view_spk_coil/' . $row['spk_no']) . '" class="btn btn-sm btn-info" title="View"><i class="fa fa-eye"></i></a>';
 
             $aksi = $btn_view;
 
             // Show "Create SPK Coil" button logic:
-            // Only show if status is Not Confirmed OR (Material On Load but still has unfulfilled material)
+            // Hanya muncul jika statusnya adalah 'Material Requested'
             $show_create_btn = false;
-            if ($display_status == 'Not Confirmed') {
-                $show_create_btn = true;
-            } elseif ($display_status == 'Material On Load') {
+
+            if ($display_status == 'Material Requested') {
                 $has_unfulfilled = $this->Request_list_model->has_unfulfilled_material($row['spk_no']);
                 if ($has_unfulfilled) {
                     $show_create_btn = true;
@@ -98,8 +104,13 @@ class Request_list extends Admin_Controller
             }
 
             if ($show_create_btn) {
-                $btn_create = ' <a href="' . site_url('request_list/create_spk_coil/' . $row['spk_no']) . '" class="btn btn-sm btn-primary" title="Create SPK Coil"><i class="fa fa-plus"></i> Create SPK Coil</a>';
+                $btn_create = ' <a href="' . site_url('request_list/create_spk_coil/' . $row['spk_no']) . '" class="btn btn-sm btn-primary" title="Create SPK Coil"><i class="fa fa-plus"></i></a>';
                 $aksi .= $btn_create;
+            }
+
+            if ($display_status != 'Material Requested') {
+                $btn_print_pengambilan = ' <a href="' . site_url('request_list/print_spk_pengambilan/' . $row['spk_no']) . '" target="_blank" class="btn btn-sm btn-secondary" title="Print SPK Pengambilan Coil"><i class="fa fa-print"></i></a>';
+                $aksi .= $btn_print_pengambilan;
             }
 
             $data[] = array(
@@ -120,6 +131,38 @@ class Request_list extends Admin_Controller
             'recordsFiltered' => $totalData,
             'data'            => $data,
         ));
+    }
+
+    // ---------------------------------------------------------------
+    // VIEW SPK COIL DETAIL
+    // ---------------------------------------------------------------
+
+    public function view_spk_coil($spk_no = null)
+    {
+        $this->auth->restrict($this->viewPermission);
+
+        if (!$spk_no) {
+            $this->session->set_flashdata('error', 'SPK No tidak valid.');
+            redirect('request_list');
+        }
+
+        // Get SPK details
+        $spk_data = $this->Request_list_model->get_spk_with_details($spk_no);
+
+        if (!$spk_data) {
+            $this->session->set_flashdata('error', 'SPK tidak ditemukan.');
+            redirect('request_list');
+        }
+
+        // Get saved coils
+        $saved_coils = $this->Request_list_model->get_saved_coils_by_spk($spk_no);
+
+        $data['spk_no']   = $spk_no;
+        $data['header']   = $spk_data['header'];
+        $data['products'] = $spk_data['products'];
+        $data['saved_coils'] = $saved_coils;
+
+        $this->template->render('view_spk_coil', $data);
     }
 
     // ---------------------------------------------------------------
@@ -184,9 +227,9 @@ class Request_list extends Admin_Controller
         );
 
         foreach ($coils as $coil) {
-            if ($coil['id_gudang'] == 1) {
+            if ($coil['source_type'] == 1) {
                 $grouped['gudang_coil'][] = $coil;
-            } elseif ($coil['id_gudang'] == 3) {
+            } elseif ($coil['source_type'] == 3) {
                 $grouped['wip'][] = $coil;
             }
         }
@@ -231,30 +274,19 @@ class Request_list extends Admin_Controller
         }
 
         // Server-side validation per material group
-        $materials = array();
         $unavailable_coils = array();
 
         foreach ($coils as $coil) {
             $id_coil       = isset($coil['id_coil']) ? $coil['id_coil'] : '';
-            $id_material   = isset($coil['id_material']) ? $coil['id_material'] : '';
-            $plan_use      = isset($coil['plan_use']) ? (float) $coil['plan_use'] : 0;
 
             // Check coil still available
-            $coil_data = $this->Request_list_model->check_coil_available($id_coil);
+            $id_gudang_sumber = isset($coil['id_gudang_sumber']) ? (int) $coil['id_gudang_sumber'] : 0;
+            $coil_data = $this->Request_list_model->check_coil_available($id_coil, $id_gudang_sumber);
             if (!$coil_data) {
                 $coil_label = isset($coil['no_coil']) ? $coil['no_coil'] : $id_coil;
                 $unavailable_coils[] = $coil_label;
                 continue;
             }
-
-            // Group by material for plan_use validation
-            if (!isset($materials[$id_material])) {
-                $materials[$id_material] = array(
-                    'plan_use'      => $plan_use,
-                    'checked_count' => 0
-                );
-            }
-            $materials[$id_material]['checked_count']++;
         }
 
         // Return error if any coil is unavailable
@@ -263,26 +295,6 @@ class Request_list extends Admin_Controller
                 'status'  => 0,
                 'message' => 'Coil berikut sudah tidak tersedia: ' . implode(', ', $unavailable_coils)
             ));
-        }
-
-        // Validate plan_use per material
-        foreach ($materials as $id_material => $mat_data) {
-            // Check plan_use does not exceed available coils
-            $total_available = count($this->Request_list_model->get_available_coils($id_material, $spk_no));
-            if ($mat_data['plan_use'] > $total_available) {
-                return $this->_json(array(
-                    'status'  => 0,
-                    'message' => 'Plan Use untuk material melebihi jumlah coil yang tersedia.'
-                ));
-            }
-
-            // Check number of checked coils matches plan_use
-            if ($mat_data['checked_count'] != $mat_data['plan_use']) {
-                return $this->_json(array(
-                    'status'  => 0,
-                    'message' => 'Jumlah coil yang dipilih tidak sesuai dengan Plan Use.'
-                ));
-            }
         }
 
         // Start transaction
@@ -313,7 +325,6 @@ class Request_list extends Admin_Controller
                 'kode_internal'  => isset($coil['kode_internal']) ? $coil['kode_internal'] : '',
                 'no_coil'        => isset($coil['no_coil']) ? $coil['no_coil'] : '',
                 'id_gudang_sumber' => isset($coil['id_gudang_sumber']) ? (int) $coil['id_gudang_sumber'] : 0,
-                'plan_use'       => isset($coil['plan_use']) ? (float) $coil['plan_use'] : 0,
             );
         }
 
@@ -339,6 +350,41 @@ class Request_list extends Admin_Controller
             'message'     => 'SPK Coil berhasil dibuat.',
             'spk_coil_no' => $spk_coil_no
         ));
+    }
+
+    // ---------------------------------------------------------------
+    // PRINT SPK PENGAMBILAN COIL
+    // ---------------------------------------------------------------
+
+    public function print_spk_pengambilan($spk_no = null)
+    {
+        $this->auth->restrict($this->viewPermission);
+
+        if (!$spk_no) {
+            $this->session->set_flashdata('error', 'SPK tidak ditemukan.');
+            redirect('request_list');
+        }
+
+        $this->load->model('spk_material/Spk_material_model');
+
+        $spk = $this->Spk_material_model->get_spk($spk_no);
+        if (!$spk) {
+            $this->session->set_flashdata('error', 'SPK tidak ditemukan.');
+            redirect('request_list');
+        }
+
+        $details = $this->Spk_material_model->get_spk_details($spk_no);
+
+        // Get BOM materials for each product
+        foreach ($details as &$detail) {
+            $detail['materials'] = $this->Spk_material_model->get_bom_details_for_request($detail['id_produk_fg']);
+        }
+
+        $data['spk']             = $spk;
+        $data['details']         = $details;
+        $data['created_by_name'] = $this->username;
+
+        $this->load->view('print_spk_pengambilan', $data);
     }
 
     // ---------------------------------------------------------------

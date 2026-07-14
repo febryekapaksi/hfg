@@ -84,6 +84,21 @@ class Request_list_model extends BF_Model
             ->get('tr_spk_material_detail')
             ->result_array();
 
+        // Calculate sum from detail
+        $sum_qty = 0;
+        $sum_weight = 0;
+        foreach ($products as $p) {
+            // Check possible column names for qty
+            if (isset($p['target_qty'])) $sum_qty += (float)$p['target_qty'];
+
+            // Check possible column names for weight
+            if (isset($p['weight'])) $sum_weight += (float)$p['weight'];
+            elseif (isset($p['total_weight'])) $sum_weight += (float)$p['total_weight'];
+        }
+
+        $header['target_qty'] = $sum_qty;
+        $header['total_weight'] = $sum_weight;
+
         // Get BOM materials per produk
         foreach ($products as &$product) {
             $sql = "SELECT bd.id_material, bd.nm_material, bd.qty, bd.id_unit, bd.nm_unit
@@ -92,7 +107,27 @@ class Request_list_model extends BF_Model
                     WHERE bh.id_produk = ? AND bh.is_delete = 0 AND bd.is_delete = 0
                     ORDER BY bd.nm_material ASC";
 
-            $product['materials'] = $this->db->query($sql, [$product['id_produk_fg']])->result_array();
+            $materials = $this->db->query($sql, [$product['id_produk_fg']])->result_array();
+
+            foreach ($materials as &$mat) {
+                // Stock Produksi (Gudang 1)
+                $prod_row = $this->db->select('qty_stock')
+                    ->where('id_material', $mat['id_material'])
+                    ->where('id_gudang', 1)
+                    ->get('warehouse_stock')
+                    ->row();
+                $mat['stock_produksi'] = $prod_row ? (float) $prod_row->qty_stock : 0;
+
+                // Stock WIP
+                $wip_row = $this->db->select_sum('qty')
+                    ->where('id_material', $mat['id_material'])
+                    ->where('status', 'active')
+                    ->get('warehouse_stock_coil_wip')
+                    ->row();
+                $mat['stock_wip'] = $wip_row ? (float) $wip_row->qty : 0;
+            }
+
+            $product['materials'] = $materials;
         }
 
         return [
@@ -116,21 +151,31 @@ class Request_list_model extends BF_Model
      */
     public function get_available_coils($id_material, $spk_no)
     {
-        $sql = "SELECT wsc.*
-                FROM warehouse_stock_coil wsc
-                WHERE wsc.id_material = ?
-                  AND wsc.id_gudang IN (1, 3)
-                  AND wsc.status = 1
-                  AND wsc.id NOT IN (
-                      SELECT wrcd.id_coil 
-                      FROM tr_warehouse_request_coil_detail wrcd
-                      JOIN tr_warehouse_request_header wrh ON wrh.id = wrcd.request_id
-                      WHERE wrh.spk_no = ?
-                        AND wrh.status != 'Rejected'
-                  )
-                ORDER BY wsc.id_gudang ASC, wsc.no_coil ASC";
+        $sql_pro = "SELECT id, id_material, nm_material, kode_internal, no_coil, net_weight, id_gudang, kd_gudang, 1 as source_type
+                    FROM warehouse_stock_coil
+                    WHERE id_material = ?
+                      AND kd_gudang = 'PRO'
+                      AND status = 1
+                      AND id NOT IN (
+                          SELECT id_coil FROM tr_warehouse_request_coil_detail wrcd
+                          JOIN tr_warehouse_request_header wrh ON wrh.id = wrcd.request_id
+                          WHERE wrh.spk_no = ? AND wrh.status != 'Rejected' AND wrcd.id_gudang_sumber = 1
+                      )";
 
-        return $this->db->query($sql, [$id_material, $spk_no])->result_array();
+        $sql_wip = "SELECT id, id_material, nm_material, kode_internal, no_coil, net_weight, id_gudang, kd_gudang, 3 as source_type
+                    FROM warehouse_stock_coil_wip
+                    WHERE id_material = ?
+                      AND status = 'active'
+                      AND id NOT IN (
+                          SELECT id_coil FROM tr_warehouse_request_coil_detail wrcd
+                          JOIN tr_warehouse_request_header wrh ON wrh.id = wrcd.request_id
+                          WHERE wrh.spk_no = ? AND wrh.status != 'Rejected' AND wrcd.id_gudang_sumber = 3
+                      )";
+
+        $pro_coils = $this->db->query($sql_pro, [$id_material, $spk_no])->result_array();
+        $wip_coils = $this->db->query($sql_wip, [$id_material, $spk_no])->result_array();
+
+        return array_merge($pro_coils, $wip_coils);
     }
 
     /**
@@ -156,13 +201,21 @@ class Request_list_model extends BF_Model
      * @param int $id_coil ID coil
      * @return array|null Coil row atau null jika tidak tersedia
      */
-    public function check_coil_available($id_coil)
+    public function check_coil_available($id_coil, $id_gudang_sumber = 0)
     {
-        return $this->db
-            ->where('id', $id_coil)
-            ->where('status', 1)
-            ->get('warehouse_stock_coil')
-            ->row_array();
+        if ($id_gudang_sumber == 3) {
+            return $this->db
+                ->where('id', $id_coil)
+                ->where('status', 'active')
+                ->get('warehouse_stock_coil_wip')
+                ->row_array();
+        } else {
+            return $this->db
+                ->where('id', $id_coil)
+                ->where('status', 1)
+                ->get('warehouse_stock_coil')
+                ->row_array();
+        }
     }
 
     // ---------------------------------------------------------------
@@ -262,6 +315,22 @@ class Request_list_model extends BF_Model
     // ---------------------------------------------------------------
     // READ OPERATIONS
     // ---------------------------------------------------------------
+
+    /**
+     * Get saved coils by SPK number
+     *
+     * @param string $spk_no Nomor SPK Material
+     * @return array Array of coil details with request header info
+     */
+    public function get_saved_coils_by_spk($spk_no)
+    {
+        $this->db->select('wrcd.*, wrh.spk_coil_no, wrh.status as request_status');
+        $this->db->from('tr_warehouse_request_coil_detail wrcd');
+        $this->db->join('tr_warehouse_request_header wrh', 'wrh.id = wrcd.request_id');
+        $this->db->where('wrh.spk_no', $spk_no);
+        $this->db->where('wrh.status !=', 'Rejected');
+        return $this->db->get()->result_array();
+    }
 
     /**
      * Get single warehouse request header by ID

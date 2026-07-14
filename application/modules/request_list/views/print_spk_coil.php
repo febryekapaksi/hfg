@@ -254,7 +254,6 @@
                     <th width="15%">No Coil</th>
                     <th width="27%">Material</th>
                     <th width="15%" class="text-center">Sumber Gudang</th>
-                    <th width="10%" class="text-right">Plan Use</th>
                 </tr>
             </thead>
             <tbody>
@@ -275,7 +274,6 @@
                             }
                             ?>
                         </td>
-                        <td class="text-right" style="font-weight: bold;"><?php echo number_format((float)$coil['plan_use'], 4); ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>

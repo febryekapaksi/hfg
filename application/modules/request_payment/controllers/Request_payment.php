@@ -917,6 +917,7 @@ class Request_payment extends Admin_Controller
 		if (!empty($post['req_payment_id'])) {
 			$this->db->update('request_payment', [
 				'app_checker' => 1,
+				'status' => 'approve checker',
 				'app_checker_by' => $this->auth->user_id(),
 				'app_checker_date' => date('Y-m-d H:i:s')
 			], [

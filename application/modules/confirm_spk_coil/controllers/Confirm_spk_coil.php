@@ -129,16 +129,29 @@ class Confirm_spk_coil extends Admin_Controller
     {
         $this->auth->restrict($this->managePermission);
 
-        $kode_internal = $this->input->post('kode_internal');
-        $request_id    = $this->input->post('request_id');
+        $qr_string = $this->input->post('kode_internal');
+        $request_id = $this->input->post('request_id');
 
         // Validate not empty
-        if (empty($kode_internal) || empty($request_id)) {
-            return $this->_json(array('status' => 0, 'message' => 'Kode internal dan request ID wajib diisi.'));
+        if (empty($qr_string) || empty($request_id)) {
+            return $this->_json(array('status' => 0, 'message' => 'Kode QR dan request ID wajib diisi.'));
         }
 
+        // QR format wajib: kode_internal/nm_gudang
+        $parts = explode('/', $qr_string);
+
+        if (count($parts) < 2 || trim($parts[0]) === '' || trim($parts[1]) === '') {
+            return $this->_json(array(
+                'status'  => 0,
+                'message' => 'Format kode salah. Format harus: kode_internal/nm_gudang'
+            ));
+        }
+
+        $kode_internal = trim($parts[0]);
+        $nm_gudang     = trim($parts[1]);
+
         // Find coil by kode_internal in this SPK Coil
-        $coil = $this->Confirm_spk_coil_model->find_coil_by_kode_internal($request_id, $kode_internal);
+        $coil = $this->Confirm_spk_coil_model->find_coil_by_kode_internal($request_id, $kode_internal, $nm_gudang);
 
         if (!$coil) {
             return $this->_json(array('status' => 0, 'message' => 'Coil tidak ditemukan dalam SPK ini'));
@@ -203,40 +216,40 @@ class Confirm_spk_coil extends Admin_Controller
 
         foreach ($coil_details as $coil) {
             if ($coil['id_gudang_sumber'] == 1) {
-                // Source is Gudang Coil — reduce stock and create WIP record
+                // Source is Gudang Coil — pindahkan seluruh coil ke production transit
                 $source_data = $this->Confirm_spk_coil_model->get_coil_source_data($coil['id_coil']);
 
-                // Reduce stock
-                $this->Confirm_spk_coil_model->reduce_coil_stock($coil['id_coil'], $coil['plan_use']);
+                // Kosongkan/soft-delete stock di gudang utama
+                $this->Confirm_spk_coil_model->reduce_coil_stock($coil['id_coil']);
 
-                // Insert WIP record - copy fields from source + override
+                // Insert transit record - pindahkan seluruh bobot coil apa adanya
                 if ($source_data) {
-                    $wip_data = array(
-                        'id_material'   => isset($source_data['id_material']) ? $source_data['id_material'] : '',
-                        'nm_material'   => isset($source_data['nm_material']) ? $source_data['nm_material'] : '',
-                        'trade_name'    => isset($source_data['trade_name']) ? $source_data['trade_name'] : '',
-                        'kode_internal' => isset($source_data['kode_internal']) ? $source_data['kode_internal'] : '',
-                        'no_coil'       => isset($source_data['no_coil']) ? $source_data['no_coil'] : '',
-                        'no_ipp'        => isset($source_data['no_ipp']) ? $source_data['no_ipp'] : '',
-                        'no_po'         => isset($source_data['no_po']) ? $source_data['no_po'] : '',
-                        'no_ros'        => isset($source_data['no_ros']) ? $source_data['no_ros'] : '',
-                        'gross_weight'  => isset($source_data['gross_weight']) ? $source_data['gross_weight'] : 0,
-                        'net_weight'    => isset($source_data['net_weight']) ? $source_data['net_weight'] : 0,
-                        'length'        => isset($source_data['length']) ? $source_data['length'] : 0,
-                        'harga_beli'    => isset($source_data['harga_beli']) ? $source_data['harga_beli'] : 0,
-                        'total_nilai'   => isset($source_data['total_nilai']) ? $source_data['total_nilai'] : 0,
-                        'id_gudang'     => 3,
-                        'kd_gudang'     => 'WIP',
-                        'type'          => 'from_warehouse',
-                        'qty'           => $coil['plan_use'],
-                        'status'        => 1,
-                        'created_by'    => $this->id_user,
-                        'created_on'    => $this->datetime,
+                    $transit_data = array(
+                        'id_coil_source' => $coil['id_coil'],
+                        'id_material'    => isset($source_data['id_material']) ? $source_data['id_material'] : '',
+                        'nm_material'    => isset($source_data['nm_material']) ? $source_data['nm_material'] : '',
+                        'trade_name'     => isset($source_data['trade_name']) ? $source_data['trade_name'] : '',
+                        'kode_internal'  => isset($source_data['kode_internal']) ? $source_data['kode_internal'] : '',
+                        'no_coil'        => isset($source_data['no_coil']) ? $source_data['no_coil'] : '',
+                        'no_ipp'         => isset($source_data['no_ipp']) ? $source_data['no_ipp'] : '',
+                        'no_po'          => isset($source_data['no_po']) ? $source_data['no_po'] : '',
+                        'no_ros'         => isset($source_data['no_ros']) ? $source_data['no_ros'] : '',
+                        'gross_weight'   => isset($source_data['gross_weight']) ? $source_data['gross_weight'] : 0,
+                        'net_weight'     => isset($source_data['net_weight']) ? $source_data['net_weight'] : 0,
+                        'length'         => isset($source_data['length']) ? $source_data['length'] : 0,
+                        'harga_beli'     => isset($source_data['harga_beli']) ? $source_data['harga_beli'] : 0,
+                        'total_nilai'    => isset($source_data['total_nilai']) ? $source_data['total_nilai'] : 0,
+                        'qty'            => 1, // 1 baris = 1 unit fisik coil utuh
+                        'kd_gudang'      => 'ONLOAD',
+                        'type'           => 'from_warehouse',
+                        'status'         => 1,
+                        'created_by'     => $this->id_user,
+                        'created_on'     => $this->datetime,
                     );
-                    $this->Confirm_spk_coil_model->insert_wip_record($wip_data);
+                    $this->Confirm_spk_coil_model->insert_production_transit_record($transit_data);
                 }
             }
-            // id_gudang_sumber == 3 (already WIP) — no stock movement needed
+            // id_gudang_sumber == 3 (sudah di production transit) — tidak ada pergerakan stock
         }
 
         // Update request status to Material Confirmed
@@ -246,9 +259,9 @@ class Confirm_spk_coil extends Admin_Controller
             'confirmed_at' => $this->datetime,
         ));
 
-        // Check if all SPK Coil for this SPK Material are confirmed
+        // Update SPK Material header status to Material Confirmed
         $spk_no = $request['spk_no'];
-        if ($this->Confirm_spk_coil_model->all_spk_coil_confirmed($spk_no)) {
+        if ($spk_no) {
             $this->Confirm_spk_coil_model->update_spk_material_status($spk_no, array(
                 'status'     => 'Material Confirmed',
                 'updated_by' => $this->id_user,

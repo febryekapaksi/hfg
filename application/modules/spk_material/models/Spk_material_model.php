@@ -213,33 +213,6 @@ class Spk_material_model extends BF_Model
         return $count > 0;
     }
 
-    // ---------------------------------------------------------------
-    // WAREHOUSE REQUEST
-    // ---------------------------------------------------------------
-
-    /**
-     * Insert header warehouse request ke tr_warehouse_request_header
-     *
-     * @param array $data Associative array kolom header request
-     * @return int Insert ID
-     */
-    public function insert_warehouse_request_header($data)
-    {
-        $this->db->insert('tr_warehouse_request_header', $data);
-        return $this->db->insert_id();
-    }
-
-    /**
-     * Insert batch detail warehouse request ke tr_warehouse_request_detail
-     *
-     * @param array $details Array of associative arrays untuk setiap material
-     * @return bool Insert batch result
-     */
-    public function insert_warehouse_request_details($details)
-    {
-        return $this->db->insert_batch('tr_warehouse_request_detail', $details);
-    }
-
     /**
      * Get BOM detail materials untuk warehouse request
      * JOIN ms_bom_detail dengan ms_bom_header berdasarkan id_produk

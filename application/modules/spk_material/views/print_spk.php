@@ -49,7 +49,7 @@
             font-size: 13px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
 
         .print-btn:hover {
@@ -75,7 +75,8 @@
             font-size: 18px;
             font-weight: bold;
             text-align: center;
-            padding: 14px 0 14px 80px; /* Padding kiri 80px agar teks judul bergeser dari logo */
+            padding: 14px 0 14px 80px;
+            /* Padding kiri 80px agar teks judul bergeser dari logo */
             border-top: 2px solid #111;
             border-bottom: 2px solid #111;
             letter-spacing: 0.5px;
@@ -122,7 +123,8 @@
 
         /* Grouping per Produk (Mencegah terpotong halaman tengah) */
         .product-group {
-            page-break-inside: avoid; /* Menjaga 1 blok produk & materialnya tetap menyatu di 1 halaman jika muat */
+            page-break-inside: avoid;
+            /* Menjaga 1 blok produk & materialnya tetap menyatu di 1 halaman jika muat */
             margin-bottom: 25px;
         }
 
@@ -155,7 +157,7 @@
             color: #4a5568;
             background-color: #edf2f7;
         }
-        
+
         .product-info-value {
             width: 35%;
         }
@@ -178,12 +180,12 @@
             border: 1px solid #cbd5e0;
         }
 
-        .material-table th.text-center, 
+        .material-table th.text-center,
         .material-table td.text-center {
             text-align: center;
         }
 
-        .material-table th.text-right, 
+        .material-table th.text-right,
         .material-table td.text-right {
             text-align: right;
         }
@@ -227,7 +229,8 @@
         .signature-title {
             font-weight: bold;
             color: #4a5568;
-            margin-bottom: 55px; /* Ruang untuk tanda tangan fisik */
+            margin-bottom: 55px;
+            /* Ruang untuk tanda tangan fisik */
             display: block;
         }
 
@@ -301,9 +304,9 @@
 
     <?php if (!empty($details)): ?>
         <?php foreach ($details as $idx => $detail): ?>
-            
+
             <div class="product-group">
-                
+
                 <div class="section-header">
                     <?php echo ($idx + 1) . '. ' . $detail['nm_produk_fg']; ?>
                 </div>
@@ -316,36 +319,6 @@
                         <td class="product-info-value"><strong><?php echo number_format($detail['total_weight'], 2); ?> Kg</strong></td>
                     </tr>
                 </table>
-
-                <?php if (!empty($detail['materials'])): ?>
-                    <table class="material-table">
-                        <thead>
-                            <tr>
-                                <th width="5%" class="text-center">No</th>
-                                <th width="50%">Nama Material</th>
-                                <th width="25%" class="text-right">Jumlah Dibutuhkan</th>
-                                <th width="20%" class="text-center">Satuan</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($detail['materials'] as $m_idx => $material): ?>
-                                <tr>
-                                    <td class="text-center" style="color: #718096;"><?php echo $m_idx + 1; ?></td>
-                                    <td style="font-weight: 500;"><?php echo $material['nm_material']; ?></td>
-                                    <td class="text-right" style="font-weight: bold;">
-                                        <?php echo number_format((float)$material['qty'] * (int)$detail['target_qty'], 4); ?>
-                                    </td>
-                                    <td class="text-center"><?php echo isset($material['nm_unit']) ? $material['nm_unit'] : '-'; ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php else: ?>
-                    <div style="padding: 10px; border: 1px dashed #cbd5e0; border-top: none; color:#718096; font-style: italic;">
-                        BOM (Bill of Materials) belum tersedia untuk produk ini.
-                    </div>
-                <?php endif; ?>
-
             </div>
 
         <?php endforeach; ?>

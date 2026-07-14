@@ -18,8 +18,13 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
     }
 
     @keyframes shimmer {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
+        0% {
+            background-position: 200% 0;
+        }
+
+        100% {
+            background-position: -200% 0;
+        }
     }
 </style>
 
@@ -34,9 +39,6 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
 <!-- Actual content (hidden until loaded) -->
 <div id="actual-content" style="display:none">
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Request List</h5>
-        </div>
         <div class="card-body">
             <table id="table-request-list" class="table table-bordered table-striped" width="100%">
                 <thead>
@@ -59,33 +61,54 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-$(document).ready(function() {
+    $(document).ready(function() {
 
-    const BASE_URL = siteurl + active_controller;
+        const BASE_URL = siteurl + active_controller;
 
-    // Initialize DataTables
-    var tableRequestList = $('#table-request-list').DataTable({
-        processing: true,
-        serverSide: true,
-        ajax: {
-            url: BASE_URL + '/data_side',
-            type: 'GET'
-        },
-        columns: [
-            { data: 0, orderable: false, className: 'text-center' },
-            { data: 1 },
-            { data: 2 },
-            { data: 3 },
-            { data: 4, className: 'text-center' },
-            { data: 5, className: 'text-center' },
-            { data: 6, orderable: false, className: 'text-center' }
-        ],
-        order: [[1, 'desc']],
-        initComplete: function() {
-            $('#skeleton-content').hide();
-            $('#actual-content').fadeIn();
-        }
+        // Initialize DataTables
+        var tableRequestList = $('#table-request-list').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: BASE_URL + '/data_side',
+                type: 'GET'
+            },
+            columns: [{
+                    data: 0,
+                    orderable: false,
+                    className: 'text-center'
+                },
+                {
+                    data: 1
+                },
+                {
+                    data: 2
+                },
+                {
+                    data: 3
+                },
+                {
+                    data: 4,
+                    className: 'text-center'
+                },
+                {
+                    data: 5,
+                    className: 'text-center'
+                },
+                {
+                    data: 6,
+                    orderable: false,
+                    className: 'text-center'
+                }
+            ],
+            order: [
+                [1, 'desc']
+            ],
+            initComplete: function() {
+                $('#skeleton-content').hide();
+                $('#actual-content').fadeIn();
+            }
+        });
+
     });
-
-});
 </script>

@@ -92,8 +92,11 @@ class Confirm_spk_coil_model extends BF_Model
      */
     public function get_coil_details($request_id)
     {
-        $this->db->where('request_id', $request_id);
-        return $this->db->get('tr_warehouse_request_coil_detail')->result_array();
+        $this->db->select('d.*, w.kd_gudang, w.nm_gudang');
+        $this->db->from('tr_warehouse_request_coil_detail d');
+        $this->db->join('warehouse w', 'w.id = d.id_gudang_sumber', 'left');
+        $this->db->where('d.request_id', $request_id);
+        return $this->db->get()->result_array();
     }
 
     // ---------------------------------------------------------------
@@ -120,11 +123,16 @@ class Confirm_spk_coil_model extends BF_Model
      * @param string $kode_internal Kode internal coil dari QR scan
      * @return array|null Coil detail row atau null jika tidak ditemukan
      */
-    public function find_coil_by_kode_internal($request_id, $kode_internal)
+    public function find_coil_by_kode_internal($request_id, $kode_internal, $nm_gudang)
     {
-        $this->db->where('request_id', $request_id);
-        $this->db->where('kode_internal', $kode_internal);
-        return $this->db->get('tr_warehouse_request_coil_detail')->row_array();
+        $this->db->select('d.*, w.kd_gudang, w.nm_gudang');
+        $this->db->from('tr_warehouse_request_coil_detail d');
+        $this->db->join('warehouse w', 'w.id = d.id_gudang_sumber', 'left');
+        $this->db->where('d.request_id', $request_id);
+        $this->db->where('d.kode_internal', $kode_internal);
+        $this->db->where('LOWER(w.nm_gudang)', strtolower($nm_gudang));
+
+        return $this->db->get()->row_array();
     }
 
     /**
@@ -153,22 +161,21 @@ class Confirm_spk_coil_model extends BF_Model
      * @param float|string $qty     Jumlah yang dikurangi (plan_use)
      * @return bool Update result
      */
-    public function reduce_coil_stock($id_coil, $qty)
+    public function reduce_coil_stock($id_coil)
     {
-        $this->db->set('qty', 'qty - ' . (float) $qty, false);
-        $this->db->where('id', $id_coil);
-        return $this->db->update('warehouse_stock_coil');
+        // Soft-delete: nolkan bobot & tandai tidak tersedia
+        // (tidak boleh DELETE row karena direferensikan FK di tabel transit)
+        return $this->db->where('id', $id_coil)->update('warehouse_stock_coil', array(
+            'net_weight'   => 0,
+            'gross_weight' => 0,
+            'qty'          => 0,
+            'status'       => 0, // 0 = sudah keluar / tidak tersedia lagi
+        ));
     }
 
-    /**
-     * Insert record baru ke warehouse_stock_wip
-     *
-     * @param array $data Associative array kolom WIP record
-     * @return bool Insert result
-     */
-    public function insert_wip_record($data)
+    public function insert_production_transit_record($data)
     {
-        return $this->db->insert('warehouse_stock_wip', $data);
+        return $this->db->insert('warehouse_stock_coil_production_transit', $data);
     }
 
     /**
