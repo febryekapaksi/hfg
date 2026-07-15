@@ -85,12 +85,6 @@ if ($is_view) {
         <input type="text" name="currency" class="form-control form-control-sm bg-light"
             value="<?= $is_view ? $currency : $currency_val ?>" readonly tabindex="-1">
     </div>
-
-    <div class="col-md-6">
-        <label class="form-label fw-semibold">Persentase DP (%)</label>
-        <input type="text" name="persen_dp" class="form-control form-control-sm text-end bg-light"
-            value="<?= number_format($persen_dp_val, 2) ?>" readonly tabindex="-1">
-    </div>
     <div class="col-md-6">
         <label class="form-label fw-semibold">Sisa Tagihan (<?= $is_view ? $currency : $currency_val ?>)</label>
         <input type="text" name="sisa_nilai" id="sisa_tagihan_display"

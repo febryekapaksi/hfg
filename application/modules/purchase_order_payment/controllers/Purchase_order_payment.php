@@ -206,7 +206,7 @@ class Purchase_order_payment extends Admin_Controller
 	{
 		$id_top = $this->input->post('id_top');
 		$no_po  = $this->input->post('no_po');
-		$tipe   = $this->input->post('tipe');   // 'import' atau 'local'
+		$tipe   = $this->input->post('tipe');   // 'import' atau 'dp'
 		$id_dp  = $this->input->post('id_dp');  // nullable
 		$id_ros = $this->input->post('id_ros'); // ID ROS untuk import
 
@@ -215,7 +215,7 @@ class Purchase_order_payment extends Admin_Controller
 			return;
 		}
 
-		// Ambal data PO
+		// Ambil data PO
 		$data_po = $this->db->get_where('tr_purchase_order', ['no_po' => $no_po])->row_array();
 		if (empty($data_po)) {
 			echo "<div class='alert alert-warning'>Data PO tidak ditemukan.</div>";
@@ -233,8 +233,12 @@ class Purchase_order_payment extends Admin_Controller
 			'kode_supplier' => $data_po['id_suplier']
 		])->row_array();
 
-		// Sisa tagihan = hargatotal - SUM(nilai dari tr_top_po WHERE group_top = 76)
-		$sisa_tagihan = (float)($data_top['nilai'] ?? 0);
+		$data_ros = null;
+		if ($tipe === 'import' && !empty($id_ros)) {
+			$data_ros = $this->db->get_where('tr_ros_header', ['id' => $id_ros])->row_array();
+		}
+
+		$sisa_tagihan = (float)($data_ros['gl_unbill_kurs'] ?? 0);
 
 		// Persentase DP diambil dari tr_top_po.progress
 		$persen_dp = (float)($data_top['progress'] ?? 0);
@@ -254,6 +258,7 @@ class Purchase_order_payment extends Admin_Controller
 		$this->template->set('mode', 'form');
 		$this->template->set('data_po',         $data_po);
 		$this->template->set('data_top',        $data_top);
+		$this->template->set('data_ros',        $data_ros);
 		$this->template->set('get_supplier',    $get_supplier);
 		$this->template->set('tipe',            $tipe);
 		$this->template->set('id_top',          $id_top);
@@ -377,7 +382,9 @@ class Purchase_order_payment extends Admin_Controller
 
 			try {
 				$this->load->model('gl_interface/Gl_interface_model');
-				$this->Gl_interface_model->generate_jurnal_dari_template('JV004', $data_insert);
+				$mapping = $this->db->get_where('ms_jurnal_mapping', ['menu' => 'Purchase Order Payment', 'action' => 'save_dp'])->row();
+				$kode_jurnal = $mapping ? $mapping->kode_master_jurnal : 'JV004'; // fallback
+				$this->Gl_interface_model->generate_jurnal_dari_template($kode_jurnal, $data_insert);
 			} catch (Exception $e) {
 				log_message('error', 'Generate jurnal DP failed: ' . $e->getMessage());
 			}
@@ -439,26 +446,26 @@ class Purchase_order_payment extends Admin_Controller
 		// Handle upload file
 		$file_invoice = null;
 		if (!empty($_FILES['upload_invoice']['name'])) {
-    $upload_path = FCPATH . 'uploads/invoice_il/';
-    if (!is_dir($upload_path)) mkdir($upload_path, 0755, true);
+			$upload_path = FCPATH . 'uploads/invoice_il/';
+			if (!is_dir($upload_path)) mkdir($upload_path, 0755, true);
 
-    $config_upload = [
-        'upload_path'   => $upload_path,
-        'allowed_types' => 'pdf|jpg|jpeg|png',
-        'max_size'      => 5120,
-        'file_name'     => 'inv_import_' . $no_po . '_' . time()
-    ];
+			$config_upload = [
+				'upload_path'   => $upload_path,
+				'allowed_types' => 'pdf|jpg|jpeg|png',
+				'max_size'      => 5120,
+				'file_name'     => 'inv_import_' . $no_po . '_' . time()
+			];
 
-    $this->load->library('upload', $config_upload);
-    $this->upload->initialize($config_upload);   // ← tambahkan ini
+			$this->load->library('upload', $config_upload);
+			$this->upload->initialize($config_upload);   // ← tambahkan ini
 
-    if ($this->upload->do_upload('upload_invoice')) {
-        $file_invoice = $this->upload->data('file_name');
-    } else {
-        echo json_encode(['status' => 0, 'message' => 'Gagal upload file: ' . $this->upload->display_errors('', '')]);
-        return;
-    }
-}
+			if ($this->upload->do_upload('upload_invoice')) {
+				$file_invoice = $this->upload->data('file_name');
+			} else {
+				echo json_encode(['status' => 0, 'message' => 'Gagal upload file: ' . $this->upload->display_errors('', '')]);
+				return;
+			}
+		}
 
 		$clean = function ($val) {
 			return (float)str_replace(',', '', $val ?? '0');
@@ -466,7 +473,7 @@ class Purchase_order_payment extends Admin_Controller
 
 		$sisa_nilai = $clean($this->input->post('sisa_nilai'));
 		$jumlah_rupiah = $sisa_nilai * $kurs;
-		$gl_hutang_dagang = $this->ceil_away_from_zero($jumlah_rupiah);
+		$gl_hutang_dagang = round($jumlah_rupiah);
 
 		// Hitung unbill dan selisih kurs
 		$nominal_unbill = 0;
@@ -478,7 +485,9 @@ class Purchase_order_payment extends Admin_Controller
 				$nominal_unbill = (float) $ros_header->gl_unbill;
 				$kurs_pib       = (float) $ros_header->kurs_pib;
 				$gl_unbill_kurs = (float) $ros_header->gl_unbill_kurs;
-				$selisih = $this->ceil_away_from_zero(($kurs - $kurs_pib) * $gl_unbill_kurs);
+				// $selisih = $this->ceil_away_from_zero(($kurs - $kurs_pib) * $gl_unbill_kurs);
+				// $selisih = round(($kurs - $kurs_pib) * $gl_unbill_kurs);
+				$selisih = $gl_hutang_dagang - round($nominal_unbill);
 			}
 		}
 
@@ -552,7 +561,7 @@ class Purchase_order_payment extends Admin_Controller
 				'keperluan'   => 'Pembayaran Invoice Import - ' . $no_surat . ' - ' . $this->input->post('nomor_invoice'),
 				'tipe'        => 'invoice_import',
 				'jumlah'      => $jumlah_total,
-				'status'      => 1,
+				'status'      => 'open',
 				'tanggal'     => null,
 				'currency'    => $currency,
 				'bank_id'     => $this->input->post('bank') ?? '',
@@ -568,15 +577,15 @@ class Purchase_order_payment extends Admin_Controller
 				'created_on'  => date('Y-m-d H:i:s'),
 			]);
 
-			// Update status di tabel receive → 2
-			$this->db->update('tr_receive_invoice', ['status' => '2'], ['id' => $id_receive]);
+			$this->db->update('tr_receive_invoice', ['status' => 'draft'], ['id' => $id_receive]);
 
-			// Generate GL Interface untuk Invoice Import
 			try {
 				$this->load->model('gl_interface/Gl_interface_model');
 				$data_source = $data_insert;
 				$data_source['tanggal'] = date('Y-m-d');
-				$this->Gl_interface_model->generate_jurnal_dari_template('JV007', $data_source);
+				$mapping = $this->db->get_where('ms_jurnal_mapping', ['menu' => 'Purchase Order Payment', 'action' => 'save_import'])->row();
+				$kode_jurnal = $mapping ? $mapping->kode_master_jurnal : 'JV007'; // fallback
+				$this->Gl_interface_model->generate_jurnal_dari_template($kode_jurnal, $data_source);
 			} catch (Exception $e) {
 				log_message('error', 'Generate jurnal invoice import failed: ' . $e->getMessage());
 			}

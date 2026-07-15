@@ -1239,7 +1239,10 @@ class Pembayaran_material extends Admin_Controller
 			}
 
 			$this->load->model('gl_interface/Gl_interface_model');
-			$id_gl = $this->Gl_interface_model->generate_jurnal_dari_template('BUK002', $row_lengkap);
+
+			$mapping = $this->db->get_where('ms_jurnal_mapping', ['menu' => 'Pembayaran Material', 'action' => 'save_payment_po'])->row();
+			$kode_jurnal = $mapping ? $mapping->kode_master_jurnal : 'BUK002'; // fallback
+			$id_gl = $this->Gl_interface_model->generate_jurnal_dari_template($kode_jurnal, $row_lengkap);
 
 			if ($id_gl === false) {
 				throw new Exception('Gagal generate jurnal: template BUK002 tidak ditemukan/kosong');
@@ -1763,7 +1766,10 @@ class Pembayaran_material extends Admin_Controller
 			$row_lengkap = $this->db->get_where('payment_approve', ['no_doc' => $no_doc_payment])->row_array();
 
 			$this->load->model('gl_interface/Gl_interface_model');
-			$id_gl = $this->Gl_interface_model->generate_jurnal_dari_template('BUK002', $row_lengkap);
+
+			$mapping = $this->db->get_where('ms_jurnal_mapping', ['menu' => 'Pembayaran Material', 'action' => 'save_payment_import'])->row();
+			$kode_jurnal = $mapping ? $mapping->kode_master_jurnal : 'BUK002'; // fallback
+			$id_gl = $this->Gl_interface_model->generate_jurnal_dari_template($kode_jurnal, $row_lengkap);
 			if ($id_gl === false) {
 				throw new Exception('Gagal generate jurnal: template BUK002 tidak ditemukan/kosong');
 			}

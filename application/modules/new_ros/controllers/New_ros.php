@@ -1631,7 +1631,11 @@ class New_ros extends Admin_Controller
                 $this->load->model('gl_interface/Gl_interface_model');
                 $data_source = $header;
                 $data_source['tanggal'] = date('Y-m-d');
-                $this->Gl_interface_model->generate_jurnal_dari_template('JV006', $data_source);
+                
+                $mapping = $this->db->get_where('ms_jurnal_mapping', ['menu' => 'ROS', 'action' => 'close_ros'])->row();
+                $kode_jurnal = $mapping ? $mapping->kode_master_jurnal : 'JV006'; // fallback
+                $this->Gl_interface_model->generate_jurnal_dari_template($kode_jurnal, $data_source);
+                
                 ob_clean();
                 header('Content-Type: application/json');
                 echo json_encode(['status' => 1, 'msg' => 'ROS closed successfully and JV journal has been created.']);
