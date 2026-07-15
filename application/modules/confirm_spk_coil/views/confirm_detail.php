@@ -29,39 +29,70 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
         }
     }
 
+    /* ===== Info grid (header) ===== */
+    .info-item {
+        padding: 4px 0;
+    }
+
+    .info-item strong {
+        display: block;
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+        color: #6c757d;
+        margin-bottom: 2px;
+    }
+
+    .info-item p {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    /* ===== Scan input (dibikin lebih proporsional, tidak sebesar sebelumnya) ===== */
     .scan-input-wrapper {
-        max-width: 650px;
-        margin: 1.5rem auto;
+        max-width: 480px;
+        margin: 0 auto;
     }
 
     .scan-input-wrapper input#scan-input {
-        font-size: 1.35rem;
-        padding: 28px 20px;
-        /* Membuat input terasa lebih tebal dan lega */
-        letter-spacing: 1px;
+        font-size: 1.05rem;
+        padding: 12px 16px;
+        letter-spacing: .5px;
         border-radius: 8px 0 0 8px !important;
         border: 2px solid #ced4da;
         border-right: none;
-        transition: all 0.2s ease-in-out;
+        transition: all .2s ease-in-out;
     }
 
-    /* Efek ketika input sedang diklik/aktif */
     .scan-input-wrapper input#scan-input:focus {
         border-color: #007bff;
         box-shadow: none;
     }
 
-    /* Membuat tombol kamera melengkung di sisi kanan saja */
     .scan-input-wrapper #btn-camera {
         border-radius: 0 8px 8px 0 !important;
-        font-size: 1.1rem;
+        font-size: .95rem;
         font-weight: 600;
         box-shadow: none;
+        padding: 0 18px;
+    }
+
+    @media (max-width: 576px) {
+        .scan-input-wrapper input#scan-input {
+            font-size: .95rem;
+            padding: 10px 12px;
+        }
+
+        .scan-input-wrapper #btn-camera span {
+            display: none;
+        }
     }
 
     .scan-count {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         font-weight: 600;
+        white-space: nowrap;
     }
 
     .badge-scanned {
@@ -72,6 +103,67 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
     .badge-not-scanned {
         background-color: #dc3545;
         color: #fff;
+    }
+
+    /* ===== Styling tombol bawaan html5-qrcode di dalam modal kamera ===== */
+    #qr-reader {
+        border: none !important;
+    }
+
+    #qr-reader button,
+    #qr-reader__dashboard_section_csr button,
+    #qr-reader__dashboard_section_fsr button {
+        background-color: #007bff !important;
+        color: #fff !important;
+        border: none !important;
+        padding: 8px 18px !important;
+        border-radius: 6px !important;
+        font-weight: 500 !important;
+        font-size: .9rem !important;
+        cursor: pointer;
+        transition: background-color .2s ease-in-out;
+        margin: 6px 4px !important;
+    }
+
+    #qr-reader button:hover,
+    #qr-reader__dashboard_section_csr button:hover,
+    #qr-reader__dashboard_section_fsr button:hover {
+        background-color: #0069d9 !important;
+    }
+
+    #qr-reader select {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        font-size: .9rem;
+        margin: 6px 4px;
+    }
+
+    #qr-reader__dashboard_section_swaplink,
+    #html5-qrcode-anchor-scan-type-change {
+        color: #007bff !important;
+        text-decoration: none !important;
+        font-size: .85rem !important;
+        display: inline-block;
+        margin-top: 8px !important;
+    }
+
+    #qr-reader__status_span {
+        font-size: .8rem;
+        color: #6c757d;
+    }
+
+    #qr-reader__dashboard_section_csr,
+    #qr-reader__dashboard_section_fsr {
+        text-align: center;
+    }
+
+    #qr-reader__filescan_input {
+        margin: 8px 4px;
+    }
+
+    #qr-reader__camera_selection {
+        margin: 6px 4px;
     }
 </style>
 
@@ -94,24 +186,26 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
         </a>
     </div>
 
-    <!-- Header Card -->
+    <!-- Header + Scan Input Card (digabung jadi satu) -->
     <div class="card mb-3">
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-3">
+
+            <!-- Info SPK -->
+            <div class="row gy-3">
+                <div class="col-6 col-md-3 info-item">
                     <strong>SPK Coil No</strong>
-                    <p class="mb-0"><?= htmlspecialchars(isset($request['spk_coil_no']) ? $request['spk_coil_no'] : '-') ?></p>
+                    <p><?= htmlspecialchars(isset($request['spk_coil_no']) ? $request['spk_coil_no'] : '-') ?></p>
                 </div>
-                <div class="col-md-3">
+                <div class="col-6 col-md-3 info-item">
                     <strong>SPK Material No</strong>
-                    <p class="mb-0"><?= htmlspecialchars(isset($request['spk_material_no']) ? $request['spk_material_no'] : (isset($request['spk_no']) ? $request['spk_no'] : '-')) ?></p>
+                    <p><?= htmlspecialchars(isset($request['spk_material_no']) ? $request['spk_material_no'] : (isset($request['spk_no']) ? $request['spk_no'] : '-')) ?></p>
                 </div>
-                <div class="col-md-3">
+                <div class="col-6 col-md-3 info-item">
                     <strong>Tanggal</strong>
-                    <p class="mb-0"><?= isset($request['tgl_spk']) ? date('d/m/Y', strtotime($request['tgl_spk'])) : '-' ?></p>
+                    <p><?= isset($request['tgl_spk']) ? date('d/m/Y', strtotime($request['tgl_spk'])) : '-' ?></p>
                 </div>
-                <div class="col-md-3">
-                    <strong>Status</strong><br>
+                <div class="col-6 col-md-3 info-item">
+                    <strong>Status</strong>
                     <?php
                     $status = isset($request['status']) ? $request['status'] : '-';
                     $badge_class = 'bg-info text-dark';
@@ -123,70 +217,68 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
                     ?>
                     <span class="badge rounded-pill <?= $badge_class ?>"><?= htmlspecialchars($status) ?></span>
                 </div>
-            </div>
-            <?php if (!empty($request['shift_names'])): ?>
-                <div class="row mt-2">
-                    <div class="col-md-3">
+                <?php if (!empty($request['shift_names'])): ?>
+                    <div class="col-6 col-md-3 info-item">
                         <strong>Shift</strong>
-                        <p class="mb-0"><?= htmlspecialchars($request['shift_names']) ?></p>
+                        <p><?= htmlspecialchars($request['shift_names']) ?></p>
                     </div>
-                </div>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- Scan Input Section -->
-    <?php if ($ENABLE_MANAGE): ?>
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="fa fa-qrcode"></i> Scan QR Code Coil</h6>
-                <span class="scan-count">
-                    Scanned: <span id="scanned-count"><?= count(array_filter($coil_details, function ($c) {
-                                                            return $c['scan_status'] == 1;
-                                                        })) ?></span> / <span id="total-count"><?= count($coil_details) ?></span>
-                </span>
+                <?php endif; ?>
             </div>
-            <div class="card-body">
+
+            <?php if ($ENABLE_MANAGE): ?>
+                <hr class="my-3">
+
+                <!-- Scan Input Section -->
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <h6 class="mb-0"><i class="fa fa-qrcode"></i> Scan QR Code Coil</h6>
+                    <span class="scan-count">
+                        Scanned: <span id="scanned-count"><?= count(array_filter($coil_details, function ($c) {
+                                                                return $c['scan_status'] == 1;
+                                                            })) ?></span> / <span id="total-count"><?= count($coil_details) ?></span>
+                    </span>
+                </div>
+
                 <div class="scan-input-wrapper">
                     <div class="input-group mb-2 d-flex align-items-stretch">
-                        <input type="text" id="scan-input" class="form-control form-control-lg text-center"
+                        <input type="text" id="scan-input" class="form-control text-center"
                             placeholder="Scan atau ketik Kodenya disini..." autofocus>
                         <div class="input-group-append d-flex">
-                            <button class="btn btn-primary btn-lg d-flex align-items-center justify-content-center px-4"
+                            <button class="btn btn-primary d-flex align-items-center justify-content-center"
                                 type="button" id="btn-camera" data-bs-toggle="modal" data-bs-target="#cameraModal" title="Gunakan Kamera">
                                 <i class="fa fa-camera me-2"></i> <span class="d-none d-sm-inline">Camera</span>
                             </button>
                         </div>
                     </div>
                     <small class="form-text text-muted text-center d-block mt-2">
-                        <i class="fa fa-info-circle mr-1"></i> Arahkan kamera ke QR Code atau ketik kode nya secara manual
+                        <i class="fa fa-info-circle mr-1"></i> Tempel/ketik kode lalu tekan <strong>Enter</strong>, atau gunakan kamera
                     </small>
                 </div>
-            </div>
-        </div>
 
-        <!-- Camera Modal -->
-        <div class="modal fade" id="cameraModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="cameraModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="cameraModalLabel">Scan QR dengan Kamera</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div id="qr-reader" style="width:100%"></div>
-                    </div>
+                <!-- Confirm Button -->
+                <div class="text-center mt-4">
+                    <button type="button" id="btn-confirm" class="btn btn-primary btn-lg" disabled>
+                        <i class="fa fa-check-circle"></i> Confirm Pengeluaran Coil
+                    </button>
+                </div>
+            <?php endif; ?>
+
+        </div>
+    </div>
+
+    <!-- Camera Modal -->
+    <div class="modal fade" id="cameraModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="cameraModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cameraModalLabel">Scan QR dengan Kamera</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="qr-reader" style="width:100%"></div>
                 </div>
             </div>
         </div>
-
-        <!-- Confirm Button -->
-        <div class="text-center mb-4">
-            <button type="button" id="btn-confirm" class="btn btn-primary btn-lg" disabled>
-                <i class="fa fa-check-circle"></i> Confirm Pengeluaran Coil
-            </button>
-        </div>
-    <?php endif; ?>
+    </div>
 
     <!-- Coil Table -->
     <div class="card mb-3">
@@ -256,12 +348,12 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
             const gain1 = ctx.createGain();
             osc1.connect(gain1);
             gain1.connect(ctx.destination);
-            
+
             osc1.type = 'sine';
-            osc1.frequency.setValueAtTime(987.77, ctx.currentTime); 
+            osc1.frequency.setValueAtTime(987.77, ctx.currentTime);
             gain1.gain.setValueAtTime(0.5, ctx.currentTime);
             gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-            
+
             osc1.start(ctx.currentTime);
             osc1.stop(ctx.currentTime + 0.15);
 
@@ -270,12 +362,12 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
             const gain2 = ctx.createGain();
             osc2.connect(gain2);
             gain2.connect(ctx.destination);
-            
+
             osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.1); 
+            osc2.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.1);
             gain2.gain.setValueAtTime(0.5, ctx.currentTime + 0.1);
             gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
-            
+
             osc2.start(ctx.currentTime + 0.1);
             osc2.stop(ctx.currentTime + 0.6);
         } catch (e) {
@@ -302,20 +394,13 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
         // Check if all already scanned on load
         checkConfirmButton();
 
-        // Scan input — trigger on Enter key
+        // Scan input — trigger HANYA saat tekan Enter.
+        // Ctrl+V / paste TIDAK memicu scan, hanya mengisi field seperti input biasa.
         $('#scan-input').on('keypress', function(e) {
             if (e.which === 13) {
                 e.preventDefault();
                 processScan($(this).val().trim());
             }
-        });
-
-        // Scan input — trigger on paste event
-        $('#scan-input').on('paste', function(e) {
-            var self = this;
-            setTimeout(function() {
-                processScan($(self).val().trim());
-            }, 100);
         });
 
         var isProcessingScan = false;
@@ -351,7 +436,7 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
                         // Update scanned count
                         scannedCount++;
                         $('#scanned-count').text(scannedCount);
-                        
+
                         // Play success sound
                         playBeep();
 

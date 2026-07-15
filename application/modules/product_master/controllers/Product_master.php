@@ -228,6 +228,10 @@ class Product_master extends Admin_Controller
       $length = str_replace(',', '', $post['length']);
       $wide   = str_replace(',', '', $post['wide']);
       $high   = str_replace(',', '', $post['high']);
+      
+      $panjang = str_replace(',', '', $post['panjang']);
+      $tebal   = str_replace(',', '', $post['tebal']);
+
       $weight = $post['weight'];
       $cub    = str_replace(',', '', $post['cub']);
 
@@ -249,6 +253,8 @@ class Product_master extends Admin_Controller
         'id_unit'         => $id_unit,
         'konversi'        => $konversi,
         'length'          => $length,
+        'panjang'         => $panjang,
+        'tebal'           => $tebal,
         'max_stok'        => $max_stok,
         'min_stok'        => $min_stok,
         'moq'             => $moq,

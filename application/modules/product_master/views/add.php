@@ -14,6 +14,8 @@ $moq             = (!empty($listData[0]->moq))             ? $listData[0]->moq  
 $id_unit_packing = (!empty($listData[0]->id_unit_packing)) ? $listData[0]->id_unit_packing : '';
 $konversi        = (!empty($listData[0]->konversi))        ? $listData[0]->konversi        : '';
 $id_unit         = (!empty($listData[0]->id_unit))         ? $listData[0]->id_unit         : '';
+$panjang         = (!empty($listData[0]->panjang))         ? $listData[0]->panjang         : '';
+$tebal           = (!empty($listData[0]->tebal))           ? $listData[0]->tebal           : '';
 $length          = (!empty($listData[0]->length))          ? $listData[0]->length          : '';
 $wide            = (!empty($listData[0]->wide))            ? $listData[0]->wide            : '';
 $high            = (!empty($listData[0]->high))            ? $listData[0]->high            : '';
@@ -91,6 +93,23 @@ $status2         = (!empty($listData[0]->status) && $listData[0]->status == '0')
 	<div class="col-md-10">
 		<input type="text" class="form-control" id="nama" name="nama"
 			required placeholder="Product Master Name" value="<?= $nama; ?>">
+	</div>
+</div>
+
+<div class="row mb-3">
+	<div class="col-md-2">
+		<label class="col-form-label">Panjang</label>
+	</div>
+	<div class="col-md-4">
+		<input type="text" class="form-control maskM" id="panjang" name="panjang"
+			value="<?= $panjang; ?>" placeholder="Panjang">
+	</div>
+	<div class="col-md-2">
+		<label class="col-form-label">Tebal</label>
+	</div>
+	<div class="col-md-4">
+		<input type="text" class="form-control maskM" id="tebal" name="tebal"
+			value="<?= $tebal; ?>" placeholder="Tebal">
 	</div>
 </div>
 
