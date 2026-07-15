@@ -26,53 +26,53 @@ $ENABLE_MANAGE = has_permission('Gl_interface.Manage');
     }
 
     .filter-row {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        align-items: center;
         margin-bottom: 15px;
-    }
-
-    .filter-row .form-control,
-    .filter-row select {
-        height: 34px;
-        font-size: 13px;
     }
 </style>
 
 <div class="card">
     <div class="card-body">
         <!-- FILTER ROW -->
-        <div class="filter-row">
-            <input type="text" id="filterSearch" class="form-control" style="width:300px;" placeholder="Search number / description...">
-            <select id="filterJenis" class="form-control" style="width:200px;">
-                <option value="">-- All Transaction Types --</option>
-            </select>
-            <select id="filterStatus" class="form-control" style="width:180px;">
-                <option value="">-- All Status --</option>
-                <option value="pending">Pending</option>
-                <option value="posted">Posted</option>
-                <option value="error">Error</option>
-            </select>
-            <button class="btn btn-sm btn-default" id="btnResetFilter"><i class="fa fa-refresh"></i> Reset</button>
+        <div class="row form-group filter-row">
+            <div class="col-md-4 col-sm-12" style="margin-bottom: 5px;">
+                <input type="text" id="filterSearch" class="form-control input-sm" placeholder="Search number / description...">
+            </div>
+            <div class="col-md-3 col-sm-12" style="margin-bottom: 5px;">
+                <select id="filterJenis" class="form-control input-sm">
+                    <option value="">-- All Transaction Types --</option>
+                </select>
+            </div>
+            <div class="col-md-3 col-sm-12" style="margin-bottom: 5px;">
+                <select id="filterStatus" class="form-control input-sm">
+                    <option value="">-- All Status --</option>
+                    <option value="pending">Pending</option>
+                    <option value="posted">Posted</option>
+                    <option value="error">Error</option>
+                </select>
+            </div>
+            <div class="col-md-2 col-sm-12">
+                <button class="btn btn-sm btn-default btn-block" id="btnResetFilter"><i class="fa fa-refresh"></i> Reset</button>
+            </div>
         </div>
 
-        <table id="tblGlInterface" class="table table-bordered table-striped" width="100%">
-            <thead>
-                <tr class="bg-blue">
-                    <th class="text-center">Number</th>
-                    <th class="text-center">Date</th>
-                    <th class="text-center">Type</th>
-                    <th class="text-center">Transaction Type</th>
-                    <th class="text-center">Description</th>
-                    <th class="text-center">Total Debet</th>
-                    <th class="text-center">Total Kredit</th>
-                    <th class="text-center">Status</th>
-                    <th class="text-center no-sort" width="60">Action</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <div class="table-responsive">
+            <table id="tblGlInterface" class="table table-bordered table-striped" width="100%">
+                <thead>
+                    <tr class="bg-blue">
+                        <th class="text-center">Number</th>
+                        <th class="text-center">Date</th>
+                        <th class="text-center">Type</th>
+                        <th class="text-center">Transaction Type</th>
+                        <th class="text-center">Description</th>
+                        <th class="text-center">Total Debet</th>
+                        <th class="text-center">Total Kredit</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center no-sort" width="60">Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
 </div>
 

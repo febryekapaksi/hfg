@@ -1,5 +1,5 @@
 <?php
-$ENABLE_VIEW = has_permission('Pengajuan_mutasi.View');
+$ENABLE_VIEW = has_permission('Request_Mutation.View');
 
 $status_label = [
     2 => ['label' => 'Approved', 'class' => 'bg-success'],
@@ -12,14 +12,14 @@ $status_label = [
         <thead class="table-light">
             <tr>
                 <th>#</th>
-                <th>No. Mutasi</th>
-                <th>Tanggal</th>
-                <th>Gudang Asal</th>
-                <th>Gudang Tujuan</th>
-                <th>Keterangan</th>
+                <th>Mutation No.</th>
+                <th>Date</th>
+                <th>Source Warehouse</th>
+                <th>Destination Warehouse</th>
+                <th>Description</th>
                 <th>Approved By</th>
-                <th width="80">Status</th>
-                <th width="80">Aksi</th>
+                <th>Status</th>
+                <th width="20">Action</th>
             </tr>
         </thead>
         <tbody>
@@ -35,11 +35,15 @@ $status_label = [
                         <td><?= ($row['description'] ?? '-') ?></td>
                         <td><?= ($row['approved_by'] ?? '-') ?></td>
                         <td><span class="badge <?= $s['class'] ?>"><?= $s['label'] ?></span></td>
-                        <td>
+                        <td class="text-center">
                             <?php if ($ENABLE_VIEW): ?>
                                 <a href="<?= site_url('pengajuan_mutasi/form/view/' . $row['id']) ?>"
                                     class="btn btn-sm btn-info" title="View">
                                     <i class="fa-solid fa-eye"></i>
+                                </a>
+                                <a href="<?= site_url('pengajuan_mutasi/print_qr/' . $row['id']) ?>"
+                                    class="btn btn-sm btn-dark" title="Print QR Label" target="_blank">
+                                    <i class="fa-solid fa-qrcode"></i>
                                 </a>
                             <?php endif; ?>
                         </td>

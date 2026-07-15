@@ -209,15 +209,15 @@ class Finalize_incoming extends Admin_Controller
             // Tombol Print QR (Hanya muncul jika ada coil-nya)
             $btn_print = $coil_ids_str
                 ? '<a href="' . base_url('incoming/print_qr/' . $coil_ids_str) . '" target="_blank" 
-                  class="btn btn-sm btn-info" style="width:120px" title="Print QR">
-                  <i class="fa fa-print"></i> Print QR
+                  class="btn btn-sm btn-dark" style="width:120px" title="Print QR">
+                  <i class="fa fa-qrcode"></i> Print QR
                </a>'
                 : '';
 
             // ── TOMBOL PRINT PL ──
             $btn_print_pl = '<a href="' . base_url('incoming/print_pl_by_gudang/' . $row['id_ros']) . '" target="_blank" 
                             class="btn btn-sm btn-secondary" style="width:120px" title="Print Packing List">
-                            <i class="fa fa-file-alt"></i> Packing List
+                            <i class="fa fa-print"></i> Packing List
                          </a>';
 
             $aksi = "<div class='d-flex flex-column align-items-center gap-1'>
@@ -544,7 +544,7 @@ class Finalize_incoming extends Admin_Controller
                 'length'        => $d['panjang'],
                 'price_per_coil' => $d['price_per_coil'],
                 'cost_book'     => $d['cost_book'],
-                'status_qc'     => $d['status_qc'],
+                'status_qc'     => 'IN',
                 'created_at'    => date('Y-m-d H:i:s'),
             ]);
         }

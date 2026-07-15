@@ -1,6 +1,6 @@
 <?php
-$ENABLE_ADD    = has_permission('Pengajuan_mutasi.Add');
-$ENABLE_MANAGE = has_permission('Pengajuan_mutasi.Manage');
+$ENABLE_ADD    = has_permission('Request_Mutation.Add');
+$ENABLE_MANAGE = has_permission('Request_Mutation.Manage');
 
 $is_view  = ($mode === 'view');
 $is_edit  = ($mode === 'edit');
@@ -25,19 +25,19 @@ $details = $m['details'] ?? [];
                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 w-100">
 
                             <div class="px-2 flex-fill">
-                                <small class="text-muted d-block text-uppercase font-size-xs fw-bold">No. Mutasi</small>
+                                <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Mutation No.</small>
                                 <span class="fs-6 fw-bold text-dark"><?= ($m['mutation_number']) ?></span>
                             </div>
 
                             <div class="px-2 flex-fill border-start-custom">
-                                <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Tanggal Pengajuan</small>
+                                <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Request Date</small>
                                 <span class="text-dark fw-semibold">
                                     <?= date('d/m/Y', strtotime($m['mutation_date'])) ?>
                                 </span>
                             </div>
 
                             <div class="px-2 flex-fill border-start-custom">
-                                <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Oleh</small>
+                                <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Created By</small>
                                 <span class="text-dark fw-semibold">
                                     <?= !empty($m['create_by']) ? $m['create_by'] : '-' ?>
                                 </span>
@@ -47,13 +47,13 @@ $details = $m['details'] ?? [];
                                 <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Status</small>
                                 <?php
                                 $status_map = [
-                                    0 => ['Open',      'primary'],
-                                    1 => ['Menunggu Approve',   'warning'],
-                                    2 => ['Approved',  'success'],
-                                    3 => ['Rejected',  'danger'],
-                                    4 => ['Done',      'dark'],
-                                    5 => ['Cancelled', 'secondary'],
-                                    6 => ['Revisi', 'danger'],
+                                    0 => ['Open',            'primary'],
+                                    1 => ['Waiting Approval', 'warning'],
+                                    2 => ['Approved',        'success'],
+                                    3 => ['Rejected',        'danger'],
+                                    4 => ['Done',            'dark'],
+                                    5 => ['Cancelled',       'secondary'],
+                                    6 => ['Revision',        'danger'],
                                 ];
                                 $st = $status_map[$m['status']] ?? ['-', 'secondary'];
                                 ?>
@@ -65,7 +65,7 @@ $details = $m['details'] ?? [];
 
                     <?php if (!empty($m['reject_reason'])): ?>
                         <div class="col-md-5 col-12 border-start-md ps-md-4 py-1 text-start">
-                            <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Alasan Reject/Cancel</small>
+                            <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Reject/Cancel Reason</small>
                             <span class="text-danger fw-semibold">
                                 <i class="fa-solid fa-circle-exclamation me-1"></i> <?= ($m['reject_reason']) ?>
                             </span>
@@ -81,17 +81,17 @@ $details = $m['details'] ?? [];
 
             <div class="row g-3 mb-4">
                 <div class="col-md-4">
-                    <label class="form-label">No. Berita Acara <span class="text-danger">*</span></label>
+                    <label class="form-label">Minutes of Meeting No. <span class="text-danger">*</span></label>
                     <input type="text" id="no_berita_acara" name="no_berita_acara"
                         class="form-control" <?= $readonly ?>
                         value="<?= ($m['no_berita_acara'] ?? '') ?>"
-                        placeholder="Masukkan No. Berita Acara">
+                        placeholder="Enter Minutes of Meeting No.">
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label">Gudang Asal <span class="text-danger">*</span></label>
+                    <label class="form-label">Source Warehouse <span class="text-danger">*</span></label>
                     <select id="id_gudang_from" class="form-select" <?= $disabled ?>>
-                        <option value="">-- Pilih Gudang Asal --</option>
+                        <option value="">-- Select Source Warehouse --</option>
                         <?php foreach ($warehouses as $wh): ?>
                             <option value="<?= $wh['id'] ?>"
                                 <?= (isset($m['id_gudang_from']) && $m['id_gudang_from'] == $wh['id']) ? 'selected' : '' ?>>
@@ -102,9 +102,9 @@ $details = $m['details'] ?? [];
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label">Gudang Tujuan <span class="text-danger">*</span></label>
-                    <select id="id_gudang_to" class="form-select" <?= $disabled ?>>
-                        <option value="">-- Pilih Gudang Tujuan --</option>
+                    <label class="form-label">Destination Warehouse <span class="text-danger">*</span></label>
+                    <select id="id_gudang_to" class="form-select" disabled>
+                        <option value="">-- Auto-selected --</option>
                         <?php foreach ($warehouses as $wh): ?>
                             <option value="<?= $wh['id'] ?>"
                                 <?= (isset($m['id_gudang_to']) && $m['id_gudang_to'] == $wh['id']) ? 'selected' : '' ?>>
@@ -112,18 +112,19 @@ $details = $m['details'] ?? [];
                             </option>
                         <?php endforeach; ?>
                     </select>
+                    <input type="hidden" id="id_gudang_to_hidden" name="id_gudang_to" value="<?= $m['id_gudang_to'] ?? '' ?>">
                 </div>
 
                 <div class="col-md-8">
-                    <label class="form-label">Keterangan <span class="text-danger">*</span></label>
+                    <label class="form-label">Description <span class="text-danger">*</span></label>
                     <input type="text" id="description" name="description"
                         class="form-control" <?= $readonly ?>
                         value="<?= ($m['description'] ?? '') ?>"
-                        placeholder="Masukkan Alasan Mutasi">
+                        placeholder="Enter mutation reason">
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label">Attach File <small class="text-muted">(PDF/JPG/PNG, maks. 5MB)</small></label>
+                    <label class="form-label">Attach File <small class="text-muted">(PDF/JPG/PNG, max 5MB)</small></label>
                     <?php if ($is_view): ?>
                         <?php if (!empty($m['file_name_hash'])): ?>
                             <div class="d-flex align-items-center gap-2">
@@ -135,20 +136,20 @@ $details = $m['details'] ?? [];
                                 </a>
                             </div>
                         <?php else: ?>
-                            <span class="text-muted">Tidak ada file</span>
+                            <span class="text-muted">No file attached</span>
                         <?php endif; ?>
                     <?php else: ?>
                         <input type="file" id="berita_acara_file" name="berita_acara_file"
                             class="form-control" accept=".pdf,.jpg,.jpeg,.png">
                         <?php if ($is_edit && !empty($m['file_name_hash'])): ?>
                             <div class="mt-1 d-flex align-items-center gap-2">
-                                <small class="text-muted">File saat ini:</small>
+                                <small class="text-muted">Current file:</small>
                                 <a href="<?= base_url('uploads/berita_acara_mutasi/' . $m['file_name_hash']) ?>"
                                     target="_blank" class="small text-truncate" style="max-width:200px;"
                                     title="<?= ($m['file_name_original']) ?>">
                                     <?= ($m['file_name_original']) ?>
                                 </a>
-                                <small class="text-muted">(kosongkan jika tidak ingin mengganti)</small>
+                                <small class="text-muted">(leave empty to keep current file)</small>
                             </div>
                         <?php endif; ?>
                     <?php endif; ?>
@@ -156,10 +157,10 @@ $details = $m['details'] ?? [];
             </div>
 
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="mb-0">Detail Material & Coil</h6>
+                <h6 class="mb-0">Material & Coil Details</h6>
                 <?php if (!$is_view): ?>
                     <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddMaterial">
-                        <i class="fa-solid fa-plus"></i> Kelompokkan Material
+                        <i class="fa-solid fa-plus"></i> Group Material
                     </button>
                 <?php endif; ?>
             </div>
@@ -192,9 +193,9 @@ $details = $m['details'] ?? [];
 
             <?php if (!$is_view): ?>
                 <div class="mt-3 d-flex gap-2 justify-content-end">
-                    <a href="<?= site_url('pengajuan_mutasi') ?>" class="btn btn-secondary">Batal</a>
+                    <a href="<?= site_url('pengajuan_mutasi') ?>" class="btn btn-secondary">Cancel</a>
                     <button type="button" class="btn btn-primary" id="btnSave">
-                        <i class="fa-solid fa-save"></i> Simpan
+                        <i class="fa-solid fa-save"></i> Save
                     </button>
                 </div>
             <?php endif; ?>
@@ -207,12 +208,12 @@ $details = $m['details'] ?? [];
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Pilih Coil untuk Material</h5>
+                <h5 class="modal-title">Select Coils for Material</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div id="coilLoading" class="text-center py-3" style="display:none;">
-                    <div class="spinner-border spinner-border-sm text-primary"></div> Memuat data coil...
+                    <div class="spinner-border spinner-border-sm text-primary"></div> Loading coil data...
                 </div>
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover align-middle" id="tblCoil">
@@ -234,9 +235,9 @@ $details = $m['details'] ?? [];
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="btnConfirmCoil">
-                    <i class="fa-solid fa-check"></i> Konfirmasi Pilihan
+                    <i class="fa-solid fa-check"></i> Confirm Selection
                 </button>
             </div>
         </div>
@@ -247,20 +248,20 @@ $details = $m['details'] ?? [];
     <div class="modal-dialog modal-md modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fa-solid fa-box-open me-2"></i>Pilih Kelompok Material</h5>
+                <h5 class="modal-title"><i class="fa-solid fa-box-open me-2"></i>Select Material Group</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="input-group mb-3">
                     <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                    <input type="text" id="searchMaterialInput" class="form-control" placeholder="Cari nama material atau nama dagang...">
+                    <input type="text" id="searchMaterialInput" class="form-control" placeholder="Search material or trade name...">
                 </div>
 
                 <div class="list-group" id="materialListContainer" style="max-height: 350px; overflow-y: auto;">
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
         </div>
     </div>
@@ -306,11 +307,46 @@ $details = $m['details'] ?? [];
         $('#btnAddMaterial').on('click', function() {
             const idGudang = $('#id_gudang_from').val();
             if (!idGudang) {
-                Swal.fire('Perhatian', 'Pilih gudang asal terlebih dahulu.', 'warning');
+                Swal.fire('Attention', 'Please select a source warehouse first.', 'warning');
                 return;
             }
             showMaterialPicker(idGudang);
         });
+
+        // Auto-set destination warehouse (opposite of source)
+        $('#id_gudang_from').on('change', function() {
+            const selectedVal = $(this).val();
+            const allOptions = $('#id_gudang_to option').not(':first');
+            let oppositeVal = '';
+
+            // Find the other warehouse (opposite)
+            allOptions.each(function() {
+                if ($(this).val() !== selectedVal && $(this).val() !== '') {
+                    oppositeVal = $(this).val();
+                }
+            });
+
+            if (selectedVal && oppositeVal) {
+                $('#id_gudang_to').val(oppositeVal);
+                $('#id_gudang_to_hidden').val(oppositeVal);
+            } else {
+                $('#id_gudang_to').val('');
+                $('#id_gudang_to_hidden').val('');
+            }
+
+            // Clear material/coil selection when warehouse changes
+            detailRows = [];
+            renderTable();
+        });
+
+        // Trigger on load for edit mode
+        if (MODE === 'edit' || MODE === 'view') {
+            const currentTo = '<?= $m['id_gudang_to'] ?? '' ?>';
+            if (currentTo) {
+                $('#id_gudang_to').val(currentTo);
+                $('#id_gudang_to_hidden').val(currentTo);
+            }
+        }
 
         $('#btnSave').on('click', saveForm);
 
@@ -326,7 +362,7 @@ $details = $m['details'] ?? [];
     // ---------------------------------------------------------------
     function showMaterialPicker(idGudang) {
         // Tampilkan loading/kosongkan list lama terlebih dahulu
-        $('#materialListContainer').html('<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Memuat data...</div>');
+        $('#materialListContainer').html('<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Loading data...</div>');
         $('#searchMaterialInput').val(''); // Reset form input pencarian
         $('#modalMaterial').modal('show');
 
@@ -335,7 +371,7 @@ $details = $m['details'] ?? [];
 
         $.get(BASE_URL + '/get_material?id_gudang=' + idGudang, function(res) {
             if (res.status != 1 || !res.data.length) {
-                $('#materialListContainer').html('<div class="text-center text-muted py-3">Tidak ada material tersedia di gudang ini.</div>');
+                $('#materialListContainer').html('<div class="text-center text-muted py-3">No materials available in this warehouse.</div>');
                 return;
             }
 
@@ -347,7 +383,7 @@ $details = $m['details'] ?? [];
                 // Konfigurasi atribut jika material sudah dipilih sebelumnya
                 const disabledAttr = isAlreadySelected ? 'disabled' : '';
                 const customStyle = isAlreadySelected ? 'style="background-color: #f8f9fa; cursor: not-allowed; opacity: 0.6;"' : '';
-                const statusLabel = isAlreadySelected ? '<span class="badge bg-secondary text-white small">Sudah Dipilih</span>' : '<i class="fa-solid fa-chevron-right text-muted small"></i>';
+                const statusLabel = isAlreadySelected ? '<span class="badge bg-secondary text-white small">Already Selected</span>' : '<i class="fa-solid fa-chevron-right text-muted small"></i>';
 
                 listHtml += `
                 <button type="button" class="list-group-item list-group-item-action material-item-btn py-2.5" 
@@ -429,7 +465,7 @@ $details = $m['details'] ?? [];
         tbody.empty();
 
         if (detailRows.length === 0) {
-            tbody.html('<tr><td colspan="6" class="text-center text-muted py-3">Belum ada data material dipilih.</td></tr>');
+            tbody.html('<tr><td colspan="6" class="text-center text-muted py-3">No material data selected yet.</td></tr>');
             recalcTotals();
             return;
         }
@@ -437,7 +473,7 @@ $details = $m['details'] ?? [];
         detailRows.forEach(function(row) {
             const coilsCount = row.coils.length;
             const actionBtnHtml = IS_VIEW ? '' : `
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeMaterialGroup(${row.rowId})" title="Hapus Kelompok Material">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeMaterialGroup(${row.rowId})" title="Remove Material Group">
                 <i class="fa-solid fa-trash"></i>
             </button>
         `;
@@ -445,7 +481,7 @@ $details = $m['details'] ?? [];
             const addCoilBtnHtml = IS_VIEW ? '' : `
             <div class="mt-2">
                 <button type="button" class="btn btn-sm btn-primary" style="font-size: 11px; padding: 2px 8px;" onclick="openCoilModal(${row.rowId})">
-                    <i class="fa-solid fa-plus-circle"></i> Pilih / Atur Coil
+                    <i class="fa-solid fa-plus-circle"></i> Select / Manage Coils
                 </button>
             </div>
         `;
@@ -458,7 +494,7 @@ $details = $m['details'] ?? [];
                         ${row.material.trade_name ? '<small class="text-muted d-block">' + escHtml(row.material.trade_name) + '</small>' : ''}
                         ${addCoilBtnHtml}
                     </td>
-                    <td colspan="4" class="text-center text-danger fw-semibold">Belum ada coil yang dipilih</td>
+                    <td colspan="4" class="text-center text-danger fw-semibold">No coils selected yet</td>
                     <td class="text-center">${actionBtnHtml}</td>
                 </tr>
             `;
@@ -525,11 +561,13 @@ $details = $m['details'] ?? [];
         $('#checkAllCoil').prop('checked', false);
         $('#modalCoil').modal('show');
 
-        $.get(BASE_URL + '/get_coil?code_lv4=' + rowData.material.code_lv4, function(res) {
+        const idGudang = $('#id_gudang_from').val();
+
+        $.get(BASE_URL + '/get_coil?code_lv4=' + rowData.material.code_lv4 + '&id_gudang=' + idGudang, function(res) {
             $('#coilLoading').hide();
 
             if (res.status != 1 || !res.data.length) {
-                $('#coilBody').html('<tr><td colspan="7" class="text-center text-muted">Tidak ada coil tersedia untuk material ini</td></tr>');
+                $('#coilBody').html('<tr><td colspan="7" class="text-center text-muted">No coils available for this material</td></tr>');
                 return;
             }
 
@@ -585,6 +623,18 @@ $details = $m['details'] ?? [];
                 checkbox.prop('checked', !checkbox.prop('checked')).trigger('change');
             });
 
+            // Sync checkAllCoil state when individual checkboxes change
+            $('#tblCoil').off('change', '.coil-check').on('change', '.coil-check', function() {
+                const totalCheckboxes = $('#coilBody .coil-check').length;
+                const checkedCheckboxes = $('#coilBody .coil-check:checked').length;
+                $('#checkAllCoil').prop('checked', totalCheckboxes > 0 && totalCheckboxes === checkedCheckboxes);
+            });
+
+            // Update checkAllCoil on initial load (for edit mode with pre-selected coils)
+            const totalCheckboxes = $('#coilBody .coil-check').length;
+            const checkedCheckboxes = $('#coilBody .coil-check:checked').length;
+            $('#checkAllCoil').prop('checked', totalCheckboxes > 0 && totalCheckboxes === checkedCheckboxes);
+
         }, 'json');
     }
 
@@ -595,7 +645,7 @@ $details = $m['details'] ?? [];
         });
 
         if (!selectedCoils.length) {
-            Swal.fire('Perhatian', 'Pilih minimal satu coil, atau hapus kelompok jika batal.', 'warning');
+            Swal.fire('Attention', 'Please select at least one coil, or remove the group to cancel.', 'warning');
             return;
         }
 
@@ -646,37 +696,37 @@ $details = $m['details'] ?? [];
     function saveForm() {
         const no_berita_acara = $('#no_berita_acara').val().trim();
         const id_gudang_from = $('#id_gudang_from').val();
-        const id_gudang_to = $('#id_gudang_to').val();
+        const id_gudang_to = $('#id_gudang_to_hidden').val();
         const description = $('#description').val().trim();
 
         if (!no_berita_acara) {
-            Swal.fire('Perhatian', 'No. Berita Acara wajib diisi.', 'warning');
+            Swal.fire('Attention', 'Minutes of Meeting No. is required.', 'warning');
             return;
         }
         if (!id_gudang_from) {
-            Swal.fire('Perhatian', 'Gudang asal wajib dipilih.', 'warning');
+            Swal.fire('Attention', 'Source warehouse must be selected.', 'warning');
             return;
         }
         if (!id_gudang_to) {
-            Swal.fire('Perhatian', 'Gudang tujuan wajib dipilih.', 'warning');
+            Swal.fire('Attention', 'Destination warehouse is not set. Please select a source warehouse.', 'warning');
             return;
         }
         if (id_gudang_from === id_gudang_to) {
-            Swal.fire('Perhatian', 'Gudang asal dan tujuan tidak boleh sama.', 'warning');
+            Swal.fire('Attention', 'Source and destination warehouse cannot be the same.', 'warning');
             return;
         }
         if (!detailRows.length) {
-            Swal.fire('Perhatian', 'Minimal satu material harus ditambahkan.', 'warning');
+            Swal.fire('Attention', 'At least one material must be added.', 'warning');
             return;
         }
         if (!description) {
-            Swal.fire('Perhatian', 'Keterangan Alasan mutasi wajib diisi.', 'warning');
+            Swal.fire('Attention', 'Description/reason is required.', 'warning');
             return;
         }
 
         const noCoil = detailRows.find(r => r.coils.length === 0);
         if (noCoil) {
-            Swal.fire('Perhatian', `Material "${noCoil.material.nm_material}" belum memiliki coil terpilih.`, 'warning');
+            Swal.fire('Attention', `Material "${noCoil.material.nm_material}" has no coils selected.`, 'warning');
             return;
         }
 
@@ -684,7 +734,7 @@ $details = $m['details'] ?? [];
         if (fileInput && fileInput.files.length > 0) {
             const maxSize = 5 * 1024 * 1024;
             if (fileInput.files[0].size > maxSize) {
-                Swal.fire('Perhatian', 'Ukuran file maksimal 5MB.', 'warning');
+                Swal.fire('Attention', 'Maximum file size is 5MB.', 'warning');
                 return;
             }
         }
@@ -711,7 +761,7 @@ $details = $m['details'] ?? [];
 
         const url = MODE === 'edit' ? BASE_URL + '/update/' + RECORD_ID : BASE_URL + '/save';
 
-        $('#btnSave').prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Menyimpan...');
+        $('#btnSave').prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Saving...');
 
         $.ajax({
             url: url,
@@ -721,10 +771,10 @@ $details = $m['details'] ?? [];
             contentType: false,
             dataType: 'json',
             success: function(res) {
-                $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-save"></i> Simpan');
+                $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-save"></i> Save');
                 if (res.status == 1) {
                     Swal.fire({
-                        title: 'Berhasil',
+                        title: 'Success',
                         text: res.message,
                         icon: 'success',
                         showConfirmButton: false,
@@ -734,12 +784,12 @@ $details = $m['details'] ?? [];
                         window.location.href = '<?= site_url('pengajuan_mutasi') ?>';
                     });
                 } else {
-                    Swal.fire('Gagal', res.message, 'error');
+                    Swal.fire('Failed', res.message, 'error');
                 }
             },
             error: function() {
-                $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-save"></i> Simpan');
-                Swal.fire('Error', 'Terjadi kesalahan pada server.', 'error');
+                $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-save"></i> Save');
+                Swal.fire('Error', 'A server error occurred.', 'error');
             }
         });
     }

@@ -48,7 +48,8 @@
                                 <th>No Dokumen</th>
                                 <th>Tgl Bayar</th>
                                 <th>Requestor / Supplier</th>
-                                <th>Nilai Bayar</th>
+                                <th>Payment IDR</th>
+                                <th>Payment Kurs</th>
                                 <th>Keterangan</th>
                                 <th style="width: 100px;">Option</th>
                             </tr>
@@ -57,15 +58,25 @@
                             <?php if (!empty($results)) :
                                 foreach ($results as $item) : ?>
                                     <tr>
-                                        <td class="text-center fw-semibold"><?= $item->id_payment; ?></td>
-                                        <td class="text-center"><?= $item->no_surat; ?></td>
-                                        <td class="text-center small"><?= date('d F Y', strtotime($item->tgl_bayar)); ?></td>
-                                        <td><?= $item->nm_supplier; ?></td>
-                                        <td class="text-end fw-semibold text-primary"><?= number_format($item->payment_bank, 2); ?></td>
-                                        <td><?= $item->keterangan_pembayaran; ?></td>
+                                        <td class="text-center fw-semibold"><?= !empty($item->no_doc) ? $item->no_doc : '-'; ?></td>
+                                        <td class="text-center">
+                                            <?php
+                                            if (!empty($item->detail_no_doc)) {
+                                                $list_no_doc = array_unique(explode('||', $item->detail_no_doc));
+                                                echo implode('<br>', array_map('htmlspecialchars', $list_no_doc));
+                                            } else {
+                                                echo '-';
+                                            }
+                                            ?>
+                                        </td>
+                                        <td class="text-center"><?= !empty($item->tgl_bayar) ? date('d F Y', strtotime($item->tgl_bayar)) : '-'; ?></td>
+                                        <td><?= !empty($item->nm_supplier) ? $item->nm_supplier : '-'; ?></td>
+                                        <td class="text-end fw-semibold text-primary"><?= !empty($item->dibayar_idr) ? number_format($item->dibayar_idr, 2) : '-'; ?></td>
+                                        <td class="text-end fw-semibold text-primary"><?= !empty($item->payment_bank) ? number_format($item->payment_bank, 2) : '-'; ?></td>
+                                        <td><?= !empty($item->keterangan_pembayaran) ? $item->keterangan_pembayaran : '-'; ?></td>
                                         <td class="text-center">
                                             <div class="d-flex gap-1 justify-content-center">
-                                                <a href="<?= base_url('pembayaran_material/view_payment_new/' . $item->id_payment); ?>" target="_blank" class="btn btn-sm btn-info text-white" title="View Request Payment"><i class="fa fa-eye"></i></a>
+                                                <a href="<?= base_url('pembayaran_material/view_payment_new/' . $item->no_doc); ?>" class="btn btn-sm btn-info text-white" title="View Request Payment"><i class="fa fa-eye"></i></a>
                                                 <?php if (!empty($item->link_doc) && file_exists('assets/expense/' . $item->link_doc)) : ?>
                                                     <a href="<?= base_url('assets/expense/' . $item->link_doc); ?>" class="btn btn-sm btn-primary" title="Download berkas"><i class="fa fa-download"></i></a>
                                                 <?php endif; ?>
@@ -88,7 +99,8 @@
                                 <th>No Dokumen</th>
                                 <th>Tgl Bayar</th>
                                 <th>Requestor / Supplier</th>
-                                <th>Nilai Bayar</th>
+                                <th>Payment IDR</th>
+                                <th>Payment Kurs</th>
                                 <th>Keterangan</th>
                                 <th style="width: 100px;">Option</th>
                             </tr>
@@ -97,15 +109,26 @@
                             <?php if (!empty($results2)) :
                                 foreach ($results2 as $item) : ?>
                                     <tr>
-                                        <td class="text-center fw-semibold"><?= $item->id_payment; ?></td>
-                                        <td class="text-center"><?= $item->no_doc; ?></td>
-                                        <td class="text-center small"><?= date('d F Y', strtotime($item->tgl_bayar)); ?></td>
-                                        <td><?= $item->created_by; ?></td>
-                                        <td class="text-end fw-semibold text-primary"><?= number_format($item->payment_bank, 2); ?></td>
-                                        <td><?= $item->keterangan_pembayaran; ?></td>
+                                        <td class="text-center fw-semibold"><?= !empty($item->no_doc) ? $item->id_payment : '-'; ?></td>
+                                        <td class="text-center">
+                                            <?php
+                                            if (!empty($item->detail_no_doc)) {
+                                                $list_no_doc = array_unique(explode('||', $item->detail_no_doc));
+                                                echo implode('<br>', array_map('htmlspecialchars', $list_no_doc));
+                                            } else {
+                                                echo '-';
+                                            }
+                                            ?>
+                                        </td>
+                                        <td class="text-center"><?= !empty($item->tgl_bayar) ? date('d F Y', strtotime($item->tgl_bayar)) : '-'; ?></td>
+                                        <td><?= !empty($item->created_by) ? $item->created_by : '-'; ?></td>
+
+                                        <td class="text-end fw-semibold text-primary"><?= !empty($item->dibayar_idr) ? number_format($item->dibayar_idr, 2) : '-'; ?></td>
+                                        <td class="text-end fw-semibold text-primary"><?= !empty($item->payment_bank) ? number_format($item->payment_bank, 2) : '-'; ?></td>
+                                        <td><?= !empty($item->keterangan_pembayaran) ? $item->keterangan_pembayaran : '-'; ?></td>
                                         <td class="text-center">
                                             <div class="d-flex gap-1 justify-content-center">
-                                                <a href="<?= base_url('pembayaran_material/view_payment_new/' . $item->id_payment); ?>" target="_blank" class="btn btn-sm btn-info text-white" title="View Request Payment"><i class="fa fa-eye"></i></a>
+                                                <a href="<?= base_url('pembayaran_material/view_payment_new/' . $item->id_payment); ?>" class="btn btn-sm btn-info text-white" title="View Request Payment"><i class="fa fa-eye"></i></a>
                                                 <?php if (!empty($item->link_doc) && file_exists('assets/expense/' . $item->link_doc)) : ?>
                                                     <a href="<?= base_url('assets/expense/' . $item->link_doc); ?>" class="btn btn-sm btn-primary" title="Download berkas"><i class="fa fa-download"></i></a>
                                                 <?php endif; ?>

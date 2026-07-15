@@ -3,11 +3,15 @@ $ENABLE_MANAGE = has_permission('Gl_interface.Manage');
 $is_pending    = ($header['status'] === 'pending' || $header['status'] === 'error');
 $memo          = !empty($header['memo']) ? json_decode($header['memo'], true) : [];
 
-$total_debet  = 0;
-$total_kredit = 0;
+$total_debet       = 0;
+$total_kredit      = 0;
+$total_debet_kurs  = 0;
+$total_kredit_kurs = 0;
 foreach ($details as $d) {
-    $total_debet  += (float) $d['debet'];
-    $total_kredit += (float) $d['kredit'];
+    $total_debet       += (float) $d['debet'];
+    $total_kredit      += (float) $d['kredit'];
+    $total_debet_kurs  += (float) ($d['debet_kurs'] ?? 0);
+    $total_kredit_kurs += (float) ($d['kredit_kurs'] ?? 0);
 }
 $is_balance = (round($total_debet) === round($total_kredit));
 ?>
@@ -137,9 +141,10 @@ $is_balance = (round($total_debet) === round($total_kredit));
                             <th>COA Name</th>
                             <th>Description</th>
                             <th>No Reff</th>
-                            <th>No Request</th>
                             <th class="text-end">Debet</th>
                             <th class="text-end">Kredit</th>
+                            <th class="text-end">Debet Kurs</th>
+                            <th class="text-end">Kredit Kurs</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -151,22 +156,26 @@ $is_balance = (round($total_debet) === round($total_kredit));
                                 <td><?= htmlspecialchars($d['nama_coa'] ?? '-') ?></td>
                                 <td><?= htmlspecialchars($d['keterangan'] ?? '-') ?></td>
                                 <td><?= htmlspecialchars($d['no_reff'] ?? '-') ?></td>
-                                <td><?= htmlspecialchars($d['no_request'] ?? '-') ?></td>
-                                <td class="text-end"><?= number_format($d['debet'], 0, ',', '.') ?></td>
-                                <td class="text-end"><?= number_format($d['kredit'], 0, ',', '.') ?></td>
+                                <td class="text-end"><?= number_format($d['debet'], 2, '.', ',') ?></td>
+                                <td class="text-end"><?= number_format($d['kredit'], 2, '.', ',') ?></td>
+                                <td class="text-end"><?= number_format($d['debet_kurs'] ?? 0, 2, '.', ',') ?></td>
+                                <td class="text-end"><?= number_format($d['kredit_kurs'] ?? 0, 2, '.', ',') ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
                     <tfoot>
                         <tr class="fw-bold table-light">
-                            <td colspan="6" class="text-end">TOTAL</td>
-                            <td class="text-end"><?= number_format($total_debet, 0, ',', '.') ?></td>
-                            <td class="text-end"><?= number_format($total_kredit, 0, ',', '.') ?></td>
+                            <td colspan="5" class="text-end">TOTAL</td>
+                            <td class="text-end"><?= number_format($total_debet, 2, '.', ',') ?></td>
+                            <td class="text-end"><?= number_format($total_kredit, 2, '.', ',') ?></td>
+                            <td class="text-end"><?= number_format($total_debet_kurs, 2, '.', ',') ?></td>
+                            <td class="text-end"><?= number_format($total_kredit_kurs, 2, '.', ',') ?></td>
                         </tr>
                         <?php if (!$is_balance): ?>
                             <tr class="text-danger">
-                                <td colspan="6" class="text-end">VARIANCE</td>
-                                <td colspan="2" class="text-end fw-bold"><?= number_format(abs($total_debet - $total_kredit), 0, ',', '.') ?></td>
+                                <td colspan="5" class="text-end">VARIANCE</td>
+                                <td colspan="2" class="text-end fw-bold"><?= number_format(abs($total_debet - $total_kredit), 2, '.', ',') ?></td>
+                                <td colspan="2" class="text-end fw-bold"><?= number_format(abs($total_debet_kurs - $total_kredit_kurs), 2, '.', ',') ?></td>
                             </tr>
                         <?php endif; ?>
                     </tfoot>

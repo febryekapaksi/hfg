@@ -38,7 +38,7 @@
                     <?php
                     $sudah_receive = !empty($item['id_receive_dp']);
                     $sudah_request = !empty($item['id_request_payment']);
-                    $sudah_bayar   = !empty($item['no_payment']) && $item['status_payment'] == 2;
+                    $sudah_bayar   = !empty($item['no_payment']) && $item['status_payment'] == 'payment';
 
                     if (!$sudah_receive) {
                         // Belum receive invoice
@@ -50,11 +50,19 @@
                             title="Receive Invoice DP">
                             <i class="fa fa-plus"></i>
                         </button>';
-                    } elseif ($sudah_receive && !$sudah_request) {
-                        // Sudah receive, belum request payment
-                        $badge = '<span class="badge bg-info text-dark">Sudah Receive</span>';
+                    } else {
+                        // Jika sudah receive, tampilkan status ENUM
+                        $status_enum = strtolower($item['status_receive_dp']);
+                        $status_uc   = ucwords($status_enum);
 
-                        // Tombol View DP selalu muncul
+                        if ($status_enum === 'draft') {
+                            $badge = '<span class="badge bg-info text-dark">Draft</span>';
+                        } elseif ($status_enum === 'payment') {
+                            $badge = '<span class="badge bg-success">Payment</span>';
+                        } else {
+                            $badge = '<span class="badge bg-warning text-dark">' . $status_uc . '</span>';
+                        }
+
                         $action_btn = '
                         <button type="button" class="btn btn-sm btn-info btn-view-dp"
                             data-id="' . $item['id_receive_dp'] . '"
@@ -62,8 +70,7 @@
                             <i class="fa fa-eye"></i>
                         </button>';
 
-                        // JIKA STATUS BUKAN 2, BARU TAMPILKAN TOMBOL REQUEST PAYMENT
-                        if (!in_array($item['status_receive_dp'], [2, 3])) {
+                        if ($status_enum === 'draft') {
                             $action_btn .= '
                             <button type="button" class="btn btn-sm btn-warning btn-req-payment ms-1"
                                 data-id_receive="' . $item['id_receive_dp'] . '"
@@ -72,24 +79,6 @@
                                 <i class="fa fa-paper-plane"></i>
                             </button>';
                         }
-                    } elseif ($sudah_request && !$sudah_bayar) {
-                        // Sudah request, menunggu pembayaran
-                        $badge = '<span class="badge bg-warning text-dark">Menunggu Pembayaran</span>';
-                        $action_btn = '
-                        <button type="button" class="btn btn-sm btn-info btn-view-dp"
-                            data-id="' . $item['id_receive_dp'] . '"
-                            title="Lihat Invoice">
-                            <i class="fa fa-eye"></i>
-                        </button>';
-                    } else {
-                        // Sudah lunas
-                        $badge = '<span class="badge bg-success">Lunas</span>';
-                        $action_btn = '
-                        <button type="button" class="btn btn-sm btn-info btn-view-dp"
-                            data-id="' . $item['id_receive_dp'] . '"
-                            title="Lihat Invoice">
-                            <i class="fa fa-eye"></i>
-                        </button>';
                     }
                     ?>
                     <tr>
@@ -142,7 +131,9 @@
                                 Swal.fire({
                                     title: 'Berhasil!',
                                     text: response.message,
-                                    icon: 'success'
+                                    icon: 'success',
+                                    timer: 1500,
+                                    showConfirmButton: false,
                                 }).then(function() {
                                     // Refresh tabel dengan supplier yang sedang aktif
                                     var supplier = $('#select_supplier').val();

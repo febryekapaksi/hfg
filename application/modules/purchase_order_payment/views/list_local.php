@@ -49,10 +49,17 @@ $url_search = 'search_local';
                 <?php
                     if (empty($item['id_receive_il'])) {
                         $badge = '<span class="badge bg-secondary">Belum Receive</span>';
-                    } elseif (!empty($item['no_payment'])) {
-                        $badge = '<span class="badge bg-success">Lunas</span>';
                     } else {
-                        $badge = '<span class="badge bg-warning text-dark">Menunggu Pembayaran</span>';
+                        $status_enum = strtolower($item['status_receive_il'] ?? '');
+                        $status_uc   = ucwords($status_enum);
+
+                        if ($status_enum === 'draft') {
+                            $badge = '<span class="badge bg-info text-dark">Draft</span>';
+                        } elseif ($status_enum === 'payment') {
+                            $badge = '<span class="badge bg-success">Payment</span>';
+                        } else {
+                            $badge = '<span class="badge bg-warning text-dark">' . $status_uc . '</span>';
+                        }
                     }
 
                     $dp_info = !empty($item['id_dp'])

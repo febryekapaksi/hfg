@@ -19,7 +19,6 @@ $d = $is_view ? $data : array_merge($data_po, [
     'kurs'                 => '',
     'jumlah_rupiah'        => 0,
     'jumlah_po'            => 0,
-    'outstanding'          => 0,
     'no_payment'           => null,
     'status_payment'       => null,
     'file_invoice'         => null,
@@ -30,6 +29,11 @@ $ro       = $is_view ? 'readonly' : '';
 ?>
 
 <div class="row g-3">
+
+    <!-- ═══ INFORMASI PO (Readonly/Otomatis) ═══ -->
+    <div class="col-12">
+        <p class="fw-bold mb-2 text-primary">Informasi PO</p>
+    </div>
 
     <div class="col-md-6">
         <label class="form-label fw-semibold">Nomor PO</label>
@@ -43,48 +47,9 @@ $ro       = $is_view ? 'readonly' : '';
     </div>
 
     <div class="col-md-6">
-        <label class="form-label fw-semibold">
-            Receive Invoice Date <?php if (!$is_view): ?><span class="text-danger">*</span><?php endif; ?>
-        </label>
-        <input type="text" name="invoice_date"
-            class="form-control form-control-sm <?= !$is_view ? 'fp-date' : '' ?>"
-            value="<?= !empty($d['invoice_date']) ? date('d M Y', strtotime($d['invoice_date'])) : '' ?>"
-            placeholder="<?= !$is_view ? 'Pilih tanggal...' : '' ?>"
-            <?= $ro ?> <?= !$is_view ? 'required' : '' ?>>
-    </div>
-    <div class="col-md-6">
-        <label class="form-label fw-semibold">Invoice Date</label>
-        <input type="text" name="invoice_date_real"
-            class="form-control form-control-sm <?= !$is_view ? 'fp-date' : '' ?>"
-            value="<?= !empty($d['invoice_date_real']) ? date('d M Y', strtotime($d['invoice_date_real'])) : '' ?>"
-            placeholder="<?= !$is_view ? 'Pilih tanggal...' : '' ?>"
-            <?= $ro ?>>
-    </div>
-
-    <div class="col-md-6">
-        <label class="form-label fw-semibold">
-            Nomor Invoice <?php if (!$is_view): ?><span class="text-danger">*</span><?php endif; ?>
-        </label>
-        <input type="text" name="nomor_invoice" class="form-control form-control-sm"
-            value="<?= $d['nomor_invoice'] ?>"
-            <?= $ro ?> <?= !$is_view ? 'required' : '' ?>>
-    </div>
-
-    <div class="col-md-6">
         <label class="form-label fw-semibold">Currency</label>
         <input type="text" name="currency" class="form-control form-control-sm"
             value="<?= $currency ?>" readonly>
-    </div>
-
-    <div class="col-md-6">
-        <label class="form-label fw-semibold">
-            Kurs Receiving Invoice <?php if (!$is_view && $currency !== 'IDR'): ?><span class="text-danger">*</span><?php endif; ?>
-        </label>
-        <input type="text" name="kurs" id="input_kurs"
-            class="form-control form-control-sm text-end <?= !$is_view ? 'auto_num' : '' ?>"
-            value="<?= $is_view ? number_format($d['kurs'], 2) : ($currency === 'IDR' ? '1' : '') ?>"
-            placeholder="<?= (!$is_view && $currency !== 'IDR') ? 'Wajib diisi' : '' ?>"
-            <?= $ro ?>>
     </div>
 
     <div class="col-md-6">
@@ -118,10 +83,16 @@ $ro       = $is_view ? 'readonly' : '';
         <input type="text" name="nilai_ppn" class="form-control form-control-sm text-end"
             value="<?= number_format($is_view ? $d['nilai_ppn'] : $nilai_ppn, 2) ?>" readonly>
     </div>
+
     <div class="col-md-6">
-        <label class="form-label fw-semibold">Nilai Disc</label>
-        <input type="text" name="nilai_disc" class="form-control form-control-sm text-end"
-            value="<?= number_format($is_view ? $d['nilai_disc'] : $nilai_disc, 2) ?>" readonly>
+        <label class="form-label fw-semibold">
+            Kurs Receiving Invoice <?php if (!$is_view && $currency !== 'IDR'): ?><span class="text-danger">*</span><?php endif; ?>
+        </label>
+        <input type="text" name="kurs" id="input_kurs"
+            class="form-control form-control-sm text-end <?= !$is_view ? 'auto_num' : '' ?>"
+            value="<?= $is_view ? number_format($d['kurs'], 2) : ($currency === 'IDR' ? '1' : '') ?>"
+            placeholder="<?= (!$is_view && $currency !== 'IDR') ? 'Wajib diisi' : '' ?>"
+            <?= $ro ?>>
     </div>
 
     <div class="col-md-6">
@@ -131,12 +102,39 @@ $ro       = $is_view ? 'readonly' : '';
             value="<?= number_format($is_view ? $d['jumlah_rupiah'] : 0, 2) ?>"
             readonly>
     </div>
+
+    <!-- ═══ FORM INPUT ═══ -->
+    <div class="col-12">
+        <hr class="my-2">
+        <p class="fw-bold mb-2 text-primary">Data Invoice</p>
+    </div>
+
     <div class="col-md-6">
-        <label class="form-label fw-semibold">Outstanding Invoice (IDR)</label>
-        <input type="text" id="outstanding"
-            class="form-control form-control-sm text-end"
-            value="<?= number_format($is_view ? $d['outstanding'] : 0, 2) ?>"
-            readonly>
+        <label class="form-label fw-semibold">
+            Receive Invoice Date <?php if (!$is_view): ?><span class="text-danger">*</span><?php endif; ?>
+        </label>
+        <input type="text" name="invoice_date"
+            class="form-control form-control-sm <?= !$is_view ? 'fp-date' : '' ?>"
+            value="<?= !empty($d['invoice_date']) ? date('d M Y', strtotime($d['invoice_date'])) : '' ?>"
+            placeholder="<?= !$is_view ? 'Pilih tanggal...' : '' ?>"
+            <?= $ro ?> <?= !$is_view ? 'required' : '' ?>>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Invoice Date</label>
+        <input type="text" name="invoice_date_real"
+            class="form-control form-control-sm <?= !$is_view ? 'fp-date' : '' ?>"
+            value="<?= !empty($d['invoice_date_real']) ? date('d M Y', strtotime($d['invoice_date_real'])) : '' ?>"
+            placeholder="<?= !$is_view ? 'Pilih tanggal...' : '' ?>"
+            <?= $ro ?>>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">
+            Nomor Invoice <?php if (!$is_view): ?><span class="text-danger">*</span><?php endif; ?>
+        </label>
+        <input type="text" name="nomor_invoice" class="form-control form-control-sm"
+            value="<?= $d['nomor_invoice'] ?>"
+            <?= $ro ?> <?= !$is_view ? 'required' : '' ?>>
     </div>
 
     <div class="col-md-6">
@@ -175,12 +173,19 @@ $ro       = $is_view ? 'readonly' : '';
         <div class="col-md-6">
             <label class="form-label fw-semibold">Status Payment</label><br>
             <?php
-            if (empty($d['no_payment'])) {
-                echo '<span class="badge bg-warning text-dark">Menunggu Pembayaran</span>';
-            } elseif ($d['status_payment'] == 2) {
+            $status = strtolower($d['status_payment'] ?? '');
+            if ($status === 'payment') {
                 echo '<span class="badge bg-success">Lunas</span>';
+            } elseif ($status === 'approve management') {
+                echo '<span class="badge bg-info">Approve Management</span>';
+            } elseif ($status === 'approve checker') {
+                echo '<span class="badge bg-primary">Approve Checker</span>';
+            } elseif ($status === 'request payment') {
+                echo '<span class="badge bg-secondary">Request Payment</span>';
+            } elseif ($status === 'draft') {
+                echo '<span class="badge bg-warning text-dark">Draft</span>';
             } else {
-                echo '<span class="badge bg-info">Dalam Proses</span>';
+                echo '<span class="badge bg-warning text-dark">Menunggu Proses</span>';
             }
             ?>
         </div>
@@ -249,7 +254,6 @@ $ro       = $is_view ? 'readonly' : '';
 
             // ── Konstanta dari PHP ──────────────────────────────────────────
             var jumlahPoForeign = <?= (float)$jumlah_po ?>; // grand total PO dalam currency asli
-            var existingDpIdr = <?= (float)$total_dp_existing ?>; // total DP sebelumnya sudah dalam IDR
             var currency = '<?= strtoupper($currency) ?>';
 
             // ── Format angka ribuan ─────────────────────────────────────────
@@ -260,23 +264,20 @@ $ro       = $is_view ? 'readonly' : '';
                 });
             }
 
-            // ── Hitung semua realtime ───────────────────────────────────────
+            // ── Hitung Jumlah Invoice IDR ───────────────────────────────────
             function hitungSemua() {
-                var valueDp = parseFloat($('input[name="value_dp"]').val().replace(/,/g, '')) || 0;
+                var valueDp = <?= (float)($is_view ? $d['value_dp'] : $data_po['nilai']) ?>;
 
-                var kurs = 1; // default IDR
+                var kurs = 1;
                 if (currency !== 'IDR') {
                     var kursRaw = $('#input_kurs').autoNumeric('get');
                     kurs = parseFloat(kursRaw) || 0;
                 }
 
                 var jumlahRupiah = valueDp * kurs;
-                var jumlahPoIdr = jumlahPoForeign * kurs;
-                var outstanding = jumlahPoIdr - existingDpIdr - jumlahRupiah;
 
                 $('#jumlah_rupiah').val(formatNumber(jumlahRupiah));
                 $('#jumlah_po').val(formatNumber(jumlahPoForeign, 4));
-                $('#outstanding').val(formatNumber(outstanding));
             }
 
             // ── Event listener ──────────────────────────────────────────────

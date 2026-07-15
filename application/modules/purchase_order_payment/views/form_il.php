@@ -10,7 +10,9 @@ if ($is_view) {
     $no_po       = $data['no_po'];
     $id_dp       = $data['id_dp'] ?? '';
     $id_ros_val  = $data['id_ros'] ?? '';
-    $sisa_tagihan_val = (float)($data['sisa_nilai'] ?? 0);
+    $id_incoming_val = $data['id_incoming'] ?? '';
+    $sisa_tagihan_val = (float)($data['nilai_invoice'] ?? 0);
+    $persen_dp_val = (float)($data['progress'] ?? 0);
     $kurs        = (float)($data['kurs'] ?? 0);
     $nomor_invoice       = $data['nomor_invoice'];
     $invoice_date        = $data['invoice_date'];
@@ -23,17 +25,21 @@ if ($is_view) {
     $file_invoice        = $data['file_invoice'] ?? null;
     $no_payment          = $data['no_payment'] ?? null;
     $status_payment      = $data['status_payment'] ?? null;
-    $total_dp_rupiah_val = 0;
+    $total_dp_rupiah_val = $data['total_dp_rupiah_val'] ?? null;
+    $jumlah_rupiah_val   = $data['jumlah_rupiah'] ?? ($sisa_tagihan_val * $kurs);
 } else {
     $no_surat    = $data_po['no_surat'];
     $nm_supplier = $get_supplier['nama'] ?? '-';
     $currency_val = $currency ?? 'IDR';
     $id_top_val  = $id_top ?? '';
     $no_po       = $data_po['no_po'];
+    $persen_dp_val = $persen_dp ?? 0;
     $id_dp_val   = $id_dp ?? '';
     $id_ros_val  = $id_ros ?? '';
+    $id_incoming_val = $id_incoming ?? '';
     $sisa_tagihan_val = $sisa_tagihan ?? 0;
     $total_dp_rupiah_val = $total_dp_rupiah ?? 0;
+    $jumlah_rupiah_val   = 0;
     $kurs        = 0;
     $nomor_invoice = '';
     $invoice_date = '';
@@ -51,18 +57,67 @@ if ($is_view) {
 <input type="hidden" name="no_surat" value="<?= $no_surat ?>">
 <input type="hidden" name="id_dp" value="<?= $is_view ? $id_dp : ($id_dp_val ?? '') ?>">
 <input type="hidden" name="id_ros" value="<?= $id_ros_val ?>">
+<input type="hidden" name="id_incoming" value="<?= $id_incoming_val ?>">
 <input type="hidden" name="nilai_ppn" value="0">
 <input type="hidden" name="nilai_disc" value="0">
 
 <div class="row g-3">
+    <!-- Bagian Otomatis (Readonly) -->
+    <div class="col-12">
+        <h5 class="mb-2 text-primary border-bottom pb-2">Informasi PO</h5>
+    </div>
 
     <div class="col-md-6">
         <label class="form-label fw-semibold">Nomor PO</label>
-        <input type="text" class="form-control form-control-sm" value="<?= $no_surat ?>" readonly>
+        <input type="text" class="form-control form-control-sm bg-light" value="<?= $no_surat ?>" readonly tabindex="-1">
     </div>
     <div class="col-md-6">
         <label class="form-label fw-semibold">Nama Supplier</label>
-        <input type="text" class="form-control form-control-sm" value="<?= $nm_supplier ?>" readonly>
+        <input type="text" class="form-control form-control-sm bg-light" value="<?= $nm_supplier ?>" readonly tabindex="-1">
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Tipe</label>
+        <input type="text" class="form-control form-control-sm bg-light" value="<?= ucfirst($tipe) ?>" readonly tabindex="-1">
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Currency</label>
+        <input type="text" name="currency" class="form-control form-control-sm bg-light"
+            value="<?= $is_view ? $currency : $currency_val ?>" readonly tabindex="-1">
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Sisa Tagihan (<?= $is_view ? $currency : $currency_val ?>)</label>
+        <input type="text" name="sisa_nilai" id="sisa_tagihan_display"
+            class="form-control form-control-sm text-end bg-light"
+            value="<?= number_format($sisa_tagihan_val, 4) ?>" readonly tabindex="-1">
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Total DP Sebelumnya (IDR)</label>
+        <input type="text" class="form-control form-control-sm text-end bg-light"
+            value="<?= number_format($total_dp_rupiah_val, 2) ?>" readonly tabindex="-1">
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">
+            Kurs <?php if (!$is_view): ?><span class="text-danger">*</span><?php endif; ?>
+        </label>
+        <input type="text" name="kurs" id="input_kurs_il"
+            class="form-control form-control-sm text-end <?= !$is_view ? 'auto_num' : '' ?>"
+            value="<?= $kurs > 0 ? number_format($kurs, 2) : '' ?>"
+            placeholder="<?= !$is_view ? 'Masukkan kurs' : '' ?>"
+            <?= $ro ?>>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Jumlah Invoice (IDR)</label>
+        <input type="text" id="jumlah_invoice_idr"
+            class="form-control form-control-sm text-end bg-light"
+            value="<?= number_format($jumlah_rupiah_val, 2) ?>" readonly tabindex="-1">
+    </div>
+
+    <!-- Bagian Wajib Diisi -->
+    <div class="col-12 mt-4">
+        <h5 class="mb-2 text-success border-bottom pb-2">Input Data Invoice</h5>
     </div>
 
     <div class="col-md-6">
@@ -85,10 +140,6 @@ if ($is_view) {
     </div>
 
     <div class="col-md-6">
-        <label class="form-label fw-semibold">Tipe</label>
-        <input type="text" class="form-control form-control-sm" value="<?= ucfirst($tipe) ?>" readonly>
-    </div>
-    <div class="col-md-6">
         <label class="form-label fw-semibold">
             Nomor Invoice <?php if (!$is_view): ?><span class="text-danger">*</span><?php endif; ?>
         </label>
@@ -96,47 +147,6 @@ if ($is_view) {
             value="<?= $nomor_invoice ?>"
             placeholder="<?= !$is_view ? 'Nomor Invoice' : '' ?>"
             <?= $ro ?> <?= !$is_view ? 'required' : '' ?>>
-    </div>
-
-    <div class="col-md-6">
-        <label class="form-label fw-semibold">Currency</label>
-        <input type="text" name="currency" class="form-control form-control-sm"
-            value="<?= $is_view ? $currency : $currency_val ?>" readonly>
-    </div>
-    <div class="col-md-6">
-        <label class="form-label fw-semibold">
-            Kurs <?php if (!$is_view): ?><span class="text-danger">*</span><?php endif; ?>
-        </label>
-        <input type="text" name="kurs" id="input_kurs_il"
-            class="form-control form-control-sm text-end <?= !$is_view ? 'auto_num' : '' ?>"
-            value="<?= $kurs > 0 ? number_format($kurs, 2) : '' ?>"
-            placeholder="<?= !$is_view ? 'Masukkan kurs' : '' ?>"
-            <?= $ro ?>>
-    </div>
-
-    <div class="col-md-6">
-        <label class="form-label fw-semibold">Sisa Tagihan (<?= $is_view ? $currency : $currency_val ?>)</label>
-        <input type="text" name="sisa_nilai" id="sisa_tagihan_display"
-            class="form-control form-control-sm text-end"
-            value="<?= number_format($sisa_tagihan_val, 2) ?>" readonly>
-    </div>
-    <div class="col-md-6">
-        <label class="form-label fw-semibold">Jumlah Invoice (IDR)</label>
-        <input type="text" id="jumlah_invoice_idr"
-            class="form-control form-control-sm text-end"
-            value="0.00" readonly>
-    </div>
-
-    <div class="col-md-6">
-        <label class="form-label fw-semibold">Total DP Sebelumnya (IDR)</label>
-        <input type="text" class="form-control form-control-sm text-end"
-            value="<?= number_format($is_view ? 0 : $total_dp_rupiah_val, 2) ?>" readonly>
-    </div>
-    <div class="col-md-6">
-        <label class="form-label fw-semibold">Outstanding (IDR)</label>
-        <input type="text" id="outstanding_il"
-            class="form-control form-control-sm text-end"
-            value="0.00" readonly>
     </div>
 
     <div class="col-md-6">
@@ -164,7 +174,7 @@ if ($is_view) {
                 <i class="fa fa-file"></i> Lihat File
             </a>
         <?php elseif ($is_view): ?>
-            <input type="text" class="form-control form-control-sm" value="-" readonly>
+            <input type="text" class="form-control form-control-sm bg-light" value="-" readonly tabindex="-1">
         <?php else: ?>
             <input type="file" name="upload_invoice" class="form-control form-control-sm"
                 accept=".pdf,.jpg,.jpeg,.png">
@@ -175,19 +185,28 @@ if ($is_view) {
         <div class="col-md-6">
             <label class="form-label fw-semibold">Status Payment</label><br>
             <?php
-            if (empty($no_payment)) {
-                echo '<span class="badge bg-warning text-dark">Menunggu Pembayaran</span>';
-            } elseif ($status_payment == 2) {
+            $status = strtolower($status_payment ?? '');
+            if ($status === 'payment') {
                 echo '<span class="badge bg-success">Lunas</span>';
+            } elseif ($status === 'approve management') {
+                echo '<span class="badge bg-info">Approve Management</span>';
+            } elseif ($status === 'approve checker') {
+                echo '<span class="badge bg-primary">Approve Checker</span>';
+            } elseif ($status === 'request payment') {
+                echo '<span class="badge bg-secondary">Request Payment</span>';
+            } elseif ($status === 'draft') {
+                echo '<span class="badge bg-warning text-dark">Draft</span>';
             } else {
-                echo '<span class="badge bg-info">Dalam Proses</span>';
+                echo '<span class="badge bg-warning text-dark">Menunggu Proses</span>';
             }
             ?>
         </div>
-        <div class="col-md-6">
-            <label class="form-label fw-semibold">No. Payment</label>
-            <input type="text" class="form-control form-control-sm" value="<?= $no_payment ?>" readonly>
-        </div>
+        <?php if (!empty($no_payment)): ?>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">No. Payment</label>
+                <input type="text" class="form-control form-control-sm bg-light" value="<?= $no_payment ?>" readonly tabindex="-1">
+            </div>
+        <?php endif; ?>
     <?php endif; ?>
 
     <div class="col-12">
@@ -226,46 +245,45 @@ if ($is_view) {
 </div>
 
 <?php if (!$is_view): ?>
-<script src="<?= base_url('assets/js/autoNumeric.js') ?>"></script>
-<script>
-    $(document).ready(function() {
-        flatpickr('.fp-date', {
-            dateFormat: 'Y-m-d',
-            altInput: true,
-            altFormat: 'd M Y',
-            allowInput: false,
-            locale: 'id'
-        });
-        $('.auto_num').autoNumeric('init', {aSep: ',', aDec: '.', mDec: 2});
+    <script src="<?= base_url('assets/js/autoNumeric.js') ?>"></script>
+    <script>
+        $(document).ready(function() {
+            flatpickr('.fp-date', {
+                dateFormat: 'Y-m-d',
+                altInput: true,
+                altFormat: 'd M Y',
+                allowInput: false,
+                locale: 'id'
+            });
+            $('.auto_num').autoNumeric('init', {
+                aSep: ',',
+                aDec: '.',
+                mDec: 2
+            });
 
-        var sisaTagihan = <?= (float)$sisa_tagihan_val ?>;
+            var sisaTagihan = <?= (float)$sisa_tagihan_val ?>;
 
-        function formatNumber(num) {
-            return num.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        }
+            function formatNumber(num) {
+                return num.toLocaleString('id-ID', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
 
-        function hitungSemua() {
-            var kursRaw = $('#input_kurs_il').autoNumeric('get');
-            var kurs = parseFloat(kursRaw) || 0;
+            function hitungSemua() {
+                var kursRaw = $('#input_kurs_il').autoNumeric('get');
+                var kurs = parseFloat(kursRaw) || 0;
 
-            var jumlahIdr = sisaTagihan * kurs;
-            var outstanding = 0 - jumlahIdr; // outstanding negatif jika ada tagihan
+                var jumlahIdr = sisaTagihan * kurs;
 
-            // Outstanding = sisa tagihan dikurangi jumlah IDR
-            // Karena ini form input baru, outstanding = 0 (belum ada pembayaran sebelumnya untuk invoice ini)
-            // Tapi kalau kurs lebih tinggi → jumlah IDR lebih besar → outstanding bisa minus
-            outstanding = sisaTagihan * kurs; // ini jumlah yang harus dibayar
-            // Tidak ada yang dikurangi karena ini form baru
+                $('#jumlah_invoice_idr').val(formatNumber(jumlahIdr));
+            }
 
-            $('#jumlah_invoice_idr').val(formatNumber(jumlahIdr));
-            $('#outstanding_il').val(formatNumber(jumlahIdr));
-        }
+            $('#input_kurs_il').on('change keyup', function() {
+                hitungSemua();
+            });
 
-        $('#input_kurs_il').on('change keyup', function() {
             hitungSemua();
         });
-
-        hitungSemua();
-    });
-</script>
+    </script>
 <?php endif; ?>

@@ -11,10 +11,10 @@ class Pengajuan_mutasi_model extends BF_Model
     {
         parent::__construct();
 
-        $this->ENABLE_ADD    = has_permission('Pengajuan_mutasi.Add');
-        $this->ENABLE_MANAGE = has_permission('Pengajuan_mutasi.Manage');
-        $this->ENABLE_VIEW   = has_permission('Pengajuan_mutasi.View');
-        $this->ENABLE_DELETE = has_permission('Pengajuan_mutasi.Delete');
+        $this->ENABLE_ADD    = has_permission('Request_Mutation.Add');
+        $this->ENABLE_MANAGE = has_permission('Request_Mutation.Manage');
+        $this->ENABLE_VIEW   = has_permission('Request_Mutation.View');
+        $this->ENABLE_DELETE = has_permission('Request_Mutation.Delete');
     }
 
     // ---------------------------------------------------------------
@@ -90,23 +90,24 @@ class Pengajuan_mutasi_model extends BF_Model
     /**
      * Get coil list berdasarkan id_material dan id_gudang
      */
-    public function get_coil_by_material($code_lv4)
+    public function get_coil_by_material($code_lv4, $id_gudang)
     {
         return $this->db->select('
-                wsc.id,
-                wsc.no_coil,
-                wsc.no_ipp,
-                wsc.no_po,
-                wsc.no_ros,
-                wsc.gross_weight,
-				wsc.kode_internal,
-                wsc.net_weight,
-                wsc.length,
-                wsc.harga_beli,
-                wsc.total_nilai
-            ')
+            wsc.id,
+            wsc.no_coil,
+            wsc.no_ipp,
+            wsc.no_po,
+            wsc.no_ros,
+            wsc.gross_weight,
+            wsc.kode_internal,
+            wsc.net_weight,
+            wsc.length,
+            wsc.harga_beli,
+            wsc.total_nilai
+        ')
             ->from('warehouse_stock_coil wsc')
             ->where('wsc.id_material', $code_lv4)
+            ->where('wsc.id_gudang', $id_gudang)
             ->get()->result_array();
     }
 
@@ -278,7 +279,7 @@ class Pengajuan_mutasi_model extends BF_Model
     public function submit_mutation($id, $update_by)
     {
         $this->db->where('id', $id);
-        $this->db->where_in('status', [0, 6]); 
+        $this->db->where_in('status', [0, 6]);
         $this->db->update('material_mutations', [
             'status'      => 1,
             'update_by'   => $update_by,

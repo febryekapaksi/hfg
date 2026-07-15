@@ -3,16 +3,16 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Pengajuan_mutasi extends Admin_Controller
 {
-    protected $viewPermission   = 'Pengajuan_mutasi.View';
-    protected $addPermission    = 'Pengajuan_mutasi.Add';
-    protected $managePermission = 'Pengajuan_mutasi.Manage';
-    protected $deletePermission = 'Pengajuan_mutasi.Delete';
+    protected $viewPermission   = 'Request_Mutation.View';
+    protected $addPermission    = 'Request_Mutation.Add';
+    protected $managePermission = 'Request_Mutation.Manage';
+    protected $deletePermission = 'Request_Mutation.Delete';
 
     public function __construct()
     {
         parent::__construct();
         $this->load->model('Pengajuan_mutasi/pengajuan_mutasi_model');
-        $this->template->title('Pengajuan Mutasi');
+        $this->template->title('Request Mutation');
         $this->template->page_icon('fa fa-exchange-alt');
 
         date_default_timezone_set('Asia/Bangkok');
@@ -29,7 +29,7 @@ class Pengajuan_mutasi extends Admin_Controller
     public function index()
     {
         $this->auth->restrict($this->viewPermission);
-        $this->template->title('Pengajuan Mutasi');
+        $this->template->title('Request Mutation');
         $this->template->render('index');
     }
 
@@ -79,19 +79,19 @@ class Pengajuan_mutasi extends Admin_Controller
             $mutation = $this->pengajuan_mutasi_model->get_detail($id);
 
             if (!$mutation) {
-                $this->session->set_flashdata('error', 'Data mutasi tidak ditemukan.');
+                $this->session->set_flashdata('error', 'Mutation data not found.');
                 redirect(site_url('pengajuan_mutasi'));
             }
 
             if ($mode === 'edit' && !in_array($mutation['status'], [0, 6])) {
-                $this->session->set_flashdata('error', 'Data ini tidak dapat diedit karena status tidak valid.');
+                $this->session->set_flashdata('error', 'This data cannot be edited due to invalid status.');
                 redirect(site_url('pengajuan_mutasi'));
             }
 
             $data['mutation'] = $mutation;
         }
 
-        $this->template->title(ucfirst($mode) . ' Pengajuan Mutasi');
+        $this->template->title(ucfirst($mode) . ' Request Mutation');
         $this->template->render('form', $data);
     }
 
@@ -119,12 +119,17 @@ class Pengajuan_mutasi extends Admin_Controller
     public function get_coil()
     {
         $code_lv4  = $this->input->get('code_lv4');
+        $id_gudang = $this->input->get('id_gudang');
 
         if (!$code_lv4) {
             return $this->_json(['status' => 0, 'message' => 'code_lv4 wajib diisi']);
         }
 
-        $coils = $this->pengajuan_mutasi_model->get_coil_by_material($code_lv4);
+        if (!$id_gudang) {
+            return $this->_json(['status' => 0, 'message' => 'id_gudang wajib diisi']);
+        }
+
+        $coils = $this->pengajuan_mutasi_model->get_coil_by_material($code_lv4, $id_gudang);
 
         return $this->_json(['status' => 1, 'data' => $coils]);
     }
@@ -141,22 +146,22 @@ class Pengajuan_mutasi extends Admin_Controller
 
         // Validasi no berita acara
         if (empty($post['no_berita_acara'])) {
-            return $this->_json(['status' => 0, 'message' => 'No. Berita Acara wajib diisi.']);
+            return $this->_json(['status' => 0, 'message' => 'Minutes of Meeting No. is required.']);
         }
 
         // Validasi gudang
         if (empty($post['id_gudang_from']) || empty($post['id_gudang_to'])) {
-            return $this->_json(['status' => 0, 'message' => 'Gudang asal dan tujuan wajib dipilih.']);
+            return $this->_json(['status' => 0, 'message' => 'Source and destination warehouse must be selected.']);
         }
 
         if ($post['id_gudang_from'] == $post['id_gudang_to']) {
-            return $this->_json(['status' => 0, 'message' => 'Gudang asal dan tujuan tidak boleh sama.']);
+            return $this->_json(['status' => 0, 'message' => 'Source and destination warehouse cannot be the same.']);
         }
 
         // Validasi detail (dikirim sebagai JSON string dalam form field)
         $details_raw = json_decode($post['details_json'] ?? '', true);
         if (empty($details_raw)) {
-            return $this->_json(['status' => 0, 'message' => 'Minimal satu material harus dipilih.']);
+            return $this->_json(['status' => 0, 'message' => 'At least one material must be selected.']);
         }
 
         // Ambil info gudang
@@ -164,7 +169,7 @@ class Pengajuan_mutasi extends Admin_Controller
         $gudang_to   = $this->_get_gudang($post['id_gudang_to']);
 
         if (!$gudang_from || !$gudang_to) {
-            return $this->_json(['status' => 0, 'message' => 'Data gudang tidak valid.']);
+            return $this->_json(['status' => 0, 'message' => 'Warehouse data is invalid.']);
         }
 
         // Handle upload file (optional)
@@ -204,7 +209,7 @@ class Pengajuan_mutasi extends Admin_Controller
         $result  = $this->pengajuan_mutasi_model->save_mutation($header, $details);
 
         if ($result) {
-            return $this->_json(['status' => 1, 'message' => 'Data berhasil disimpan.', 'id' => $result]);
+            return $this->_json(['status' => 1, 'message' => 'Data saved successfully.', 'id' => $result]);
         }
 
         // Rollback file jika DB gagal
@@ -212,7 +217,7 @@ class Pengajuan_mutasi extends Admin_Controller
             @unlink(FCPATH . 'uploads/berita_acara_mutasi/' . $file_name_hash);
         }
 
-        return $this->_json(['status' => 0, 'message' => 'Gagal menyimpan data.']);
+        return $this->_json(['status' => 0, 'message' => 'Failed to save data.']);
     }
 
     // ---------------------------------------------------------------
@@ -229,25 +234,25 @@ class Pengajuan_mutasi extends Admin_Controller
         if (!$mutation || !in_array($mutation['status'], [0, 6])) {
             return $this->_json([
                 'status' => 0,
-                'message' => 'Data tidak dapat diubah.'
+                'message' => 'Data cannot be modified.'
             ]);
         }
 
         if (empty($post['no_berita_acara'])) {
-            return $this->_json(['status' => 0, 'message' => 'No. Berita Acara wajib diisi.']);
+            return $this->_json(['status' => 0, 'message' => 'Minutes of Meeting No. is required.']);
         }
 
         if (empty($post['id_gudang_from']) || empty($post['id_gudang_to'])) {
-            return $this->_json(['status' => 0, 'message' => 'Gudang asal dan tujuan wajib dipilih.']);
+            return $this->_json(['status' => 0, 'message' => 'Source and destination warehouse must be selected.']);
         }
 
         if ($post['id_gudang_from'] == $post['id_gudang_to']) {
-            return $this->_json(['status' => 0, 'message' => 'Gudang asal dan tujuan tidak boleh sama.']);
+            return $this->_json(['status' => 0, 'message' => 'Source and destination warehouse cannot be the same.']);
         }
 
         $details_raw = json_decode($post['details_json'] ?? '', true);
         if (empty($details_raw)) {
-            return $this->_json(['status' => 0, 'message' => 'Minimal satu material harus dipilih.']);
+            return $this->_json(['status' => 0, 'message' => 'At least one material must be selected.']);
         }
 
         $gudang_from = $this->_get_gudang($post['id_gudang_from']);
@@ -291,10 +296,10 @@ class Pengajuan_mutasi extends Admin_Controller
         $result  = $this->pengajuan_mutasi_model->update_mutation($id, $header, $details);
 
         if ($result) {
-            return $this->_json(['status' => 1, 'message' => 'Data berhasil diperbarui.']);
+            return $this->_json(['status' => 1, 'message' => 'Data updated successfully.']);
         }
 
-        return $this->_json(['status' => 0, 'message' => 'Gagal memperbarui data.']);
+        return $this->_json(['status' => 0, 'message' => 'Failed to update data.']);
     }
 
     // ---------------------------------------------------------------
@@ -308,10 +313,10 @@ class Pengajuan_mutasi extends Admin_Controller
         $result = $this->pengajuan_mutasi_model->submit_mutation($id, $this->username);
 
         if ($result) {
-            return $this->_json(['status' => 1, 'message' => 'Mutasi berhasil diajukan.']);
+            return $this->_json(['status' => 1, 'message' => 'Mutation submitted successfully.']);
         }
 
-        return $this->_json(['status' => 0, 'message' => 'Gagal mengajukan mutasi.']);
+        return $this->_json(['status' => 0, 'message' => 'Failed to submit mutation.']);
     }
 
     // ---------------------------------------------------------------
@@ -323,16 +328,68 @@ class Pengajuan_mutasi extends Admin_Controller
         $this->auth->restrict($this->managePermission);
         $reject_reason = $this->input->post('reject_reason');
         if (empty(trim($reject_reason))) {
-            return $this->_json(['status' => 0, 'message' => 'Alasan pembatalan wajib diisi.']);
+            return $this->_json(['status' => 0, 'message' => 'Cancellation reason is required.']);
         }
 
         $result = $this->pengajuan_mutasi_model->cancel_mutation($id, $this->username, $reject_reason);
 
         if ($result) {
-            return $this->_json(['status' => 1, 'message' => 'Mutasi berhasil dibatalkan.']);
+            return $this->_json(['status' => 1, 'message' => 'Mutation cancelled successfully.']);
         }
 
-        return $this->_json(['status' => 0, 'message' => 'Gagal membatalkan mutasi atau status data sudah berubah.']);
+        return $this->_json(['status' => 0, 'message' => 'Failed to cancel mutation or status has changed.']);
+    }
+
+    // ---------------------------------------------------------------
+    // PRINT QR LABEL (untuk mutasi yang sudah close/approved)
+    // ---------------------------------------------------------------
+
+    public function print_qr($id)
+    {
+        $this->auth->restrict($this->viewPermission);
+
+        $mutation = $this->pengajuan_mutasi_model->get_detail($id);
+
+        if (!$mutation || !in_array($mutation['status'], [2, 4])) {
+            show_error('Mutation data not found or not yet approved.', 404);
+            return;
+        }
+
+        // Kumpulkan semua coil dari detail mutasi, ambil data lengkap dari warehouse_stock_coil
+        $coils = [];
+        foreach ($mutation['details'] as $detail) {
+            foreach ($detail['coils'] as $coil) {
+                // Ambil data terkini dari warehouse_stock_coil
+                $live_coil = $this->db->query("
+                    SELECT wsc.*, ni4.trade_name, ni4.thickness
+                    FROM warehouse_stock_coil wsc
+                    LEFT JOIN new_inventory_4 ni4 ON ni4.code_lv4 = wsc.id_material
+                    WHERE wsc.id = ?
+                    LIMIT 1
+                ", [$coil['id_warehouse_stock_coil']])->row_array();
+
+                $coils[] = [
+                    'no_ros'            => $coil['no_ros'] ?? '',
+                    'trade_name'          => $live_coil['trade_name'] ?? $detail['trade_name'],
+                    'kode_internal'     => $live_coil['kode_internal'] ?? $coil['kode_internal'],
+                    'berat_bersih'      => $live_coil['net_weight'] ?? $coil['net_weight'],
+                    'berat_kotor'       => $live_coil['gross_weight'] ?? $coil['gross_weight'],
+                    'thickness'         => $live_coil['thickness'] ?? '',
+                    'nm_gudang_tujuan'  => $mutation['nm_gudang_to'],
+                    'kd_gudang_ke'      => $mutation['kd_gudang_to'],
+                    'id_gudang_ke'      => $mutation['id_gudang_to'],
+                    'incoming_date'     => $mutation['approved_date'] ?? $mutation['mutation_date'],
+                ];
+            }
+        }
+
+        if (empty($coils)) {
+            show_error('No coil data found for this mutation.', 404);
+            return;
+        }
+
+        $data = ['results' => $coils, 'mutation' => $mutation];
+        $this->load->view('print_qr_label', $data);
     }
 
     // ---------------------------------------------------------------

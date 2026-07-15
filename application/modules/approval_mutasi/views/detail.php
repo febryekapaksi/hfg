@@ -1,16 +1,16 @@
 <?php
-$ENABLE_MANAGE = has_permission('Approval_mutasi.Manage');
+$ENABLE_MANAGE = has_permission('Approval_mutation.Manage');
 
 $m       = $mutation ?? [];
 $details = $m['details'] ?? [];
 
 $status_map = [
     0 => ['Open',             'primary'],
-    1 => ['Menunggu Approve', 'warning'],
+    1 => ['Waiting Approval', 'warning'],
     2 => ['Approved',         'success'],
     3 => ['Rejected',         'danger'],
     5 => ['Cancelled',        'secondary'],
-    6 => ['Revisi',           'danger'],
+    6 => ['Revision',         'danger'],
 ];
 $st = $status_map[$m['status']] ?? ['-', 'secondary'];
 ?>
@@ -30,19 +30,19 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 w-100">
 
                         <div class="px-2 flex-fill">
-                            <small class="text-muted d-block text-uppercase font-size-xs fw-bold">No. Mutasi</small>
+                            <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Mutation No.</small>
                             <span class="fs-6 fw-bold text-dark"><?= $m['mutation_number'] ?></span>
                         </div>
 
                         <div class="px-2 flex-fill border-start-custom">
-                            <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Tanggal Pengajuan</small>
+                            <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Request Date</small>
                             <span class="text-dark fw-semibold">
                                 <?= date('d/m/Y', strtotime($m['mutation_date'])) ?>
                             </span>
                         </div>
 
                         <div class="px-2 flex-fill border-start-custom">
-                            <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Pengajuan Oleh</small>
+                            <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Requested By</small>
                             <span class="text-dark fw-semibold">
                                 <?= !empty($m['create_by']) ? $m['create_by'] : '-' ?>
                             </span>
@@ -58,7 +58,7 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
 
                 <?php if (!empty($m['reject_reason'])): ?>
                     <div class="col-md-5 col-12 border-start-md ps-md-4 py-1 text-start">
-                        <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Alasan Reject/Revisi</small>
+                        <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Reject/Revision Reason</small>
                         <span class="text-danger fw-semibold">
                             <i class="fa-solid fa-circle-exclamation me-1"></i> <?= $m['reject_reason'] ?>
                         </span>
@@ -71,23 +71,23 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
         <!-- Detail Info -->
         <div class="row g-3 mb-4">
             <div class="col-md-4">
-                <label class="form-label fw-bold">No. Berita Acara</label>
+                <label class="form-label fw-bold">Minutes of Meeting No.</label>
                 <p class="form-control-plaintext"><?= $m['no_berita_acara'] ?? '-' ?></p>
             </div>
             <div class="col-md-4">
-                <label class="form-label fw-bold">Gudang Asal</label>
+                <label class="form-label fw-bold">Source Warehouse</label>
                 <p class="form-control-plaintext"><?= $m['nm_gudang_from'] ?></p>
             </div>
             <div class="col-md-4">
-                <label class="form-label fw-bold">Gudang Tujuan</label>
+                <label class="form-label fw-bold">Destination Warehouse</label>
                 <p class="form-control-plaintext"><?= $m['nm_gudang_to'] ?></p>
             </div>
             <div class="col-md-8">
-                <label class="form-label fw-bold">Keterangan / Alasan Mutasi</label>
+                <label class="form-label fw-bold">Description / Mutation Reason</label>
                 <p class="form-control-plaintext"><?= $m['description'] ?? '-' ?></p>
             </div>
             <div class="col-md-4">
-                <label class="form-label fw-bold">File Berita Acara</label>
+                <label class="form-label fw-bold">Minutes of Meeting File</label>
                 <?php if (!empty($m['file_name_hash'])): ?>
                     <div class="d-flex align-items-center gap-2">
                         <i class="fa-solid fa-paperclip text-primary"></i>
@@ -98,7 +98,7 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
                         </a>
                     </div>
                 <?php else: ?>
-                    <p class="form-control-plaintext text-muted">Tidak ada file</p>
+                    <p class="form-control-plaintext text-muted">No file attached</p>
                 <?php endif; ?>
             </div>
         </div>
@@ -108,14 +108,14 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
             <div class="alert alert-success d-flex align-items-center gap-2 mb-4">
                 <i class="fa-solid fa-circle-check fs-5"></i>
                 <div>
-                    <strong>Diapprove oleh:</strong> <?= $m['approved_by'] ?>
-                    <span class="ms-3"><strong>Tanggal:</strong> <?= date('d/m/Y H:i', strtotime($m['approved_date'])) ?></span>
+                    <strong>Approved by:</strong> <?= $m['approved_by'] ?>
+                    <span class="ms-3"><strong>Date:</strong> <?= date('d/m/Y H:i', strtotime($m['approved_date'])) ?></span>
                 </div>
             </div>
         <?php endif; ?>
 
         <!-- Detail Material & Coil -->
-        <h6 class="mb-2">Detail Material & Coil</h6>
+        <h6 class="mb-2">Material & Coil Details</h6>
         <div class="table-responsive">
             <table class="table table-bordered align-middle" id="tblDetailApproval">
                 <thead class="table-light">
@@ -140,7 +140,7 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
                                             <small class="text-muted"><?= $detail['trade_name'] ?></small>
                                         <?php endif; ?>
                                     </td>
-                                    <td colspan="5" class="text-center text-muted">Tidak ada coil</td>
+                                    <td colspan="5" class="text-center text-muted">No coils</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($coils as $idx => $coil): ?>
@@ -164,7 +164,7 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="6" class="text-center text-muted">Tidak ada data detail</td>
+                            <td colspan="6" class="text-center text-muted">No detail data</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -193,13 +193,13 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
         <!-- Action Buttons -->
         <div class="mt-4 d-flex gap-2 justify-content-between">
             <a href="<?= site_url('approval_mutasi') ?>" class="btn btn-secondary">
-                <i class="fa-solid fa-arrow-left"></i> Kembali
+                <i class="fa-solid fa-arrow-left"></i> Back
             </a>
 
             <?php if ($m['status'] == 1 && $ENABLE_MANAGE): ?>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-info text-white" onclick="doRevision(<?= $m['id'] ?>)">
-                        <i class="fa-solid fa-rotate-left"></i> Revisi
+                        <i class="fa-solid fa-rotate-left"></i> Revision
                     </button>
                     <button type="button" class="btn btn-danger" onclick="doReject(<?= $m['id'] ?>)">
                         <i class="fa-solid fa-times"></i> Reject
@@ -219,19 +219,19 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
 
     function doApprove(id) {
         Swal.fire({
-            title: 'Approve Mutasi?',
-            html: 'Stock akan langsung dipindahkan ke gudang tujuan.<br><strong>Aksi ini tidak dapat dibatalkan.</strong>',
+            title: 'Approve Mutation?',
+            html: 'Stock will be transferred to the destination warehouse immediately.<br><strong>This action cannot be undone.</strong>',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: '<i class="fa-solid fa-check"></i> Ya, Approve',
-            cancelButtonText: 'Batal',
+            confirmButtonText: '<i class="fa-solid fa-check"></i> Yes, Approve',
+            cancelButtonText: 'Cancel',
             confirmButtonColor: '#28a745'
         }).then(result => {
             if (result.isConfirmed) {
                 $.post(BASE_URL + '/approve/' + id, function(res) {
                     if (res.status == 1) {
                         Swal.fire({
-                            title: 'Berhasil',
+                            title: 'Success',
                             text: res.message,
                             icon: 'success',
                             showConfirmButton: false,
@@ -241,10 +241,10 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
                             window.location.href = BASE_URL;
                         });
                     } else {
-                        Swal.fire('Gagal', res.message, 'error');
+                        Swal.fire('Failed', res.message, 'error');
                     }
                 }, 'json').fail(function() {
-                    Swal.fire('Error', 'Terjadi kesalahan pada server.', 'error');
+                    Swal.fire('Error', 'A server error occurred.', 'error');
                 });
             }
         });
@@ -252,18 +252,18 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
 
     function doReject(id) {
         Swal.fire({
-            title: 'Reject Mutasi?',
-            html: '<p class="text-danger"><strong>Mutasi akan ditolak secara permanen.</strong></p>',
+            title: 'Reject Mutation?',
+            html: '<p class="text-danger"><strong>This mutation will be permanently rejected.</strong></p>',
             input: 'textarea',
-            inputPlaceholder: 'Masukkan alasan penolakan...',
+            inputPlaceholder: 'Enter rejection reason...',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: '<i class="fa-solid fa-times"></i> Ya, Reject',
-            cancelButtonText: 'Batal',
+            confirmButtonText: '<i class="fa-solid fa-times"></i> Yes, Reject',
+            cancelButtonText: 'Cancel',
             confirmButtonColor: '#dc3545',
             inputValidator: (value) => {
                 if (!value || value.trim() === '') {
-                    return 'Alasan penolakan wajib diisi!';
+                    return 'Rejection reason is required!';
                 }
             }
         }).then(result => {
@@ -273,7 +273,7 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
                 }, function(res) {
                     if (res.status == 1) {
                         Swal.fire({
-                            title: 'Berhasil',
+                            title: 'Success',
                             text: res.message,
                             icon: 'success',
                             showConfirmButton: false,
@@ -283,10 +283,10 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
                             window.location.href = BASE_URL;
                         });
                     } else {
-                        Swal.fire('Gagal', res.message, 'error');
+                        Swal.fire('Failed', res.message, 'error');
                     }
                 }, 'json').fail(function() {
-                    Swal.fire('Error', 'Terjadi kesalahan pada server.', 'error');
+                    Swal.fire('Error', 'A server error occurred.', 'error');
                 });
             }
         });
@@ -294,18 +294,18 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
 
     function doRevision(id) {
         Swal.fire({
-            title: 'Kembalikan untuk Revisi?',
-            html: '<p>Pengajuan akan dikembalikan ke pengaju untuk diperbaiki.</p>',
+            title: 'Return for Revision?',
+            html: '<p>The request will be returned to the requester for correction.</p>',
             input: 'textarea',
-            inputPlaceholder: 'Masukkan catatan/poin yang perlu direvisi...',
+            inputPlaceholder: 'Enter revision notes/points...',
             icon: 'info',
             showCancelButton: true,
-            confirmButtonText: '<i class="fa-solid fa-rotate-left"></i> Ya, Minta Revisi',
-            cancelButtonText: 'Batal',
+            confirmButtonText: '<i class="fa-solid fa-rotate-left"></i> Yes, Request Revision',
+            cancelButtonText: 'Cancel',
             confirmButtonColor: '#17a2b8',
             inputValidator: (value) => {
                 if (!value || value.trim() === '') {
-                    return 'Catatan revisi wajib diisi!';
+                    return 'Revision notes are required!';
                 }
             }
         }).then(result => {
@@ -315,7 +315,7 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
                 }, function(res) {
                     if (res.status == 1) {
                         Swal.fire({
-                            title: 'Berhasil',
+                            title: 'Success',
                             text: res.message,
                             icon: 'success',
                             showConfirmButton: false,
@@ -325,10 +325,10 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
                             window.location.href = BASE_URL;
                         });
                     } else {
-                        Swal.fire('Gagal', res.message, 'error');
+                        Swal.fire('Failed', res.message, 'error');
                     }
                 }, 'json').fail(function() {
-                    Swal.fire('Error', 'Terjadi kesalahan pada server.', 'error');
+                    Swal.fire('Error', 'A server error occurred.', 'error');
                 });
             }
         });

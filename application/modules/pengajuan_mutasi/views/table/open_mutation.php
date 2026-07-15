@@ -1,7 +1,7 @@
 <?php
-$ENABLE_ADD    = has_permission('Pengajuan_mutasi.Add');
-$ENABLE_MANAGE = has_permission('Pengajuan_mutasi.Manage');
-$ENABLE_VIEW   = has_permission('Pengajuan_mutasi.View');
+$ENABLE_ADD    = has_permission('Request_Mutation.Add');
+$ENABLE_MANAGE = has_permission('Request_Mutation.Manage');
+$ENABLE_VIEW   = has_permission('Request_Mutation.View');
 ?>
 
 <div class="table-responsive">
@@ -9,13 +9,13 @@ $ENABLE_VIEW   = has_permission('Pengajuan_mutasi.View');
         <thead class="table-light">
             <tr>
                 <th>#</th>
-                <th>No. Mutasi</th>
-                <th>Pengajuan Oleh</th>
-                <th>Gudang Asal</th>
-                <th>Gudang Tujuan</th>
-                <th>Keterangan</th>
+                <th>Mutation No.</th>
+                <th>Requested By</th>
+                <th>Source Warehouse</th>
+                <th>Destination Warehouse</th>
+                <th>Description</th>
                 <th>Status</th>
-                <th width="100">Aksi</th>
+                <th width="100">Action</th>
             </tr>
         </thead>
         <tbody>
@@ -35,14 +35,14 @@ $ENABLE_VIEW   = has_permission('Pengajuan_mutasi.View');
                             <?php if ($row['status'] == 0) : ?>
                                 <span class="badge bg-primary">Open</span>
                             <?php elseif ($row['status'] == 1) : ?>
-                                <span class="badge bg-warning">Menunggu Approve</span>
+                                <span class="badge bg-warning">Waiting Approval</span>
                             <?php elseif ($row['status'] == 6) : ?>
                                 <div class="d-flex align-items-center gap-1">
-                                    <span class="badge bg-danger">Revisi</span>
+                                    <span class="badge bg-danger">Revision</span>
                                     <a href="javascript:void(0)" class="text-info fs-6"
                                         onclick="showRevisionReason('<?= htmlspecialchars($row['mutation_number']) ?>', '<?= isset($row['reject_reason']) ? htmlspecialchars($row['reject_reason']) : '' ?>')"
-                                        title="Lihat Catatan Revisi">
-                                        <i class="fa-solid fa-circle-info"></i>
+                                        title="View Revision Notes">
+                                        <i class="fa-solid fa-circle-info"></i> 
                                     </a>
                                 </div>
                             <?php endif; ?>
@@ -63,7 +63,7 @@ $ENABLE_VIEW   = has_permission('Pengajuan_mutasi.View');
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
                                         <button type="button" class="btn btn-sm btn-success"
-                                            onclick="confirmSubmit(<?= $row['id'] ?>)" title="Ajukan">
+                                            onclick="confirmSubmit(<?= $row['id'] ?>)" title="Submit">
                                             <i class="fa-solid fa-paper-plane"></i>
                                         </button>
                                         <button type="button" class="btn btn-sm btn-danger"
@@ -74,11 +74,11 @@ $ENABLE_VIEW   = has_permission('Pengajuan_mutasi.View');
 
                                     <?php if ($row['status'] == 6): ?>
                                         <a href="<?= site_url('pengajuan_mutasi/form/edit/' . $row['id']) ?>"
-                                            class="btn btn-sm btn-warning" title="Perbaiki Data">
+                                            class="btn btn-sm btn-warning" title="Fix Data">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
                                         <button type="button" class="btn btn-sm btn-success"
-                                            onclick="confirmSubmit(<?= $row['id'] ?>)" title="Ajukan Kembali">
+                                            onclick="confirmSubmit(<?= $row['id'] ?>)" title="Resubmit">
                                             <i class="fa-solid fa-paper-plane"></i>
                                         </button>
                                     <?php endif; ?>
@@ -104,13 +104,11 @@ $ENABLE_VIEW   = has_permission('Pengajuan_mutasi.View');
         }
     });
 
-    // Fungsi untuk memunculkan Alasan/Catatan Revisi dari Approver
     function showRevisionReason(mutationNumber, reasonJson) {
-        let reason = "Tidak ada catatan spesifik.";
+        let reason = "No specific notes provided.";
 
         try {
             if (reasonJson) {
-                // Unescape json string jika dibungkus json_encode sebelumnya
                 reason = JSON.parse(reasonJson);
             }
         } catch (e) {
@@ -118,21 +116,21 @@ $ENABLE_VIEW   = has_permission('Pengajuan_mutasi.View');
         }
 
         if (!reason || reason.trim() === "null" || reason.trim() === "") {
-            reason = "Tidak ada catatan spesifik.";
+            reason = "No specific notes provided.";
         }
 
         Swal.fire({
-            title: 'Catatan Revisi',
+            title: 'Revision Notes',
             html: `<div class="text-start">
-                <p class="mb-1"><strong>No. Mutasi:</strong> ${mutationNumber}</p>
+                <p class="mb-1"><strong>Mutation No.:</strong> ${mutationNumber}</p>
                 <hr class="my-2">
-                <p class="mb-0 text-danger fw-semibold"><i class="fa-solid fa-comment-dots me-1"></i> Alasan/Poin Revisi:</p>
+                <p class="mb-0 text-danger fw-semibold"><i class="fa-solid fa-comment-dots me-1"></i> Revision Reason/Points:</p>
                 <blockquote class="bg-light p-3 border-start border-info border-3 rounded mt-2 text-dark" style="font-style: italic;">
                     "${reason}"
                 </blockquote>
                </div>`,
             icon: 'info',
-            confirmButtonText: 'Tutup',
+            confirmButtonText: 'Close',
             confirmButtonColor: '#6c757d'
         });
     }

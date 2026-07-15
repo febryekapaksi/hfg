@@ -44,20 +44,25 @@ class Pembayaran_material_model extends BF_Model
 
 	public function generate_id_payment_paid($kode_bank = null, $tanggal)
 	{
-		$generate_id = $this->db->query("SELECT MAX(id) AS max_id FROM tr_payment_paid WHERE id LIKE '%BK-" . $kode_bank . "-" . date('my-', strtotime($tanggal)) . "%'")->row();
-		$kodeBarang = $generate_id->max_id;
-		$urutan = (int) substr($kodeBarang, 16, 4);
-		if ($kode_bank == null) {
-			$urutan = (int) substr($kodeBarang, 9, 4);
-		}
+		$huruf  = "BK--" . ($kode_bank ? $kode_bank . "-" : "");
+		$tahun  = date('my-', strtotime($tanggal));
+		$prefix = $huruf . $tahun;
 
-		if ($urutan == '') {
-			$urutan = 0;
+		$generate_id = $this->db->query(
+			"SELECT MAX(no_doc) AS max_id FROM payment_approve WHERE no_doc LIKE ?",
+			[$prefix . '%']
+		)->row();
+
+		$kodeBarang = $generate_id->max_id;
+
+		// Ambil 4 digit terakhir setelah tanda '-' terakhir, tidak bergantung posisi tetap
+		$urutan = 0;
+		if (!empty($kodeBarang)) {
+			$urutan = (int) substr(strrchr($kodeBarang, '-'), 1);
 		}
 		$urutan++;
-		$tahun = date('my-', strtotime($tanggal));
-		$huruf = "BK-" . $kode_bank . "-";
-		$kodecollect = $huruf . $tahun . sprintf("%04s", $urutan);
+
+		$kodecollect = $prefix . sprintf("%04d", $urutan);
 
 		return $kodecollect;
 	}
@@ -68,25 +73,40 @@ class Pembayaran_material_model extends BF_Model
 		$jenis_payment = $post['jenis_payment'];
 		$search = $post['search']['value'];
 
-		$this->db->from('v_list_payment');
-		$this->db->where('status <>', 2);
+		$this->db->select("a.id, a.no_doc, a.no_surat, a.created_on, a.currency, a.jumlah, a.keperluan, a.status, a.tipe, 
+            COALESCE(b.created_by, c.nama, d.nama, a.created_by) AS requestor, 
+            (CASE WHEN a.tipe IN ('invoice_dp', 'invoice_import', 'invoice_local') THEN 1 WHEN b.exp_inv_po = 1 THEN 1 ELSE 0 END) AS is_po_payment");
+		$this->db->from('request_payment a');
+		$this->db->join('tr_expense b', 'b.no_doc = a.no_doc', 'left');
+		$this->db->join('tr_kasbon c', 'c.no_doc = a.no_doc', 'left');
+		$this->db->join('tr_transport_req d', 'd.no_doc = a.no_doc', 'left');
+		$this->db->where('a.status', 'approve management');
 
 		// Logika Filter Jenis Payment
 		if ($jenis_payment == 1) {
 			$this->db->group_start()
-				->where('is_po_payment', 1)
-				->or_where('tipe', 'Cash')
+				->where_in('a.tipe', ['invoice_dp', 'invoice_import', 'invoice_local'])
+				->or_where('b.exp_inv_po', 1)
+				->or_where('a.tipe', 'Cash')
 				->group_end();
 		} else {
-			$this->db->where('is_po_payment <>', 1);
+			$this->db->where_not_in('a.tipe', ['invoice_dp', 'invoice_import', 'invoice_local']);
+			$this->db->group_start()
+				->where('b.exp_inv_po <>', 1)
+				->or_where('b.exp_inv_po IS NULL', null, false)
+				->group_end();
 		}
 
-		// Global Search
+		// Global Search (Termasuk Kolom Tipe)
 		if (!empty($search)) {
 			$this->db->group_start()
-				->like('no_doc', $search)
-				->or_like('requestor', $search)
-				->or_like('keperluan', $search)
+				->like('a.no_doc', $search)
+				->or_like('a.tipe', $search) // Ditambahkan agar tipe bisa dicari
+				->or_like('b.created_by', $search)
+				->or_like('c.nama', $search)
+				->or_like('d.nama', $search)
+				->or_like('a.created_by', $search)
+				->or_like('a.keperluan', $search)
 				->group_end();
 		}
 
@@ -102,21 +122,25 @@ class Pembayaran_material_model extends BF_Model
 		$no = (0 + $post['start']);
 		foreach ($get_data as $item) {
 			$no++;
-			// Logika checkbox tetep di sini karena butuh session user_id
+
 			$is_checked = $this->db->get_where('tr_choosed_payment', [
 				'id_user' => $this->auth->user_id(),
 				'id_payment' => $item->id
 			])->num_rows() > 0;
 
+			// Merapikan format tipe (contoh: "invoice_local" menjadi "Invoice Local")
+			$tipe_clean = ucwords(str_replace('_', ' ', $item->tipe));
+
 			$hasil[] = [
 				'no' => $no,
 				'no_dokumen' => $item->no_surat,
+				'tipe' => $tipe_clean, // Dikirim ke DataTables columns
 				'tgl' => date('d F Y', strtotime($item->created_on)),
 				'keperluan' => $item->keperluan,
 				'total_invoice' => number_format($item->jumlah),
 				'requestor' => $item->requestor,
 				'currency' => $item->currency,
-				'option' => '<input type="checkbox" class="check_payment" value="' . $item->id . '" ' . ($is_checked ? 'checked' : '') . '>'
+				'option' => '<input type="checkbox" class="check_payment" value="' . $item->id . '" data-tipe="' . $item->tipe . '" ' . ($is_checked ? 'checked' : '') . '>'
 			];
 		}
 
@@ -144,7 +168,7 @@ class Pembayaran_material_model extends BF_Model
 		$ttl_kredit = 0;
 
 		$this->db->select('a.*');
-		$this->db->from('payment_approve a');
+		$this->db->from('request_payment a');
 		$this->db->where_in('a.id', explode(',', $id_payment));
 		$get_payment = $this->db->get()->result();
 

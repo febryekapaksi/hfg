@@ -120,6 +120,9 @@ class Warehouse_model extends BF_Model
         $no   = $start + 1;
 
         foreach ($rows as $row) {
+            $qr_text = ($row['kode_internal'] ?? '-') . '/' . strtolower($row['nm_gudang'] ?? '-');
+            $qr_html = "<button type='button' class='btn btn-sm btn-info btn-show-qr' data-qr='" . htmlspecialchars($qr_text) . "'><i class='fa fa-qrcode'></i> QR</button>";
+
             $data[] = [
                 "<div class='text-center'>{$no}</div>",
                 $row['nm_barang']
@@ -130,6 +133,7 @@ class Warehouse_model extends BF_Model
                 "<div class='text-end'>"    . number_format((float) $row['net_weight'],   3, ',', '.') . "</div>",
                 "<div class='text-end'>"    . number_format((float) $row['gross_weight'], 3, ',', '.') . "</div>",
                 "<div class='text-end'>"    . number_format((float) $row['length'],       3, ',', '.') . "</div>",
+                "<div class='text-center'>" . $qr_html . "</div>",
             ];
             $no++;
         }
@@ -727,7 +731,7 @@ class Warehouse_model extends BF_Model
         $filter_material = '',
         $date_snap = '',
         $date_to = ''  // $date_to diabaikan, tetap ada agar tidak breaking
-        ) {
+    ) {
         if (empty($date_snap)) return 0;
 
         $snap_datetime = $date_snap . ' 23:59:59';

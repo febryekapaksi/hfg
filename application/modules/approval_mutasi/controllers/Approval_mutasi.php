@@ -3,8 +3,8 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Approval_mutasi extends Admin_Controller
 {
-    protected $viewPermission   = 'Approval_mutasi.View';
-    protected $managePermission = 'Approval_mutasi.Manage';
+    protected $viewPermission   = 'Approval_mutation.View';
+    protected $managePermission = 'Approval_mutation.Manage';
 
     public function __construct()
     {
@@ -78,7 +78,7 @@ class Approval_mutasi extends Admin_Controller
         $mutation = $this->approval_mutasi_model->get_detail($id);
 
         if (!$mutation) {
-            $this->session->set_flashdata('error', 'Data mutasi tidak ditemukan.');
+            $this->session->set_flashdata('error', 'Mutation data not found.');
             redirect('approval_mutasi');
         }
 
@@ -100,16 +100,29 @@ class Approval_mutasi extends Admin_Controller
         $mutation = $this->approval_mutasi_model->get_detail($id);
 
         if (!$mutation || $mutation['status'] != 1) {
-            return $this->_json(['status' => 0, 'message' => 'Data tidak valid atau status sudah berubah.']);
+            return $this->_json(['status' => 0, 'message' => 'Invalid data or status has changed.']);
         }
 
         $result = $this->approval_mutasi_model->approve_mutation($id, $this->username, $this->datetime);
 
         if ($result) {
-            return $this->_json(['status' => 1, 'message' => 'Mutasi berhasil diapprove. Stock telah dipindahkan.']);
+            // Generate jurnal mutasi
+            $jurnal_error = null;
+            try {
+                $this->approval_mutasi_model->_generate_jurnal_mutasi($mutation);
+            } catch (Exception $e) {
+                $jurnal_error = $e->getMessage();
+                log_message('error', 'GL error approval_mutasi ' . $mutation['mutation_number'] . ': ' . $jurnal_error);
+            }
+
+            if ($jurnal_error) {
+                return $this->_json(['status' => 1, 'message' => 'Mutation approved. Stock transferred, but GL Interface failed: ' . $jurnal_error]);
+            }
+
+            return $this->_json(['status' => 1, 'message' => 'Mutation approved successfully. Stock has been transferred.']);
         }
 
-        return $this->_json(['status' => 0, 'message' => 'Gagal melakukan approval.']);
+        return $this->_json(['status' => 0, 'message' => 'Failed to approve mutation.']);
     }
 
     // ---------------------------------------------------------------
@@ -123,22 +136,22 @@ class Approval_mutasi extends Admin_Controller
         $reason = $this->input->post('reject_reason');
 
         if (empty(trim($reason))) {
-            return $this->_json(['status' => 0, 'message' => 'Alasan reject wajib diisi.']);
+            return $this->_json(['status' => 0, 'message' => 'Rejection reason is required.']);
         }
 
         $mutation = $this->approval_mutasi_model->get_detail($id);
 
         if (!$mutation || $mutation['status'] != 1) {
-            return $this->_json(['status' => 0, 'message' => 'Data tidak valid atau status sudah berubah.']);
+            return $this->_json(['status' => 0, 'message' => 'Invalid data or status has changed.']);
         }
 
         $result = $this->approval_mutasi_model->reject_mutation($id, $this->username, $this->datetime, $reason);
 
         if ($result) {
-            return $this->_json(['status' => 1, 'message' => 'Mutasi berhasil ditolak.']);
+            return $this->_json(['status' => 1, 'message' => 'Mutation rejected successfully.']);
         }
 
-        return $this->_json(['status' => 0, 'message' => 'Gagal melakukan reject.']);
+        return $this->_json(['status' => 0, 'message' => 'Failed to reject mutation.']);
     }
 
     // ---------------------------------------------------------------
@@ -152,22 +165,22 @@ class Approval_mutasi extends Admin_Controller
         $reason = $this->input->post('reject_reason');
 
         if (empty(trim($reason))) {
-            return $this->_json(['status' => 0, 'message' => 'Catatan revisi wajib diisi.']);
+            return $this->_json(['status' => 0, 'message' => 'Revision notes are required.']);
         }
 
         $mutation = $this->approval_mutasi_model->get_detail($id);
 
         if (!$mutation || $mutation['status'] != 1) {
-            return $this->_json(['status' => 0, 'message' => 'Data tidak valid atau status sudah berubah.']);
+            return $this->_json(['status' => 0, 'message' => 'Invalid data or status has changed.']);
         }
 
         $result = $this->approval_mutasi_model->revision_mutation($id, $this->username, $this->datetime, $reason);
 
         if ($result) {
-            return $this->_json(['status' => 1, 'message' => 'Mutasi dikembalikan untuk revisi.']);
+            return $this->_json(['status' => 1, 'message' => 'Mutation returned for revision.']);
         }
 
-        return $this->_json(['status' => 0, 'message' => 'Gagal mengembalikan untuk revisi.']);
+        return $this->_json(['status' => 0, 'message' => 'Failed to return for revision.']);
     }
 
     // ---------------------------------------------------------------
@@ -176,6 +189,7 @@ class Approval_mutasi extends Admin_Controller
 
     private function _json($data)
     {
+        if (ob_get_length()) ob_clean();
         return $this->output->set_content_type('application/json')
             ->set_output(json_encode($data));
     }

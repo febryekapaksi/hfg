@@ -55,10 +55,10 @@ $ENABLE_DELETE  = has_permission('Purchase_Order.Delete');
                 <button class="nav-link active tab-invoice" data-tipe="dp" type="button" role="tab">DP</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link tab-invoice" data-tipe="import" type="button" role="tab">Import</button>
+                <button class="nav-link tab-invoice" data-tipe="import" type="button" role="tab">Import (by ROS)</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link tab-invoice" data-tipe="local" type="button" role="tab">Local</button>
+                <button class="nav-link tab-invoice" data-tipe="local" type="button" role="tab">Local (by Incoming)</button>
             </li>
         </ul>
     </div>

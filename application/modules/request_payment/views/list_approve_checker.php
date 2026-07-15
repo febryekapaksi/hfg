@@ -406,7 +406,7 @@ endforeach;
 
         <div class="col-12 list_pembayaran_po table-section mb-4" style="display: none;">
             <h4 class="text-dark fw-bold mb-3"><i class="fa fa-shopping-cart me-2"></i>Pembayaran PO</h4>
-            <div class="table-responsive shadow-sm">
+            <div class="table-responsive shadow-sm" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
                 <table class="table table-striped table-hover table-bordered align-middle mb-0" id="table_pembayaran_po" width="100%">
                     <thead class="text-center">
                         <tr>
@@ -496,16 +496,18 @@ endforeach;
                                 echo '<td class="text-center">' . $item_inv->tanggal . '</td>';
                                 echo '<td>' . ($item_inv->currency ?? 'IDR') . '</td>';
                                 echo '<td class="text-center">';
-                                if ($item_inv->status == '0') {
+                                if ($item_inv->status == 'open') {
                                     echo '<span class="badge bg-info text-dark">Open</span>';
-                                } elseif ($item_inv->status == '9') {
+                                } elseif ($item_inv->status == 'reject') {
                                     echo '<span class="badge bg-danger">Rejected</span>';
+                                } elseif ($item_inv->status == 'approve') {
+                                    echo '<span class="badge bg-success">Approved</span>';
                                 } else {
                                     echo '<span class="badge bg-warning text-dark">Process</span>';
                                 }
                                 echo '</td>';
                                 echo '<td class="text-center"><div class="d-flex justify-content-center gap-1">';
-                                if ($ENABLE_MANAGE && in_array($item_inv->status, ['0', '1']) && $item_inv->app_checker === null) {
+                                if ($ENABLE_MANAGE) {
                                     echo '<a href="' . base_url($this->uri->segment(1) . '/approval_payment_checker/?type=' . $item_inv->tipe . '&id=' . $item_inv->id . '&nilai=' . $item_inv->jumlah) . '" class="btn btn-success btn-sm" title="Approve"><i class="fa fa-check-square"></i></a>';
                                 }
                                 echo '</div></td>';

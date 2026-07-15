@@ -78,15 +78,15 @@ $ENABLE_VIEW    = has_permission('Request_Payment.View');
 
 			<div class="row g-3 align-items-end">
 				<div class="col-12 col-md-6">
-					<div class="form-group">
+					<!-- <div class="form-group">
 						<label for="reject_reason" class="form-label fw-semibold small text-muted">Reject Reason</label>
 						<textarea name="reject_reason" id="reject_reason" class="form-control" rows="2" placeholder="Tulis alasan jika menolak pengajuan..."></textarea>
-					</div>
+					</div> -->
 				</div>
 				<div class="col-12 col-md-6 text-end d-flex justify-content-md-end justify-content-start gap-2">
-					<button type="button" class="btn btn-danger" onclick="reject_req_payment()">
+					<!-- <button type="button" class="btn btn-danger" onclick="reject_req_payment()">
 						<i class="fa fa-close me-1"></i> Reject
-					</button>
+					</button> -->
 					<button type="submit" name="save" class="btn btn-primary" id="submit">
 						<i class="fa fa-save me-1"></i> Update
 					</button>
@@ -236,31 +236,6 @@ $ENABLE_VIEW    = has_permission('Request_Payment.View');
 			}
 		});
 	}
-
-	$(document).on('click', '.pilih_data', function() {
-		var val_pilih = $(this).val();
-		var kategori = $(this).data('kategori');
-		var isChecked = $(this).is(':checked');
-		var wdo = isChecked ? 1 : 0;
-
-		$.ajax({
-			type: 'post',
-			url: siteurl + active_controller + 'added_pilih_data',
-			data: {
-				'id': val_pilih,
-				'kategori': kategori,
-				'wdo': wdo
-			},
-			cache: false,
-			error: function() {
-				Swal.fire({
-					icon: 'error',
-					title: 'Error !',
-					text: 'Please try again later !'
-				});
-			}
-		});
-	});
 
 	// Save/Update Form Handler
 	$('#frm_data').on('submit', function(e) {

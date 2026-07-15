@@ -442,25 +442,25 @@ class Request_payment_model extends BF_Model
         $search = $this->input->post('search');
 
         $this->db->select('a.*');
-        $this->db->from('v_request_payment a');
-        $this->db->where('a.status', '1');
+        $this->db->from('request_payment a');
+        $this->db->where('a.status', 'open');
 
         $count_all = $this->db->count_all_results('', false);
 
         if (!empty($search['value'])) {
             $this->db->group_start();
-            $this->db->like('a.no_dokumen', $search['value'], 'both');
-            $this->db->or_like('a.request_by', $search['value'], 'both');
-            $this->db->or_like('DATE_FORMAT(a.tanggal, "%d-%M-%Y")', $search['value'], 'both');
+            $this->db->like('a.no_doc', $search['value'], 'both');
+            $this->db->or_like('a.nama', $search['value'], 'both');
+            $this->db->or_like('DATE_FORMAT(a.tgl_doc, "%d-%M-%Y")', $search['value'], 'both');
             $this->db->or_like('a.keperluan', $search['value'], 'both');
-            $this->db->or_like('a.kategori', $search['value'], 'both');
-            $this->db->or_like('a.nilai_pengajuan', $search['value'], 'both');
+            $this->db->or_like('a.tipe', $search['value'], 'both');
+            $this->db->or_like('a.jumlah', $search['value'], 'both');
             $this->db->group_end();
         }
 
         $count_filter = $this->db->count_all_results('', false);
 
-        $this->db->order_by('a.tanggal', 'desc');
+        $this->db->order_by('a.tgl_doc', 'desc');
         $this->db->limit($length, $start);
 
         $get_data = $this->db->get();
@@ -471,88 +471,42 @@ class Request_payment_model extends BF_Model
         foreach ($get_data->result() as $item) {
             $no++;
 
-            $nmuser = $item->request_by;
-            if ($item->kategori == 'Kasbon') {
-                $get_kasbon = $this->db->get_where('tr_kasbon', array('no_doc' => $item->no_dokumen))->row();
-                $check_detail = $this->db->get_where('tr_pr_detail_kasbon', ['id_kasbon' => $item->no_dokumen])->result();
-                if (count($check_detail)) {
-                    if ($get_kasbon->tipe_pr == 'pr departemen') {
-                        $this->db->select('b.nm_lengkap');
-                        $this->db->from('rutin_non_planning_header a');
-                        $this->db->join('users b', 'b.id_user = a.created_by');
-                        $this->db->where('a.no_pr', $get_kasbon->id_pr);
-                        $get_single_detail = $this->db->get()->row();
+            $checked = '';
 
-                        $nmuser = $get_single_detail->nm_lengkap;
-                    }
+            $input_tanggal_pembayaran = '<input type="text" class="form-control form-control-sm tanggal" name="tanggal_pembayaran_' . $item->no_doc . '" placeholder="Pilih tanggal...">';
 
-                    if ($get_kasbon->tipe_pr == 'pr stok') {
-                        $this->db->select('b.nm_lengkap');
-                        $this->db->from('material_planning_base_on_produksi a');
-                        $this->db->join('users b', 'b.id_user = a.created_by');
-                        $this->db->where('a.no_pr', $get_kasbon->id_pr);
-                        $get_single_detail = $this->db->get()->row();
-
-                        $nmuser = $get_single_detail->nm_lengkap;
-                    }
-                }
-            }
-
-            $check_added = $this->db->get_where('tr_added_req_payment', ['no_doc' => $item->no_dokumen])->result();
-
-            $checked = (count($check_added) > 0) ? 'checked' : '';
-
-            $input_tanggal_pembayaran = '<input type="text" class="form-control form-control-sm tanggal" name="tanggal_pembayaran_' . $item->no_dokumen . '" placeholder="Pilih tanggal...">';
-
-            $action = '<input type="checkbox" class="pilih_data" name="pilih[]" value="' . $item->no_dokumen . '" data-kategori="' . $item->kategori . '" ' . $checked . '>';
-            $action .= '<input type="hidden" name="kategori_' . $item->no_dokumen . '" value="' . $item->kategori . '">';
-            $action .= '<input type="hidden" name="nilai_pengajuan_' . $item->no_dokumen . '" value="' . $item->nilai_pengajuan . '">';
+            $action = '<input type="checkbox" class="pilih_data" name="pilih[]" value="' . $item->no_doc . '" data-kategori="' . $item->tipe . '" ' . $checked . '>';
+            $action .= '<input type="hidden" name="kategori_' . $item->no_doc . '" value="' . $item->tipe . '">';
+            $action .= '<input type="hidden" name="nilai_pengajuan_' . $item->no_doc . '" value="' . $item->jumlah . '">';
 
             $btn_print = '';
-            if ($item->kategori == 'Periodik') {
+            if ($item->tipe == 'Periodik') {
                 $btn_print = ' <a href="' . base_url('expense/periodik_print/' . $item->id) . '" target="_blank" class="btn btn-sm btn-info" title="Print"><i class="fa fa-print"></i></a>';
             }
-            if ($item->kategori == 'Kasbon') {
+            if ($item->tipe == 'Kasbon') {
                 $btn_print = ' <a href="' . base_url('expense/kasbon_print/' . $item->id) . '" target="_blank" class="btn btn-sm btn-info" title="Print"><i class="fa fa-print"></i></a>';
             }
-            if ($item->kategori == 'Transport') {
+            if ($item->tipe == 'Transport') {
                 $btn_print = ' <a href="' . base_url('expense/transport_req_print/' . $item->id) . '" target="_blank" class="btn btn-sm btn-info" title="Print"><i class="fa fa-print"></i></a>';
             }
-            if ($item->kategori == 'Expense') {
+            if ($item->tipe == 'Expense') {
                 $btn_print = ' <a href="' . base_url('expense/expense_print/' . $item->id) . '" target="_blank" class="btn btn-sm btn-info" title="Print"><i class="fa fa-print"></i></a>';
             }
-            if ($item->kategori == 'Cash') {
+            if ($item->tipe == 'Cash') {
                 $get_check_non_po = $this->db->get_where('tr_pr_non_po', ['id' => $item->id])->row();
-                if ($get_check_non_po->jenis_pr == 'pr departemen' || $get_check_non_po->jenis_pr == 'pr asset') {
+                if (!empty($get_check_non_po) && ($get_check_non_po->jenis_pr == 'pr departemen' || $get_check_non_po->jenis_pr == 'pr asset')) {
                     $btn_print = '<a href="' . base_url('request_payment/print_cash/' . $item->id) . '" target="_blank" class="btn btn-sm btn-info" title="Print"><i class="fa fa-print"></i></a>';
-                }
-            }
-
-            $keperluan = (!empty($item->keperluan)) ? $item->keperluan : '';
-            if ($item->kategori == 'Non-PO') {
-                $get_pr_non_po = $this->db->get_where('tr_pr_non_po', ['id' => $item->id])->row();
-
-                if ($get_pr_non_po->jenis_pr == 'pr stok') {
-                    $keperluan = 'PR Stock - ' . $get_pr_non_po->no_pr;
-                } else if ($get_pr_non_po->jenis_pr == 'pr departemen') {
-                    $get_pr_dept = $this->db->get_where('rutin_non_planning_header', ['no_pr' => $get_pr_non_po->no_pr])->row();
-
-                    $keperluan = (!empty($get_pr_dept)) ? $get_pr_dept->project_name : '';
-                } else {
-                    $get_pr_asset = $this->db->get_where('tran_pr_detail', ['no_pr' => $get_pr_non_po->no_pr])->row();
-
-                    $keperluan = 'PR Asset - ' . $get_pr_non_po->no_pr . ' - ' . $get_pr_asset->nm_barang;
                 }
             }
 
             $hasil[] = [
                 'no' => $no,
-                'no_dokumen' => $item->no_dokumen . ' ' . $btn_print,
-                'request_by' => $nmuser,
-                'tanggal' => date('d F Y', strtotime($item->tanggal)),
-                'keperluan' => $keperluan,
-                'kategori' => $item->kategori,
-                'nilai_pengajuan' => number_format($item->nilai_pengajuan, 2),
+                'no_dokumen' => $item->no_doc . ' ' . $btn_print,
+                'request_by' => $item->nama,
+                'tanggal' => date('d F Y', strtotime($item->tgl_doc)),
+                'keperluan' => $item->keperluan,
+                'kategori' => $item->tipe,
+                'nilai_pengajuan' => number_format($item->jumlah, 2),
                 'tanggal_pembayaran' => $input_tanggal_pembayaran,
                 'action' => $action
             ];

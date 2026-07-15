@@ -1,5 +1,5 @@
 <?php
-$ENABLE_VIEW = has_permission('Approval_mutasi.View');
+$ENABLE_VIEW = has_permission('Approval_mutation.View');
 ?>
 
 <div class="table-responsive">
@@ -7,37 +7,37 @@ $ENABLE_VIEW = has_permission('Approval_mutasi.View');
         <thead class="table-light">
             <tr>
                 <th>#</th>
-                <th>No. Mutasi</th>
-                <th>Tanggal</th>
-                <th>Gudang Asal</th>
-                <th>Gudang Tujuan</th>
-                <th>Keterangan</th>
+                <th>Mutation No.</th>
+                <th>Date</th>
+                <th>Source Warehouse</th>
+                <th>Destination Warehouse</th>
+                <th>Description</th>
                 <th>Approved By</th>
-                <th>Tgl Approve</th>
-                <th width="20">Aksi</th>
+                <th>Approved Date</th>
+                <th width="20">Action</th>
             </tr>
         </thead>
         <tbody>
-                <?php foreach ($list as $i => $row): ?>
-                    <tr>
-                        <td><?= $i + 1 ?></td>
-                        <td><strong><?= $row['mutation_number'] ?></strong></td>
-                        <td><?= date('d/m/Y', strtotime($row['mutation_date'])) ?></td>
-                        <td><?= $row['nm_gudang_from'] ?></td>
-                        <td><?= $row['nm_gudang_to'] ?></td>
-                        <td><?= $row['description'] ?? '-' ?></td>
-                        <td><?= $row['approved_by'] ?? '-' ?></td>
-                        <td><?= !empty($row['approved_date']) ? date('d/m/Y H:i', strtotime($row['approved_date'])) : '-' ?></td>
-                        <td>
-                            <?php if ($ENABLE_VIEW): ?>
-                                <a href="<?= site_url('approval_mutasi/detail/' . $row['id']) ?>"
-                                    class="btn btn-sm btn-info text-white" title="View Detail">
-                                    <i class="fa-solid fa-eye"></i>
-                                </a>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
+            <?php foreach ($list as $i => $row): ?>
+                <tr>
+                    <td><?= $i + 1 ?></td>
+                    <td><strong><?= $row['mutation_number'] ?></strong></td>
+                    <td><?= date('d/m/Y', strtotime($row['mutation_date'])) ?></td>
+                    <td><?= $row['nm_gudang_from'] ?></td>
+                    <td><?= $row['nm_gudang_to'] ?></td>
+                    <td><?= $row['description'] ?? '-' ?></td>
+                    <td><?= $row['approved_by'] ?? '-' ?></td>
+                    <td><?= !empty($row['approved_date']) ? date('d/m/Y H:i', strtotime($row['approved_date'])) : '-' ?></td>
+                    <td class="text-center">
+                        <?php if ($ENABLE_VIEW): ?>
+                            <a href="<?= site_url('approval_mutasi/detail/' . $row['id']) ?>"
+                                class="btn btn-sm btn-info text-white" title="View Detail">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
         </tbody>
     </table>
 </div>

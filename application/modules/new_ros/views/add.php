@@ -1470,7 +1470,13 @@ $list_po_data = isset($list_po) ? $list_po : [];
             if (added > 0) {
                 renderCoilTable();
                 recalculate();
-                Swal.fire('Success', added + ' coils have been added.', 'success');
+                Swal.fire({
+                    title: 'Success',
+                    text: added + ' coils have been added.',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
             } else {
                 Swal.fire('Info', 'No matching coils found.', 'info');
             }
@@ -1543,7 +1549,9 @@ $list_po_data = isset($list_po) ? $list_po : [];
                                     icon: 'success',
                                     title: 'Success',
                                     text: res.msg,
-                                    confirmButtonText: 'OK'
+                                    confirmButtonText: 'OK',
+                                    timer: 1500,
+                                    showConfirmButton: false,
                                 })
                                 .then(function() {
                                     window.location.href = baseurl + 'new_ros';
