@@ -34,9 +34,6 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
 <!-- Actual content (hidden until loaded) -->
 <div id="content-spk-coil" style="display:none">
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Confirm SPK Coil</h5>
-        </div>
         <div class="card-body">
             <table id="table-spk-coil" class="table table-bordered table-striped" width="100%">
                 <thead>

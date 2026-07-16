@@ -89,20 +89,73 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
         }
     }
 
-    .scan-count {
-        font-size: 1.05rem;
-        font-weight: 600;
-        white-space: nowrap;
+
+    /* ===== Status Pill Component (Premium Look) ===== */
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        border-radius: 30px;
+        letter-spacing: 0.3px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
     }
 
-    .badge-scanned {
-        background-color: #28a745;
-        color: #fff;
+    /* State: Belum Scan (Soft Red) */
+    .status-pill.not-scanned {
+        background-color: #e63946 !important;
+        color: #ffffff !important;
+        border: 1px solid #d62828;
+        position: relative;
+        /* Menjalankan animasi pulse merah terus menerus */
+        animation: pulse-red 2s infinite;
     }
 
-    .badge-not-scanned {
-        background-color: #dc3545;
-        color: #fff;
+    .status-pill.not-scanned .status-dot {
+        background-color: #e03131;
+        box-shadow: 0 0 0 3px rgba(224, 49, 49, 0.2);
+    }
+
+    /* State: Sudah Scan (Soft Green dengan animasi sukses) */
+    .status-pill.scanned {
+        background-color: #ebfbee !important;
+        color: #099268 !important;
+        border: 1px solid #b2f2bb;
+        animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .status-pill.scanned .status-dot {
+        background-color: #099268;
+        box-shadow: 0 0 0 3px rgba(9, 146, 104, 0.2);
+    }
+
+    /* Indikator Titik (Dot) di dalam Pill */
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    /* Efek khusus untuk baris yang berhasil discan */
+    .row-scanned-success {
+        background-color: rgba(9, 146, 104, 0.04) !important;
+    }
+
+    /* Animasi ketika status berubah menjadi Sudah Scan */
+    @keyframes popIn {
+        0% {
+            transform: scale(0.9);
+            opacity: 0.5;
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
     }
 
     /* ===== Styling tombol bawaan html5-qrcode di dalam modal kamera ===== */
@@ -181,7 +234,7 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
 
     <!-- Back Button -->
     <div class="mb-3">
-        <a href="<?= site_url('confirm_spk_coil') ?>" class="btn btn-secondary">
+        <a href="<?= site_url('confirm_spk_coil') ?>" class="btn btn-sm btn-secondary">
             <i class="fa fa-arrow-left"></i> Kembali
         </a>
     </div>
@@ -191,20 +244,20 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
         <div class="card-body">
 
             <!-- Info SPK -->
-            <div class="row gy-3">
-                <div class="col-6 col-md-3 info-item">
+            <div class="row gy-3 align-items-center">
+                <div class="col-6 col-md info-item">
                     <strong>SPK Coil No</strong>
-                    <p><?= htmlspecialchars(isset($request['spk_coil_no']) ? $request['spk_coil_no'] : '-') ?></p>
+                    <p class="mb-0"><?= htmlspecialchars(isset($request['spk_coil_no']) ? $request['spk_coil_no'] : '-') ?></p>
                 </div>
-                <div class="col-6 col-md-3 info-item">
+                <div class="col-6 col-md info-item">
                     <strong>SPK Material No</strong>
-                    <p><?= htmlspecialchars(isset($request['spk_material_no']) ? $request['spk_material_no'] : (isset($request['spk_no']) ? $request['spk_no'] : '-')) ?></p>
+                    <p class="mb-0"><?= htmlspecialchars(isset($request['spk_material_no']) ? $request['spk_material_no'] : (isset($request['spk_no']) ? $request['spk_no'] : '-')) ?></p>
                 </div>
-                <div class="col-6 col-md-3 info-item">
+                <div class="col-6 col-md info-item">
                     <strong>Tanggal</strong>
-                    <p><?= isset($request['tgl_spk']) ? date('d/m/Y', strtotime($request['tgl_spk'])) : '-' ?></p>
+                    <p class="mb-0"><?= isset($request['tgl_spk']) ? date('d/m/Y', strtotime($request['tgl_spk'])) : '-' ?></p>
                 </div>
-                <div class="col-6 col-md-3 info-item">
+                <div class="col-6 col-md info-item">
                     <strong>Status</strong>
                     <?php
                     $status = isset($request['status']) ? $request['status'] : '-';
@@ -215,12 +268,14 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
                         $badge_class = 'bg-warning text-dark';
                     }
                     ?>
-                    <span class="badge rounded-pill <?= $badge_class ?>"><?= htmlspecialchars($status) ?></span>
+                    <div class="mt-1">
+                        <span class="badge rounded-pill <?= $badge_class ?>"><?= htmlspecialchars($status) ?></span>
+                    </div>
                 </div>
                 <?php if (!empty($request['shift_names'])): ?>
-                    <div class="col-6 col-md-3 info-item">
+                    <div class="col-6 col-md info-item">
                         <strong>Shift</strong>
-                        <p><?= htmlspecialchars($request['shift_names']) ?></p>
+                        <p class="mb-0"><?= htmlspecialchars($request['shift_names']) ?></p>
                     </div>
                 <?php endif; ?>
             </div>
@@ -282,8 +337,8 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
 
     <!-- Coil Table -->
     <div class="card mb-3">
-        <div class="card-header">
-            <h6 class="mb-0">Daftar Coil</h6>
+        <div class="card-header m-1">
+            <h4 class="mb-0">Daftar Coil</h4>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -295,7 +350,6 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
                             <th>No Coil</th>
                             <th>Material</th>
                             <th>Sumber Gudang</th>
-                            <th class="text-center">Plan Use</th>
                             <th class="text-center" width="15%">Status Scan</th>
                         </tr>
                     </thead>
@@ -313,15 +367,23 @@ $ENABLE_MANAGE = has_permission('Confirm_Spk_Coil.Manage');
                                     echo ($gudang_sumber == 1) ? 'Gudang Coil' : (($gudang_sumber == 3) ? 'WIP' : '-');
                                     ?>
                                 </td>
-                                <td class="text-center"><?= isset($coil['plan_use']) ? $coil['plan_use'] : 0 ?></td>
-                                <td class="text-center">
-                                    <input type="checkbox" class="coil-scan-check" data-id="<?= $coil['id'] ?>" disabled
+                                <td class="text-center align-middle">
+                                    <input type="checkbox" class="coil-scan-check d-none" data-id="<?= $coil['id'] ?>"
                                         <?= ($coil['scan_status'] == 1) ? 'checked' : '' ?>>
-                                    <?php if ($coil['scan_status'] == 1): ?>
-                                        <span class="badge badge-scanned ms-1">Sudah Scan</span>
-                                    <?php else: ?>
-                                        <span class="badge badge-not-scanned ms-1" id="badge-<?= $coil['id'] ?>">Belum Scan</span>
-                                    <?php endif; ?>
+
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <?php if ($coil['scan_status'] == 1): ?>
+                                            <div class="status-pill scanned" id="status-pill-<?= $coil['id'] ?>">
+                                                <i class="fa fa-check-circle"></i>
+                                                <span>Sudah</span>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="status-pill not-scanned" id="status-pill-<?= $coil['id'] ?>">
+                                                <i class="fa fa-exclamation-triangle"></i>
+                                                <span>Belum</span>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

@@ -67,7 +67,7 @@
             left: 5px;
             top: 50%;
             transform: translateY(-50%);
-            height: 40px;
+            height: 60px;
             width: auto;
         }
 
@@ -75,8 +75,7 @@
             font-size: 18px;
             font-weight: bold;
             text-align: center;
-            padding: 14px 0 14px 80px;
-            /* Padding kiri 80px agar teks judul bergeser dari logo */
+            padding: 14px 0 14px 0;
             border-top: 2px solid #111;
             border-bottom: 2px solid #111;
             letter-spacing: 0.5px;

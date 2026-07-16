@@ -501,7 +501,7 @@ class Request_payment_model extends BF_Model
 
             $hasil[] = [
                 'no' => $no,
-                'no_dokumen' => $item->no_doc . ' ' . $btn_print,
+                'no_dokumen' => $item->no_surat . ' ' . $btn_print,
                 'request_by' => $item->nama,
                 'tanggal' => date('d F Y', strtotime($item->tgl_doc)),
                 'keperluan' => $item->keperluan,
