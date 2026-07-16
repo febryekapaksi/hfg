@@ -545,44 +545,11 @@ class Purchase_order_payment extends Admin_Controller
 		if ($this->db->affected_rows() > 0) {
 			$id_receive = $this->db->insert_id();
 
-			// Insert ke request_payment (status=1) supaya muncul di request_payment/index
-			$data_po = $this->db->get_where('tr_purchase_order', ['no_po' => $no_po])->row_array();
-			$get_supplier = $this->db->get_where('new_supplier', ['kode_supplier' => $data_po['id_suplier'] ?? ''])->row_array();
-			$get_user = $this->db->get_where('users', ['id_user' => $this->auth->user_id()])->row_array();
-
-			$sisa_nilai_form = $clean($this->input->post('sisa_nilai'));
-			$jumlah_total = $sisa_nilai_form; // dalam foreign currency (tanpa × kurs)
-
-			$this->db->insert('request_payment', [
-				'no_doc'      => $no_po,
-				'no_surat'    => $no_surat,
-				'nama'        => $get_user['nm_lengkap'] ?? $this->auth->user_name(),
-				'tgl_doc'     => $this->input->post('invoice_date') ?? date('Y-m-d'),
-				'keperluan'   => 'Pembayaran Invoice Import - ' . $no_surat . ' - ' . $this->input->post('nomor_invoice'),
-				'tipe'        => 'invoice_import',
-				'jumlah'      => $jumlah_total,
-				'status'      => 'open',
-				'tanggal'     => null,
-				'currency'    => $currency,
-				'bank_id'     => $this->input->post('bank') ?? '',
-				'accnumber'   => $this->input->post('no_bank') ?? '',
-				'accname'     => $this->input->post('nm_acc_bank') ?? '',
-				'bank_name'   => $this->input->post('bank') ?? '',
-				'ids'         => (string)$id_receive,
-				'admin_bank'  => 0,
-				'total_pph'   => 0,
-				'id_supplier' => $data_po['id_suplier'] ?? '',
-				'nm_supplier' => $get_supplier['nama'] ?? '',
-				'created_by'  => $get_user['nm_lengkap'] ?? $this->auth->user_name(),
-				'created_on'  => date('Y-m-d H:i:s'),
-			]);
-
-			$this->db->update('tr_receive_invoice', ['status' => 'draft'], ['id' => $id_receive]);
-
 			try {
 				$this->load->model('gl_interface/Gl_interface_model');
 				$data_source = $data_insert;
 				$data_source['tanggal'] = date('Y-m-d');
+				$data_source['id'] = $id_receive; // Set id untuk generate jurnal jika diperlukan
 				$mapping = $this->db->get_where('ms_jurnal_mapping', ['menu' => 'Purchase Order Payment', 'action' => 'save_import'])->row();
 				$kode_jurnal = $mapping ? $mapping->kode_master_jurnal : 'JV007'; // fallback
 				$this->Gl_interface_model->generate_jurnal_dari_template($kode_jurnal, $data_source);
@@ -592,7 +559,7 @@ class Purchase_order_payment extends Admin_Controller
 
 			if (ob_get_length()) ob_clean();
 			header('Content-Type: application/json');
-			echo json_encode(['status' => 1, 'message' => 'Invoice Import berhasil disimpan. Silakan isi tanggal pembayaran di menu Request Payment.']);
+			echo json_encode(['status' => 1, 'message' => 'Invoice Import berhasil disimpan.']);
 		} else {
 			if (ob_get_length()) ob_clean();
 			header('Content-Type: application/json');
@@ -3160,10 +3127,16 @@ class Purchase_order_payment extends Admin_Controller
 		}
 
 		// Cek duplikat di request_payment
-		$cek_rp = $this->db->get_where('request_payment', [
+		$cek_rp_cond = [
 			'no_doc' => $data['no_po'],
 			'tipe'   => $tipe_rp
-		])->row();
+		];
+		
+		if ($tipe === 'import' && !empty($data['id_ros'])) {
+			$cek_rp_cond['id_ros'] = $data['id_ros'];
+		}
+		
+		$cek_rp = $this->db->get_where('request_payment', $cek_rp_cond)->row();
 		if ($cek_rp) {
 			echo json_encode(['status' => 0, 'message' => 'Request payment untuk invoice ini sudah pernah dibuat.']);
 			return;
@@ -3203,6 +3176,7 @@ class Purchase_order_payment extends Admin_Controller
 			'accname'     => $data['nm_acc_bank'] ?? '',
 			'bank_name'   => $data['bank'] ?? '',
 			'ids'         => (string)$id_receive,
+			'id_ros'      => $data['id_ros'] ?? null, // Tambahkan id_ros di sini
 			'admin_bank'  => 0,
 			'total_pph'   => 0,
 			'id_supplier' => $data_po['id_suplier'] ?? '',

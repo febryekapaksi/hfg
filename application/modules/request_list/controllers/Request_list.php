@@ -96,7 +96,7 @@ class Request_list extends Admin_Controller
             // Hanya muncul jika statusnya adalah 'Material Requested'
             $show_create_btn = false;
 
-            if ($display_status == 'Material Requested') {
+            if (in_array($display_status, ['Material Requested', 'Material On Load'])) {
                 $has_unfulfilled = $this->Request_list_model->has_unfulfilled_material($row['spk_no']);
                 if ($has_unfulfilled) {
                     $show_create_btn = true;
