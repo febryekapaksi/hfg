@@ -2813,13 +2813,79 @@ class Request_payment extends Admin_Controller
 
 	public function download_excel_request_payment()
 	{
+		require_once APPPATH . 'libraries/PHPExcel.php';
+		
+		$objPHPExcel = new PHPExcel();
+		$objPHPExcel->setActiveSheetIndex(0);
+		$sheet = $objPHPExcel->getActiveSheet();
+		$sheet->setTitle('Request Payment');
+
+		$sheet->setCellValue('A1', '#');
+		$sheet->setCellValue('B1', 'No. Dokumen');
+		$sheet->setCellValue('C1', 'Request By');
+		$sheet->setCellValue('D1', 'Tanggal');
+		$sheet->setCellValue('E1', 'Keperluan');
+		$sheet->setCellValue('F1', 'Kategori');
+		$sheet->setCellValue('G1', 'Nilai Pengajuan');
+
 		$list_all_request_payment = $this->Request_payment_model->list_all_request_payment();
 
-		$data = [
-			'list_all_request_payment' => $list_all_request_payment
-		];
+		$row = 2;
+		$no = 0;
+		foreach ($list_all_request_payment as $item) {
+			$no++;
+			$nmuser = $item->request_by;
+			
+			if ($item->kategori == 'Kasbon') {
+				$get_kasbon = $this->db->get_where('tr_kasbon', array('no_doc' => $item->no_dokumen))->row();
+				$check_detail = $this->db->get_where('tr_pr_detail_kasbon', ['id_kasbon' => $item->no_dokumen])->result();
+				if (count($check_detail) > 0 && !empty($get_kasbon)) {
+					if ($get_kasbon->tipe_pr == 'pr departemen') {
+						$this->db->select('b.nm_lengkap');
+						$this->db->from('rutin_non_planning_header a');
+						$this->db->join('users b', 'b.id_user = a.created_by');
+						$this->db->where('a.no_pr', $get_kasbon->id_pr);
+						$get_single_detail = $this->db->get()->row();
+						if(!empty($get_single_detail)) {
+							$nmuser = $get_single_detail->nm_lengkap;
+						}
+					}
 
-		$this->load->view('download_excel', $data);
+					if ($get_kasbon->tipe_pr == 'pr stok') {
+						$this->db->select('b.nm_lengkap');
+						$this->db->from('material_planning_base_on_produksi a');
+						$this->db->join('users b', 'b.id_user = a.created_by');
+						$this->db->where('a.no_pr', $get_kasbon->id_pr);
+						$get_single_detail = $this->db->get()->row();
+						if(!empty($get_single_detail)) {
+							$nmuser = $get_single_detail->nm_lengkap;
+						}
+					}
+				}
+			}
+
+			$sheet->setCellValue('A' . $row, $no);
+			$sheet->setCellValue('B' . $row, $item->no_surat);
+			$sheet->setCellValue('C' . $row, $nmuser);
+			$sheet->setCellValue('D' . $row, date('d F Y', strtotime($item->tanggal)));
+			$sheet->setCellValue('E' . $row, $item->keperluan);
+			$sheet->setCellValue('F' . $row, $item->kategori);
+			$sheet->setCellValue('G' . $row, $item->nilai_pengajuan);
+
+			$row++;
+		}
+
+		if (ob_get_length()) {
+			ob_clean();
+		}
+		
+		header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+		header('Content-Disposition: attachment;filename="Request Payment (' . date('d-m-Y') . ').xlsx"');
+		header('Cache-Control: max-age=0');
+		
+		$objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+		$objWriter->save('php://output');
+		exit;
 	}
 
 	public function print_cash($id)

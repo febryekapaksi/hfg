@@ -51,7 +51,7 @@ header("Content-Disposition: attachment; filename=Request Payment (" . date('d-m
             echo '<tr>';
 
             echo '<td style="text-align: center;">' . $no . '</td>';
-            echo '<td style="text-align: center;">' . $item->no_dokumen . '</td>';
+            echo '<td style="text-align: center;">' . $item->no_surat . '</td>';
             echo '<td style="text-align: center;">' . $nmuser . '</td>';
             echo '<td style="text-align: center;">' . date('d F Y', strtotime($item->tanggal)) . '</td>';
             echo '<td style="text-align: left;">' . $item->keperluan . '</td>';

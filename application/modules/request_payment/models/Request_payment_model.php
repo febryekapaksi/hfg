@@ -881,10 +881,18 @@ class Request_payment_model extends BF_Model
 
     public function list_all_request_payment()
     {
-        $this->db->select('a.*');
-        $this->db->from('v_request_payment a');
-        $this->db->where('a.status', '1');
-        $this->db->order_by('a.tanggal', 'desc');
+        $this->db->select('
+            a.*,
+            a.nama as request_by,
+            a.no_doc as no_dokumen,
+            a.tgl_doc as tanggal,
+            a.keperluan as keperluan,
+            a.tipe as kategori,
+            a.jumlah as nilai_pengajuan
+        ');
+        $this->db->from('request_payment a');
+        $this->db->where('a.status', 'open');
+        $this->db->order_by('a.tgl_doc', 'desc');
         $get_data = $this->db->get()->result();
 
         return $get_data;

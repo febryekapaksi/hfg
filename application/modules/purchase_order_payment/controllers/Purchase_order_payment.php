@@ -48,6 +48,14 @@ class Purchase_order_payment extends Admin_Controller
 		$this->template->title('Receive Invoice');
 		$this->template->render('index');
 	}
+	
+	public function check_menus() {
+	    echo "<pre>";
+	    print_r($this->db->query("SHOW COLUMNS FROM payment_approve_details")->result());
+	    echo "================\n";
+	    print_r($this->db->query("SHOW COLUMNS FROM payment_approve")->result());
+	    exit;
+	}
 
 	public function checkbx()
 	{
