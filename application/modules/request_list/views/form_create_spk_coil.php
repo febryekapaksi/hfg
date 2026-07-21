@@ -372,18 +372,32 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
 
             if (data.wip && data.wip.length > 0) {
                 data.wip.forEach(function(coil) {
+                    var isScanned = (coil.scan_status == 1) ? true : false;
+                    var assignedSPKC = coil.assigned_spkc || '';
+                    var assignedReqId = coil.assigned_request_id || '';
+                    var disabledAttr = isScanned ? 'disabled' : '';
+                    var badgeHtml = '';
+                    
+                    if (isScanned) {
+                        badgeHtml = '<br><span class="badge bg-success">Scanned di ' + assignedSPKC + '</span>';
+                    } else if (assignedSPKC) {
+                        badgeHtml = '<br><span class="badge bg-warning text-dark">Terdaftar di ' + assignedSPKC + '</span>';
+                    }
+
                     tbodyWip += '<tr>';
                     tbodyWip += '<td class="text-center">';
-                    tbodyWip += '<input type="checkbox" class="form-check-input coil-checkbox" ' +
+                    tbodyWip += '<input type="checkbox" class="form-check-input coil-checkbox" ' + disabledAttr + ' ' +
                         'data-id-material="' + escHtml(String(idMaterial)) + '" ' +
                         'data-id-coil="' + escHtml(String(coil.id)) + '" ' +
                         'data-no-coil="' + escHtml(coil.no_coil || '') + '" ' +
                         'data-kode-internal="' + escHtml(coil.kode_internal || '') + '" ' +
                         'data-id-gudang="3" ' +
                         'data-target="wip" ' +
+                        'data-assigned-spkc="' + escHtml(assignedSPKC) + '" ' +
+                        'data-assigned-req-id="' + escHtml(String(assignedReqId)) + '" ' +
                         'data-nm-material="' + escHtml(coil.nm_material || '') + '">';
                     tbodyWip += '</td>';
-                    tbodyWip += '<td>' + escHtml(coil.no_coil || '-') + '</td>';
+                    tbodyWip += '<td>' + escHtml(coil.no_coil || '-') + badgeHtml + '</td>';
                     tbodyWip += '<td>' + escHtml(coil.kode_internal || '-') + '</td>';
                     tbodyWip += '<td class="text-end">' + parseFloat(coil.net_weight || 0).toFixed(2) + '</td>';
                     tbodyWip += '</tr>';
@@ -394,18 +408,32 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
 
             if (data.gudang_coil && data.gudang_coil.length > 0) {
                 data.gudang_coil.forEach(function(coil) {
+                    var isScanned = (coil.scan_status == 1) ? true : false;
+                    var assignedSPKC = coil.assigned_spkc || '';
+                    var assignedReqId = coil.assigned_request_id || '';
+                    var disabledAttr = isScanned ? 'disabled' : '';
+                    var badgeHtml = '';
+                    
+                    if (isScanned) {
+                        badgeHtml = '<br><span class="badge bg-success">Scanned di ' + assignedSPKC + '</span>';
+                    } else if (assignedSPKC) {
+                        badgeHtml = '<br><span class="badge bg-warning text-dark">Terdaftar di ' + assignedSPKC + '</span>';
+                    }
+
                     tbodyPro += '<tr>';
                     tbodyPro += '<td class="text-center">';
-                    tbodyPro += '<input type="checkbox" class="form-check-input coil-checkbox" ' +
+                    tbodyPro += '<input type="checkbox" class="form-check-input coil-checkbox" ' + disabledAttr + ' ' +
                         'data-id-material="' + escHtml(String(idMaterial)) + '" ' +
                         'data-id-coil="' + escHtml(String(coil.id)) + '" ' +
                         'data-no-coil="' + escHtml(coil.no_coil || '') + '" ' +
                         'data-kode-internal="' + escHtml(coil.kode_internal || '') + '" ' +
                         'data-id-gudang="1" ' +
                         'data-target="pro" ' +
+                        'data-assigned-spkc="' + escHtml(assignedSPKC) + '" ' +
+                        'data-assigned-req-id="' + escHtml(String(assignedReqId)) + '" ' +
                         'data-nm-material="' + escHtml(coil.nm_material || '') + '">';
                     tbodyPro += '</td>';
-                    tbodyPro += '<td>' + escHtml(coil.no_coil || '-') + '</td>';
+                    tbodyPro += '<td>' + escHtml(coil.no_coil || '-') + badgeHtml + '</td>';
                     tbodyPro += '<td>' + escHtml(coil.kode_internal || '-') + '</td>';
                     tbodyPro += '<td class="text-end">' + parseFloat(coil.net_weight || 0).toFixed(2) + '</td>';
                     tbodyPro += '</tr>';
@@ -449,16 +477,42 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
         /**
          * Individual checkbox change
          */
-        $(document).on('change', '.coil-checkbox', function() {
-            var idMaterial = $(this).data('id-material');
-            var target = $(this).data('target');
-            updateCheckedCount(idMaterial);
+        $(document).on('change', '.coil-checkbox', function(e) {
+            var $checkbox = $(this);
+            var isChecked = $checkbox.is(':checked');
+            var assignedSpkc = $checkbox.data('assigned-spkc');
+            
+            if (isChecked && assignedSpkc) {
+                // Prevent default/temporary uncheck
+                $checkbox.prop('checked', false);
+                
+                Swal.fire({
+                    title: 'Peringatan',
+                    text: 'Coil ini sudah ada di ' + assignedSpkc + ' dan belum discan. Apakah Anda ingin mengeluarkannya dan memasukannya ke SPK Coil baru ini?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, pindahkan',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $checkbox.prop('checked', true);
+                        updateCheckAllState($checkbox);
+                    }
+                });
+            } else {
+                updateCheckAllState($checkbox);
+            }
+        });
 
+        function updateCheckAllState($checkbox) {
+            var idMaterial = $checkbox.data('id-material');
+            var target = $checkbox.data('target');
+            
             // Update check-all state
             var total = $('#coil-body-' + target + '-' + idMaterial + ' .coil-checkbox').length;
             var checked = $('#coil-body-' + target + '-' + idMaterial + ' .coil-checkbox:checked').length;
             $('.check-all[data-id-material="' + idMaterial + '"][data-target="' + target + '"]').prop('checked', total > 0 && checked === total);
-        });
+        }
 
         // Checked count display removed
         function updateCheckedCount(idMaterial) {
@@ -473,18 +527,6 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
             var isValid = true;
             var errorMessages = [];
 
-            // Validate per material
-            $('.material-section').each(function() {
-                var idMaterial = $(this).data('id-material');
-                var matName = $(this).find('.section-title').text().trim();
-                var checkedCount = $('#coil-body-wip-' + idMaterial + ' .coil-checkbox:checked').length +
-                    $('#coil-body-pro-' + idMaterial + ' .coil-checkbox:checked').length;
-
-                if (checkedCount === 0) {
-                    isValid = false;
-                    errorMessages.push('Anda belum memilih coil untuk material "' + matName + '".');
-                }
-            });
 
             if (!isValid) {
                 Swal.fire('Validasi Gagal', errorMessages.join('<br>'), 'error');
@@ -502,7 +544,8 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                     nm_material: $(this).data('nm-material'),
                     kode_internal: $(this).data('kode-internal'),
                     no_coil: $(this).data('no-coil'),
-                    id_gudang_sumber: $(this).data('id-gudang')
+                    id_gudang_sumber: $(this).data('id-gudang'),
+                    assigned_request_id: $(this).data('assigned-req-id')
                 });
             });
 

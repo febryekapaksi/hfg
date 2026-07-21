@@ -665,12 +665,12 @@
                 html += '<tr>' +
                     '<td class="text-center">' + (i + 1) + '</td>' +
                     '<td>' + (r.tanggal || '-') + '</td>' +
-                    '<td>' + (r.no_ipp || '-') + '</td>' +
+                    '<td>' + (r.kode_trans || '-') + '</td>' +
                     '<td class="text-center">' + statusBadge + '</td>' +
                     // Jumlah coil — klik → drill-down
                     '<td class="text-center">' +
                     '<a href="javascript:void(0)" class="badge bg-primary" ' +
-                    'data-no-ipp="' + r.no_ipp + '" ' +
+                    'data-kode-trans="' + r.kode_trans + '" ' +
                     'data-id-material="' + r.id_material + '" ' +
                     'data-id-gudang="' + r.id_gudang + '" ' +
                     'data-nm-material="' + r.nm_material + '" ' +
@@ -692,12 +692,12 @@
     }
 
     function showSummaryDetailCoil(el) {
-        var no_ipp = el.dataset.noIpp;
+        var kode_trans = el.dataset.kodeTrans;
         var id_material = el.dataset.idMaterial;
         var id_gudang = el.dataset.idGudang;
         var nm_material = el.dataset.nmMaterial;
 
-        $('#coil-trx-title').text(nm_material + ' — ' + no_ipp);
+        $('#coil-trx-title').text(nm_material + ' — ' + kode_trans);
         $('#tbody-detail-coil-trx').html(
             '<tr><td colspan="7" class="text-center">' +
             '<i class="fa fa-spinner fa-spin"></i> Loading...</td></tr>'
@@ -707,7 +707,7 @@
         new bootstrap.Modal(document.getElementById('modal-detail-coil-trx')).show();
 
         $.post(siteurl + 'warehouse/get_summary_detail_coil', {
-            no_ipp: no_ipp,
+            kode_trans: kode_trans,
             id_material: id_material,
             id_gudang: id_gudang
         }, function(data) {

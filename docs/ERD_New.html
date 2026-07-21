@@ -195,7 +195,7 @@
     decimal saldo_akhir
     decimal harga_baru
   }
-  warehouse_incoming_summary {
+  warehouse_stock_transaction_summary {
     int id PK
     varchar no_ipp FK
     varchar id_material
@@ -205,7 +205,7 @@
     decimal costbook
     decimal saldo_akhir
   }
-  warehouse_incoming_summary_detail {
+  warehouse_stock_transaction_detail {
     int id PK
     varchar no_ipp FK
     varchar no_coil
@@ -234,8 +234,8 @@
   tr_ros_header ||--o| gl_interface : "1:1 close-ROS"
   tr_incoming_header ||--|| gl_interface : "1:1 finalize"
   gl_interface ||--o{ gl_interface_detail : "1:N id_gl_interface"
-  tr_incoming_header ||--o{ warehouse_incoming_summary : "1:N no_ipp"
-  tr_incoming_header ||--o{ warehouse_incoming_summary_detail : "1:N no_ipp"
+  tr_incoming_header ||--o{ warehouse_stock_transaction_summary : "1:N no_ipp"
+  tr_incoming_header ||--o{ warehouse_stock_transaction_detail : "1:N no_ipp"
   tr_incoming_detail }o--|| warehouse_stock : "N:1 update stok"
   tr_incoming_detail ||--|| warehouse_stock_coil : "1:1 per coil"
   tr_incoming_detail ||--|| warehouse_history : "1:1 per coil"
@@ -284,8 +284,8 @@
     warehouse_stock: '#8e44ad',
     warehouse_stock_coil: '#8e44ad',
     warehouse_history: '#8e44ad',
-    warehouse_incoming_summary: '#8e44ad',
-    warehouse_incoming_summary_detail: '#8e44ad',
+    warehouse_stock_transaction_summary: '#8e44ad',
+    warehouse_stock_transaction_detail: '#8e44ad',
     kartu_stok: '#8e44ad',
   };
 

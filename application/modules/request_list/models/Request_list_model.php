@@ -151,29 +151,49 @@ class Request_list_model extends BF_Model
      */
     public function get_available_coils($id_material, $spk_no)
     {
-        $sql_pro = "SELECT id, id_material, nm_material, kode_internal, no_coil, net_weight, id_gudang, kd_gudang, 1 as source_type
-                    FROM warehouse_stock_coil
-                    WHERE id_material = ?
-                      AND kd_gudang = 'PRO'
-                      AND status = 1
-                      AND id NOT IN (
-                          SELECT id_coil FROM tr_warehouse_request_coil_detail wrcd
-                          JOIN tr_warehouse_request_header wrh ON wrh.id = wrcd.request_id
-                          WHERE wrh.spk_no = ? AND wrh.status != 'Rejected' AND wrcd.id_gudang_sumber = 1
-                      )";
+        $sql_pro = "SELECT c.id, c.id_material, c.nm_material, c.kode_internal, c.no_coil, c.net_weight, c.id_gudang, c.kd_gudang, 1 as source_type,
+                           (SELECT wrh.spk_coil_no 
+                            FROM tr_warehouse_request_coil_detail wrcd
+                            JOIN tr_warehouse_request_header wrh ON wrh.id = wrcd.request_id
+                            WHERE wrcd.id_coil = c.id AND wrcd.id_gudang_sumber = 1 AND wrh.status != 'Rejected' AND wrh.status != 'Cancelled'
+                            ORDER BY wrcd.id DESC LIMIT 1) as assigned_spkc,
+                           (SELECT wrcd.scan_status 
+                            FROM tr_warehouse_request_coil_detail wrcd
+                            JOIN tr_warehouse_request_header wrh ON wrh.id = wrcd.request_id
+                            WHERE wrcd.id_coil = c.id AND wrcd.id_gudang_sumber = 1 AND wrh.status != 'Rejected' AND wrh.status != 'Cancelled'
+                            ORDER BY wrcd.id DESC LIMIT 1) as scan_status,
+                           (SELECT wrcd.request_id 
+                            FROM tr_warehouse_request_coil_detail wrcd
+                            JOIN tr_warehouse_request_header wrh ON wrh.id = wrcd.request_id
+                            WHERE wrcd.id_coil = c.id AND wrcd.id_gudang_sumber = 1 AND wrh.status != 'Rejected' AND wrh.status != 'Cancelled'
+                            ORDER BY wrcd.id DESC LIMIT 1) as assigned_request_id
+                    FROM warehouse_stock_coil c
+                    WHERE c.id_material = ?
+                      AND c.kd_gudang = 'PRO'
+                      AND c.status = 1";
 
-        $sql_wip = "SELECT id, id_material, nm_material, kode_internal, no_coil, net_weight, id_gudang, kd_gudang, 3 as source_type
-                    FROM warehouse_stock_coil_wip
-                    WHERE id_material = ?
-                      AND status = 'active'
-                      AND id NOT IN (
-                          SELECT id_coil FROM tr_warehouse_request_coil_detail wrcd
-                          JOIN tr_warehouse_request_header wrh ON wrh.id = wrcd.request_id
-                          WHERE wrh.spk_no = ? AND wrh.status != 'Rejected' AND wrcd.id_gudang_sumber = 3
-                      )";
+        $sql_wip = "SELECT c.id, c.id_material, c.nm_material, c.kode_internal, c.no_coil, c.net_weight, c.id_gudang, c.kd_gudang, 3 as source_type,
+                           (SELECT wrh.spk_coil_no 
+                            FROM tr_warehouse_request_coil_detail wrcd
+                            JOIN tr_warehouse_request_header wrh ON wrh.id = wrcd.request_id
+                            WHERE wrcd.id_coil = c.id AND wrcd.id_gudang_sumber = 3 AND wrh.status != 'Rejected' AND wrh.status != 'Cancelled'
+                            ORDER BY wrcd.id DESC LIMIT 1) as assigned_spkc,
+                           (SELECT wrcd.scan_status 
+                            FROM tr_warehouse_request_coil_detail wrcd
+                            JOIN tr_warehouse_request_header wrh ON wrh.id = wrcd.request_id
+                            WHERE wrcd.id_coil = c.id AND wrcd.id_gudang_sumber = 3 AND wrh.status != 'Rejected' AND wrh.status != 'Cancelled'
+                            ORDER BY wrcd.id DESC LIMIT 1) as scan_status,
+                           (SELECT wrcd.request_id 
+                            FROM tr_warehouse_request_coil_detail wrcd
+                            JOIN tr_warehouse_request_header wrh ON wrh.id = wrcd.request_id
+                            WHERE wrcd.id_coil = c.id AND wrcd.id_gudang_sumber = 3 AND wrh.status != 'Rejected' AND wrh.status != 'Cancelled'
+                            ORDER BY wrcd.id DESC LIMIT 1) as assigned_request_id
+                    FROM warehouse_stock_coil_wip c
+                    WHERE c.id_material = ?
+                      AND c.status = 'active'";
 
-        $pro_coils = $this->db->query($sql_pro, [$id_material, $spk_no])->result_array();
-        $wip_coils = $this->db->query($sql_wip, [$id_material, $spk_no])->result_array();
+        $pro_coils = $this->db->query($sql_pro, [$id_material])->result_array();
+        $wip_coils = $this->db->query($sql_wip, [$id_material])->result_array();
 
         return array_merge($pro_coils, $wip_coils);
     }
@@ -417,5 +437,191 @@ class Request_list_model extends BF_Model
         }
 
         return false;
+    }
+
+    // ---------------------------------------------------------------
+    // SCAN & CONFIRM SPK COIL OPERATIONS (Migrated from Confirm_spk_coil_model)
+    // ---------------------------------------------------------------
+
+    /**
+     * Get pending SPK Coils (request headers) by SPK Material
+     */
+    public function get_pending_spkc_by_spk($spk_no)
+    {
+        $this->db->where('spk_no', $spk_no);
+        $this->db->where('status', 'Material On Load');
+        return $this->db->get('tr_warehouse_request_header')->result_array();
+    }
+
+    public function update_scan_status($detail_id, $data)
+    {
+        $this->db->where('id', $detail_id);
+        return $this->db->update('tr_warehouse_request_coil_detail', $data);
+    }
+
+    public function find_coil_by_kode_internal($request_id, $kode_internal, $nm_gudang)
+    {
+        $this->db->select('d.*, w.kd_gudang, w.nm_gudang');
+        $this->db->from('tr_warehouse_request_coil_detail d');
+        $this->db->join('warehouse w', 'w.id = d.id_gudang_sumber', 'left');
+        $this->db->where('d.request_id', $request_id);
+        $this->db->where('d.kode_internal', $kode_internal);
+        $this->db->where('LOWER(w.nm_gudang)', strtolower($nm_gudang));
+
+        return $this->db->get()->row_array();
+    }
+
+    public function all_coils_scanned($request_id)
+    {
+        $this->db->where('request_id', $request_id);
+        $this->db->where('scan_status', 0);
+        $count = $this->db->count_all_results('tr_warehouse_request_coil_detail');
+
+        return $count == 0;
+    }
+
+    public function reduce_coil_stock($id_coil, $kode_trans, $created_by)
+    {
+        $coil = $this->db->query(
+            "SELECT * FROM warehouse_stock_coil WHERE id = ? LIMIT 1 FOR UPDATE",
+            [$id_coil]
+        )->row_array();
+
+        if (!$coil) {
+            return false;
+        }
+
+        $stock = $this->db->query(
+            "SELECT * FROM warehouse_stock WHERE code_lv4 = ? AND kd_gudang = ? LIMIT 1 FOR UPDATE",
+            [$coil['id_material'], $coil['kd_gudang']]
+        )->row_array();
+
+        $qty_awal   = $stock ? (float) $stock['qty_stock']   : 0;
+        $saldo_awal = $stock ? (float) $stock['total_nilai'] : 0;
+        $harga_lama = $stock ? (float) $stock['harga_beli']  : 0;
+        $id_gudang  = $stock ? $stock['id_gudang']            : 0;
+
+        // Hapus baris coil dari gudang sumber
+        $this->db->where('id', $id_coil)->delete('warehouse_stock_coil');
+
+        // Hitung ulang qty_stock & total_nilai dari sisa coil di gudang yang sama
+        $this->db->select_sum('net_weight');
+        $this->db->select_sum('total_nilai');
+        $this->db->where('id_material', $coil['id_material']);
+        $this->db->where('kd_gudang', $coil['kd_gudang']);
+        $sum_result = $this->db->get('warehouse_stock_coil')->row_array();
+
+        $qty_akhir   = $sum_result['net_weight']  ? (float) $sum_result['net_weight']  : 0;
+        $saldo_akhir = $sum_result['total_nilai'] ? (float) $sum_result['total_nilai'] : 0;
+        $costbook    = $harga_lama;
+
+        $this->db->where('code_lv4', $coil['id_material'])
+            ->where('kd_gudang', $coil['kd_gudang'])
+            ->set('qty_stock', $qty_akhir)
+            ->set('total_nilai', $saldo_akhir)
+            ->update('warehouse_stock');
+
+        $now = date('Y-m-d H:i:s');
+
+        // Ledger costing
+        $this->db->insert('warehouse_history', [
+            'id_material'     => $coil['id_material'],
+            'nm_material'     => $coil['nm_material'],
+            'id_gudang'       => $id_gudang,
+            'kd_gudang'       => $coil['kd_gudang'],
+            'id_gudang_dari'  => $id_gudang,
+            'kd_gudang_dari'  => $coil['kd_gudang'],
+            'id_gudang_ke'    => $id_gudang,
+            'kd_gudang_ke'    => $coil['kd_gudang'],
+            'qty_stock_awal'  => $qty_awal,
+            'qty_stock_akhir' => $qty_akhir,
+            'no_ipp'          => $kode_trans,
+            'jumlah_mat'      => $coil['net_weight'],
+            'ket'             => 'Coil terpakai produksi SPK ' . $kode_trans . ' (Coil: ' . $coil['no_coil'] . ')',
+            'no_coil'         => $coil['no_coil'],
+            'harga_beli'      => $harga_lama,
+            'total_harga'     => $coil['total_nilai'],
+            'saldo_awal'      => $saldo_awal,
+            'saldo_akhir'     => $saldo_akhir,
+            'harga_baru'      => $costbook,
+            'harga_lama'      => $harga_lama,
+            'update_by'       => $created_by,
+            'update_date'     => $now,
+        ]);
+
+        // Agregat per transaksi (SPK) + material
+        $this->db->insert('warehouse_stock_transaction_summary', [
+            'kode_trans'    => $kode_trans,
+            'id_material'   => $coil['id_material'],
+            'nm_material'   => $coil['nm_material'],
+            'id_gudang'     => $id_gudang,
+            'kd_gudang'     => $coil['kd_gudang'],
+            'tanggal'       => date('Y-m-d'),
+            'jumlah_coil'   => 1,
+            'qty_awal'      => $qty_awal,
+            'qty_transaksi' => $coil['net_weight'],
+            'qty_akhir'     => $qty_akhir,
+            'costbook'      => $costbook,
+            'total_harga'   => $coil['total_nilai'],
+            'saldo_awal'    => $saldo_awal,
+            'saldo_akhir'   => $saldo_akhir,
+            'harga_lama'    => $harga_lama,
+            'created_by'    => $created_by,
+            'created_at'    => $now,
+        ]);
+
+        // Rincian coil
+        $this->db->insert('warehouse_stock_transaction_detail', [
+            'kode_trans'     => $kode_trans,
+            'id_material'    => $coil['id_material'],
+            'nm_material'    => $coil['nm_material'],
+            'id_gudang'      => $id_gudang,
+            'kd_gudang'      => $coil['kd_gudang'],
+            'no_coil'        => $coil['no_coil'],
+            'kode_internal'  => $coil['kode_internal'],
+            'gross_weight'   => !empty($coil['gross_weight']) ? $coil['gross_weight'] : 0,
+            'net_weight'     => !empty($coil['net_weight'])   ? $coil['net_weight']   : 0,
+            'length'         => !empty($coil['length'])       ? $coil['length']       : 0,
+            'price_per_coil' => !empty($coil['harga_beli']) ? $coil['harga_beli'] : 0,
+            'cost_book'      => $costbook,
+            'status_qc'      => 'OUT',
+            'created_at'     => $now,
+        ]);
+
+        return true;
+    }
+
+    public function insert_production_transit_record($data)
+    {
+        return $this->db->insert('warehouse_stock_coil_production_transit', $data);
+    }
+
+    public function get_coil_source_data($id_coil)
+    {
+        $this->db->where('id', $id_coil);
+        return $this->db->get('warehouse_stock_coil')->row_array();
+    }
+
+    public function update_request_status($request_id, $data)
+    {
+        $this->db->where('id', $request_id);
+        return $this->db->update('tr_warehouse_request_header', $data);
+    }
+
+    public function remove_coil_from_spkc($request_id, $id_coil)
+    {
+        $this->db->where('request_id', $request_id);
+        $this->db->where('id_coil', $id_coil);
+        return $this->db->delete('tr_warehouse_request_coil_detail');
+    }
+
+    public function check_and_cancel_empty_spkc($request_id)
+    {
+        $this->db->where('request_id', $request_id);
+        $count = $this->db->count_all_results('tr_warehouse_request_coil_detail');
+        if ($count == 0) {
+            $this->db->where('id', $request_id);
+            $this->db->update('tr_warehouse_request_header', array('status' => 'Cancelled'));
+        }
     }
 }

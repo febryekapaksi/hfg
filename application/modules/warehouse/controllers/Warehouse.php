@@ -720,7 +720,7 @@ class Warehouse extends Admin_Controller
 
         $rows = $this->db->query("
         SELECT *
-        FROM warehouse_incoming_summary
+        FROM warehouse_stock_transaction_summary
         WHERE id_material = ?
           AND id_gudang   = ?
         ORDER BY tanggal ASC, id ASC
@@ -732,18 +732,18 @@ class Warehouse extends Admin_Controller
     // Untuk modal drill-down coil per transaksi
     public function get_summary_detail_coil()
     {
-        $no_ipp      = $this->input->post('no_ipp');
+        $kode_trans      = $this->input->post('kode_trans');
         $id_material = $this->input->post('id_material');
         $id_gudang   = $this->input->post('id_gudang');
 
         $rows = $this->db->query("
         SELECT *
-        FROM warehouse_incoming_summary_detail
-        WHERE no_ipp      = ?
+        FROM warehouse_stock_transaction_detail
+        WHERE kode_trans  = ?
           AND id_material = ?
           AND id_gudang   = ?
         ORDER BY id ASC
-        ", [$no_ipp, $id_material, $id_gudang])->result_array();
+        ", [$kode_trans, $id_material, $id_gudang])->result_array();
 
         echo json_encode($rows);
     }

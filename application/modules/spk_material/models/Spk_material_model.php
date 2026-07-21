@@ -138,16 +138,19 @@ class Spk_material_model extends BF_Model
      */
     public function get_produk_fg_list($search = null)
     {
-        $this->db->select('code_lv4, nama');
-        $this->db->from('product_lvl_4');
-        $this->db->where('status', 1);
-        $this->db->where('deleted_date IS NULL', null, false);
+        $this->db->select('p.code_lv4, p.nama');
+        $this->db->from('product_lvl_4 p');
+        $this->db->join('ms_bom_header bh', 'bh.id_produk = p.code_lv4');
+        $this->db->where('bh.is_delete', 0);
+        $this->db->where('p.status', 1);
+        $this->db->where('p.deleted_date IS NULL', null, false);
         if (!empty($search)) {
             $this->db->group_start();
-            $this->db->like('nama', $search);
-            $this->db->or_like('code_lv4', $search);
+            $this->db->like('p.nama', $search);
+            $this->db->or_like('p.code_lv4', $search);
             $this->db->group_end();
         }
+        $this->db->group_by('p.code_lv4, p.nama');
         $this->db->limit(50);
         return $this->db->get()->result_array();
     }

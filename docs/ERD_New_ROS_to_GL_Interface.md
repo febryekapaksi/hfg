@@ -300,7 +300,7 @@ erDiagram
         INT hist_by
     }
 
-    warehouse_incoming_summary {
+    warehouse_stock_transaction_summary {
         INT id PK "AUTO_INCREMENT"
         VARCHAR30 no_ipp FK "FK ke tr_incoming_header.kode_trans"
         VARCHAR50 id_material
@@ -321,7 +321,7 @@ erDiagram
         DATETIME created_at
     }
 
-    warehouse_incoming_summary_detail {
+    warehouse_stock_transaction_detail {
         INT id PK "AUTO_INCREMENT"
         VARCHAR30 no_ipp FK "FK ke tr_incoming_header.kode_trans"
         VARCHAR50 id_material
@@ -377,8 +377,8 @@ erDiagram
     tr_incoming_header ||--o| gl_interface : "generate jurnal"
     gl_interface ||--o{ gl_interface_detail : "memiliki"
 
-    tr_incoming_header ||--o{ warehouse_incoming_summary : "summary per material"
-    tr_incoming_header ||--o{ warehouse_incoming_summary_detail : "detail per coil"
+    tr_incoming_header ||--o{ warehouse_stock_transaction_summary : "summary per material"
+    tr_incoming_header ||--o{ warehouse_stock_transaction_detail : "detail per coil"
 
     tr_incoming_detail }o--|| warehouse_stock : "update stok"
     tr_incoming_detail }o--|| warehouse_stock_coil : "insert coil stok"
@@ -420,8 +420,8 @@ erDiagram
   - **warehouse_history** — riwayat mutasi lengkap
   - **warehouse_stock_per_day** — snapshot stok harian per material per gudang
   - **warehouse_coil_per_day** — snapshot coil harian
-  - **warehouse_incoming_summary** — ringkasan incoming per material per gudang
-  - **warehouse_incoming_summary_detail** — detail coil per ringkasan
+  - **warehouse_stock_transaction_summary** — ringkasan incoming per material per gudang
+  - **warehouse_stock_transaction_detail** — detail coil per ringkasan
   - **kartu_stok** — pencatatan kartu stok (debet)
 - Update `qty_in` di `dt_trans_po` (mengupdate sisa qty PO)
 - Status ROS: `status_incoming = 'closed'`
@@ -591,7 +591,7 @@ costbook = (saldo_lama + nilai_baru) / (qty_lama + qty_masuk)
 
 ---
 
-### 3.15 `warehouse_incoming_summary` — Ringkasan Incoming per Material
+### 3.15 `warehouse_stock_transaction_summary` — Ringkasan Incoming per Material
 | Fungsi | Summary incoming per material per gudang (level aggregat) |
 |--------|--------------------------------------------------------|
 | FK | `no_ipp` → `tr_incoming_header.kode_trans` |
@@ -599,7 +599,7 @@ costbook = (saldo_lama + nilai_baru) / (qty_lama + qty_masuk)
 
 ---
 
-### 3.16 `warehouse_incoming_summary_detail` — Detail Coil per Summary
+### 3.16 `warehouse_stock_transaction_detail` — Detail Coil per Summary
 | Fungsi | Detail individual coil per incoming summary |
 |--------|-------------------------------------------|
 | FK | `no_ipp` → `tr_incoming_header.kode_trans` |
@@ -627,8 +627,8 @@ costbook = (saldo_lama + nilai_baru) / (qty_lama + qty_masuk)
 | `tr_ros_material_coil` | `tr_incoming_detail` | 1:1 | 1 coil ROS = 1 detail incoming |
 | `tr_incoming_header` | `gl_interface` | 1:1 | 1 incoming = 1 jurnal GL |
 | `gl_interface` | `gl_interface_detail` | 1:N | 1 jurnal punya banyak baris |
-| `tr_incoming_header` | `warehouse_incoming_summary` | 1:N | Summary per material |
-| `tr_incoming_header` | `warehouse_incoming_summary_detail` | 1:N | Detail per coil |
+| `tr_incoming_header` | `warehouse_stock_transaction_summary` | 1:N | Summary per material |
+| `tr_incoming_header` | `warehouse_stock_transaction_detail` | 1:N | Detail per coil |
 | `tr_incoming_detail` | `warehouse_stock` | N:1 | Update stok aggregate |
 | `tr_incoming_detail` | `warehouse_stock_coil` | 1:1 | Insert stok per coil |
 | `tr_incoming_detail` | `warehouse_history` | 1:1 | Catat riwayat mutasi |

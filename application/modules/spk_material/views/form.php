@@ -384,7 +384,7 @@ $catatan    = $is_edit ? $spk['catatan'] : '';
                 <i class="fa fa-times"></i>
             </button>
             <div class="row g-3 mt-1">
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <label class="form-label">Produk <span class="text-danger">*</span></label>
                     <select class="form-select select-produk" id="produk_${idx}" data-idx="${idx}">
                         <option value="">-- Pilih Produk --</option>
@@ -395,13 +395,17 @@ $catatan    = $is_edit ? $spk['catatan'] : '';
                     <label class="form-label">Target Qty <span class="text-danger">*</span></label>
                     <input type="number" class="form-control input-target-qty" id="qty_${idx}" data-idx="${idx}"
                            min="1" max="999999" step="1" placeholder="0" value="${targetQty}">
-                    <input type="hidden" class="input-berat-per-unit" id="berat_${idx}" value="${beratPerUnit}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Berat/Unit (Kg)</label>
+                    <input type="text" class="form-control input-berat-per-unit" id="berat_${idx}" readonly
+                           value="${beratPerUnit ? parseFloat(beratPerUnit).toFixed(2) : '0.00'}">
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Total Weight (Kg)</label>
                     <input type="text" class="form-control input-total-weight" id="weight_${idx}" readonly
                            value="${totalWeight ? parseFloat(totalWeight).toFixed(2) : '0.00'}">
-                    <div class="weight-warning" id="weight_warn_${idx}" style="display:none;">Berat/Unit belum diset</div>
+                    <div class="weight-warning" id="weight_warn_${idx}" style="display:none; font-size: 11px; color: #dc3545;">Berat/Unit belum diset</div>
                 </div>
                 <div class="col-md-1 d-flex align-items-end">
                     <button type="button" class="btn btn-sm btn-outline-info w-100 btn-show-material"

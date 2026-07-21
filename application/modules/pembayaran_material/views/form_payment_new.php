@@ -121,6 +121,18 @@ foreach ($results['result_payment'] as $item) {
 	.d-none {
 		display: none;
 	}
+
+	.btn-reset-mata-uang {
+		color: #d9534f;
+		font-size: 16px;
+		line-height: 1;
+		flex-shrink: 0;
+		cursor: pointer;
+	}
+
+	.btn-reset-mata-uang:hover {
+		color: #c9302c;
+	}
 </style>
 <form action="" id="frm-data" enctype="multipart/form-data">
 	<input type="hidden" name="id_payment" class="id_payment" value="<?= $results['id_payment'] ?>">
@@ -172,14 +184,19 @@ foreach ($results['result_payment'] as $item) {
 					<td width="15%" style="">Mata Uang</td>
 					<td width="5%" class="text-center">:</td>
 					<td width="25%">
-						<select name="mata_uang" id="" class="form-control form-control-sm mata_uang" data-placeholder="- Pilih Mata Uang -">
-							<option value="">- Mata Uang -</option>
-							<?php
-							foreach ($results['list_mata_uang'] as $item_mata_uang) {
-								echo '<option value="' . $item_mata_uang->kode . '">' . $item_mata_uang->kode . '</option>';
-							}
-							?>
-						</select>
+						<div class="d-flex align-items-center" style="gap: 6px;">
+							<select name="mata_uang" id="" class="form-control form-control-sm mata_uang" data-placeholder="- Pilih Mata Uang -" style="flex: 1;">
+								<option value="">- Mata Uang -</option>
+								<?php
+								foreach ($results['list_mata_uang'] as $item_mata_uang) {
+									echo '<option value="' . $item_mata_uang->kode . '">' . $item_mata_uang->kode . '</option>';
+								}
+								?>
+							</select>
+							<a href="javascript:void(0)" class="btn-reset-mata-uang d-none" title="Batal pilih mata uang">
+								<i class="fa fa-times-circle"></i>
+							</a>
+						</div>
 					</td>
 					<td width="15%" style="">Nilai Bank</td>
 					<td width="5%" class="text-center">:</td>
@@ -472,8 +489,22 @@ foreach ($results['result_payment'] as $item) {
 		});
 		$('select[name="mata_uang"]').select2({
 			width: '100%',
-			placeholder: '- Pilih Mata Uang -',
-			allowClear: true
+			placeholder: '- Pilih Mata Uang -'
+		});
+		// Tampilkan/sembunyikan tombol batal berdasarkan value select
+		$(document).on('change', 'select[name="mata_uang"]', function() {
+			var val = $(this).val();
+			if (val && val !== '') {
+				$('.btn-reset-mata-uang').removeClass('d-none');
+			} else {
+				$('.btn-reset-mata-uang').addClass('d-none');
+			}
+		});
+
+		// Klik tombol batal -> reset select ke kosong & sembunyikan tombol lagi
+		$(document).on('click', '.btn-reset-mata-uang', function() {
+			$('select[name="mata_uang"]').val('').trigger('change');
+			$(this).addClass('d-none');
 		});
 		$('.pph').chosen({
 			width: '100%'
