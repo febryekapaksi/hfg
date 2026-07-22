@@ -143,8 +143,8 @@ $is_balance = (round($total_debet) === round($total_kredit));
                             <th>No Reff</th>
                             <th class="text-end">Debet</th>
                             <th class="text-end">Kredit</th>
-                            <th class="text-end">Debet Kurs</th>
-                            <th class="text-end">Kredit Kurs</th>
+                            <th class="text-end">Debet USD</th>
+                            <th class="text-end">Kredit USD</th>
                         </tr>
                     </thead>
                     <tbody>

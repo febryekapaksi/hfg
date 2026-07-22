@@ -30,3 +30,6 @@ application/config/constants.php
 
 #kiro
 .kiro/*
+
+#antigravity
+.artifacts/*
