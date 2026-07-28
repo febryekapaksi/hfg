@@ -269,6 +269,7 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
 
         // Load Sound Config dari Master Sound App
         let activeSoundConfig = {};
+
         function loadSoundConfig() {
             $.ajax({
                 url: siteurl + 'master_sound/get_sound_config',
@@ -291,8 +292,10 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                 try {
                     const duration = level * 100;
                     navigator.vibrate([duration, 50, duration]);
-                } catch(e) {
-                    try { navigator.vibrate(level * 100); } catch(err) {}
+                } catch (e) {
+                    try {
+                        navigator.vibrate(level * 100);
+                    } catch (err) {}
                 }
             }
         }
@@ -547,41 +550,57 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
         $('#btn-submit-confirm').click(function() {
             if (!activeRequestId) return;
 
-            $(this).prop('disabled', true).html('<i class="fa fa-spin fa-spinner"></i> Processing...');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Apakah Anda yakin?',
+                text: 'Konfirmasi pengeluaran ini tidak dapat dibatalkan setelah diproses.',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Proses!',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                reverseButtons: true
+            }).then(function(result) {
+                if (!result.isConfirmed) {
+                    return;
+                }
 
-            $.ajax({
-                url: BASE_URL + '/confirm_spk_coil/' + activeRequestId,
-                type: 'POST',
-                dataType: 'json',
-                success: function(res) {
-                    if (res.status == 1) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil',
-                            text: res.message,
-                            showConfirmButton: false,
-                            timer: 1500
-                        }).then(function() {
-                            $('#modal-confirm-spk').modal('hide');
-                            tableRequestList.ajax.reload(null, false);
-                        });
-                    } else {
+                $('#btn-submit-confirm').prop('disabled', true).html('<i class="fa fa-spin fa-spinner"></i> Processing...');
+
+                $.ajax({
+                    url: BASE_URL + '/confirm_spk_coil/' + activeRequestId,
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function(res) {
+                        if (res.status == 1) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: res.message,
+                                showConfirmButton: false,
+                                timer: 1500
+                            }).then(function() {
+                                $('#modal-confirm-spk').modal('hide');
+                                tableRequestList.ajax.reload(null, false);
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: res.message
+                            });
+                            $('#btn-submit-confirm').prop('disabled', false).text('Confirm Pengeluaran');
+                        }
+                    },
+                    error: function() {
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: res.message
+                            text: 'Terjadi kesalahan jaringan'
                         });
                         $('#btn-submit-confirm').prop('disabled', false).text('Confirm Pengeluaran');
                     }
-                },
-                error: function() {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Terjadi kesalahan jaringan'
-                    });
-                    $('#btn-submit-confirm').prop('disabled', false).text('Confirm Pengeluaran');
-                }
+                });
             });
         });
 
