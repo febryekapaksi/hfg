@@ -65,7 +65,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">File Audio (MP3 / WAV / OGG / M4A)</label>
+                        <label class="form-label fw-bold">File Audio (MP3 / WAV / OGG / M4A / MPEG)</label>
                         <input type="file" class="form-control" name="file_sound" id="file_sound" accept="audio/*">
                         <div id="file-existing-info" class="mt-2 text-muted small" style="display:none;"></div>
                         <small class="text-muted d-block mt-1">Maksimal ukuran file: 10MB.</small>
@@ -93,6 +93,7 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     $(document).ready(function() {
         const BASE_URL = siteurl + active_controller;
@@ -220,30 +221,51 @@
         $('#form-sound').submit(function(e) {
             e.preventDefault();
 
-            const formData = new FormData(this);
-            const $btn = $('#btn-save-sound');
-            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Menyimpan...');
+            // 1. Tampilkan konfirmasi peringatan terlebih dahulu
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Data yang dimasukan sudah benar.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Simpan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                // 2. Jika pengguna mengklik tombol "Ya, Simpan!"
+                if (result.isConfirmed) {
+                    const formData = new FormData(this);
+                    const $btn = $('#btn-save-sound');
+                    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Menyimpan...');
 
-            $.ajax({
-                url: BASE_URL + '/save',
-                type: 'POST',
-                data: formData,
-                contentType: false,
-                processData: false,
-                dataType: 'json',
-                success: function(res) {
-                    $btn.prop('disabled', false).html('<i class="fa fa-save me-1"></i> Simpan');
-                    if (res.status == 1) {
-                        $('#modal-sound').modal('hide');
-                        table.ajax.reload(null, false);
-                        Swal.fire('Berhasil', res.msg, 'success');
-                    } else {
-                        Swal.fire('Peringatan', res.msg, 'warning');
-                    }
-                },
-                error: function() {
-                    $btn.prop('disabled', false).html('<i class="fa fa-save me-1"></i> Simpan');
-                    Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
+                    $.ajax({
+                        url: BASE_URL + '/save',
+                        type: 'POST',
+                        data: formData,
+                        contentType: false,
+                        processData: false,
+                        dataType: 'json',
+                        success: function(res) {
+                            $btn.prop('disabled', false).html('<i class="fa fa-save me-1"></i> Simpan');
+                            if (res.status == 1) {
+                                $('#modal-sound').modal('hide');
+                                table.ajax.reload(null, false);
+                                Swal.fire({
+                                    title: 'Berhasil',
+                                    text: res.msg,
+                                    icon: 'success',
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                });
+                            } else {
+                                Swal.fire('Peringatan', res.msg, 'warning');
+                            }
+                        },
+                        error: function() {
+                            $btn.prop('disabled', false).html('<i class="fa fa-save me-1"></i> Simpan');
+                            Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
+                        }
+                    });
                 }
             });
         });

@@ -208,12 +208,12 @@ class Master_sound extends Admin_Controller
             'status'        => $status,
         ];
 
-        // Handle File Upload if provided
         if (isset($_FILES['file_sound']) && !empty($_FILES['file_sound']['name'])) {
             $config['upload_path']   = FCPATH . 'uploads/sound_app/';
-            $config['allowed_types'] = 'mp3|wav|ogg|m4a|aac';
+            $config['allowed_types'] = '*';
             $config['max_size']      = 10240; // 10MB
             $config['encrypt_name']  = TRUE;
+            $config['detect_mime']   = FALSE;
 
             if (!is_dir($config['upload_path'])) {
                 mkdir($config['upload_path'], 0755, true);
