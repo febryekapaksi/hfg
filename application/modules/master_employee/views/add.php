@@ -1,3 +1,9 @@
+<!-- CDN Flatpickr & ViewerJS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.js"></script>
+
 <?php
 $id                    = (!empty($header[0]->id)) ? $header[0]->id : '';
 $nik                = (!empty($header[0]->id)) ? $header[0]->nik : '';
@@ -8,6 +14,7 @@ $tgl_lahir            = (!empty($header[0]->id)) ? $header[0]->tgl_lahir : '';
 $gender                = (!empty($header[0]->id)) ? $header[0]->gender : '';
 $agama                = (!empty($header[0]->id)) ? $header[0]->agama : '';
 $department            = (!empty($header[0]->id)) ? $header[0]->department : '';
+$sub_department        = (!empty($header[0]->id)) ? $header[0]->sub_department : '';
 $cost_center        = (!empty($header[0]->id)) ? $header[0]->cost_center : '';
 $no_ponsel            = (!empty($header[0]->id)) ? $header[0]->no_ponsel : '';
 $email                = (!empty($header[0]->id)) ? $header[0]->email : '';
@@ -34,6 +41,7 @@ $bank_account        = (!empty($header[0]->id)) ? $header[0]->bank_account : '';
 $sts_karyawan        = (!empty($header[0]->id)) ? $header[0]->sts_karyawan : '';
 $status                = (!empty($header[0]->id)) ? $header[0]->status : '';
 $tanda_tangan        = (!empty($header[0]->id)) ? $header[0]->tanda_tangan : '';
+$tanda               = (!empty($tanda)) ? $tanda : '';
 
 ?>
 <form method="POST" id="form_employee" autocomplete="off" enctype="multipart/form-data">
@@ -66,7 +74,7 @@ $tanda_tangan        = (!empty($header[0]->id)) ? $header[0]->tanda_tangan : '';
 
                 <div class="col-md-6">
                     <label class="form-label">Date of Birth</label>
-                    <input type="date" class="form-control" name="tgl_lahir" value="<?= $tgl_lahir ?>">
+                    <input type="text" class="form-control flatpickr-date" name="tgl_lahir" value="<?= $tgl_lahir ?>" placeholder="YYYY-MM-DD">
                 </div>
 
                 <div class="col-md-6">
@@ -103,6 +111,15 @@ $tanda_tangan        = (!empty($header[0]->id)) ? $header[0]->tanda_tangan : '';
                             echo "<option value='" . $valx['id'] . "' " . $selected . ">" . strtoupper($valx['nama']) . "</option>";
                         }
                         ?>
+                    </select>
+                </div>
+
+                <div class='col-sm-6' id="container_sub_department" style="display: none;">
+                    <label class='form-label'>Sub Department / Role</label>
+                    <select name='sub_department' id='sub_department' class='form-select'>
+                        <option value=''>Select Role</option>
+                        <option value='Setter' <?= ($sub_department == 'Setter' ? 'selected' : '') ?>>Setter</option>
+                        <option value='Helper' <?= ($sub_department == 'Helper' ? 'selected' : '') ?>>Helper</option>
                     </select>
                 </div>
 
@@ -228,12 +245,12 @@ $tanda_tangan        = (!empty($header[0]->id)) ? $header[0]->tanda_tangan : '';
 
                 <div class="col-md-6">
                     <label class="form-label">Join Date</label>
-                    <input type="date" class="form-control" name="tgl_join" value="<?= $tgl_join ?>">
+                    <input type="text" class="form-control flatpickr-date" name="tgl_join" value="<?= $tgl_join ?>" placeholder="YYYY-MM-DD">
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label">End Date</label>
-                    <input type="date" class="form-control" name="tgl_end" value="<?= $tgl_end ?>">
+                    <input type="text" class="form-control flatpickr-date" name="tgl_end" value="<?= $tgl_end ?>" placeholder="YYYY-MM-DD">
                 </div>
 
                 <div class="col-md-12">
@@ -280,20 +297,20 @@ $tanda_tangan        = (!empty($header[0]->id)) ? $header[0]->tanda_tangan : '';
                                     <i class="ti ti-file-description me-1"></i> Existing Tanda Tangan
                                 </span>
 
-                                <a href="<?= base_url() . $tanda_tangan; ?>" target="_blank" class="btn btn-sm btn-success">
+                                <a href="<?= base_url() . $tanda_tangan; ?>" download class="btn btn-sm btn-success">
                                     <i class="ti ti-download me-1"></i> Download
                                 </a>
 
-                                <a href="<?= base_url() . $tanda_tangan; ?>" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnPreviewTtd">
                                     <i class="ti ti-eye me-1"></i> Preview
-                                </a>
+                                </button>
                             </div>
 
                             <!-- thumbnail preview -->
-                            <div>
-                                <img src="<?= base_url() . $tanda_tangan; ?>"
+                            <div id="ttdImageContainer">
+                                <img id="ttdImage" src="<?= base_url() . $tanda_tangan; ?>"
                                     alt="Ttd"
-                                    style="width:160px; height:100px; object-fit:contain; border:1px solid #ddd; border-radius:6px; padding:4px; background:#fff;">
+                                    style="width:160px; height:100px; object-fit:contain; border:1px solid #ddd; border-radius:6px; padding:4px; background:#fff; cursor:pointer;">
                             </div>
                         <?php endif; ?>
 
@@ -352,6 +369,49 @@ $tanda_tangan        = (!empty($header[0]->id)) ? $header[0]->tanda_tangan : '';
             width: '100%'
         });
 
+        // Inisialisasi Flatpickr
+        flatpickr('.flatpickr-date', {
+            dateFormat: 'Y-m-d',
+            allowInput: true
+        });
+
+        // Inisialisasi ViewerJS jika ada gambar ttd
+        var ttdImg = document.getElementById('ttdImage');
+        if (ttdImg) {
+            var viewer = new Viewer(ttdImg, {
+                inline: false,
+                viewed: function() {}
+            });
+
+            $(document).on('click', '#btnPreviewTtd', function(e) {
+                e.preventDefault();
+                viewer.show();
+            });
+        }
+
+        // Mode View Read-Only
+        var modeTanda = '<?= $tanda ?>';
+        if (modeTanda === 'view') {
+            $('#form_employee input, #form_employee select, #form_employee textarea, #btnPickTtd, #btnClearTtd').prop('disabled', true);
+            $('#saved').hide();
+        }
+
+        function checkDepartment() {
+            var deptId = $('#department').val();
+            // Produksi ID = 8
+            if (deptId == '8') {
+                $('#container_sub_department').show();
+            } else {
+                $('#container_sub_department').hide();
+                $('#sub_department').val('').trigger('change');
+            }
+        }
+
+        checkDepartment();
+
+        $(document).on('change', '#department', function() {
+            checkDepartment();
+        });
     })
 
     $(document).on('click', '#back', function() {
