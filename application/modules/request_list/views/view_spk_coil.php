@@ -107,16 +107,16 @@ foreach ($saved_coils as $coil) {
         <div id="material-sections">
             <?php if (!empty($products)): ?>
                 <?php foreach ($products as $idx => $product): ?>
-                    <div class="product-section mb-4">
-                        <div class="product-header cursor-pointer bg-secondary p-2 rounded mb-3 d-flex justify-content-between align-items-center" data-target="product-content-<?= $idx ?>">
-                            <h6 class="mb-0 text-white">
+                    <div class="card mb-4 border-secondary product-section">
+                        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center product-header cursor-pointer" data-target="product-content-<?= $idx ?>" style="cursor: pointer;">
+                            <h6 class="mb-0 text-white fw-bold">
                                 <i class="fa fa-box me-2"></i>
                                 <?= htmlspecialchars(isset($product['nm_produk_fg']) ? $product['nm_produk_fg'] : 'Produk') ?>
                             </h6>
                             <i class="fa fa-chevron-up text-white"></i>
                         </div>
 
-                        <div class="product-content" id="product-content-<?= $idx ?>">
+                        <div class="card-body product-content p-3" id="product-content-<?= $idx ?>">
                             <?php if (!empty($product['materials'])): ?>
                                 <?php foreach ($product['materials'] as $material): ?>
                                     <div class="material-section">

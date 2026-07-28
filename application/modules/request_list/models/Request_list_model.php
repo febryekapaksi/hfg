@@ -243,16 +243,18 @@ class Request_list_model extends BF_Model
     // ---------------------------------------------------------------
 
     /**
-     * Generate nomor SPK Coil format SPKC-YYYYMM-XXXX
-     * Query last counter dari tr_warehouse_request_header bulan ini
+     * Generate nomor SPK Coil format [spk_no]/TRS-001
+     * Query last counter dari tr_warehouse_request_header per SPK Material
      *
-     * @return string Nomor SPK Coil baru (e.g. SPKC-202506-0001)
+     * @param string $spk_no Nomor SPK Material
+     * @return string Nomor SPK Coil baru (e.g. SPK-001/TRS-001)
      */
-    public function generate_spk_coil_no()
+    public function generate_spk_coil_no($spk_no)
     {
-        $prefix = 'SPKC-' . date('Ym') . '-';
+        $prefix = $spk_no . '/TRS-';
 
         $last = $this->db
+            ->where('spk_no', $spk_no)
             ->like('spk_coil_no', $prefix, 'after')
             ->order_by('spk_coil_no', 'DESC')
             ->limit(1)
@@ -261,11 +263,13 @@ class Request_list_model extends BF_Model
 
         $next = 1;
         if ($last) {
-            $parts = explode('-', $last->spk_coil_no);
-            $next = (int) end($parts) + 1;
+            $parts = explode('/TRS-', $last->spk_coil_no);
+            if (isset($parts[1])) {
+                $next = (int) $parts[1] + 1;
+            }
         }
 
-        return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
+        return $prefix . str_pad($next, 3, '0', STR_PAD_LEFT);
     }
 
     // ---------------------------------------------------------------
@@ -623,5 +627,211 @@ class Request_list_model extends BF_Model
             $this->db->where('id', $request_id);
             $this->db->update('tr_warehouse_request_header', array('status' => 'Cancelled'));
         }
+    }
+
+    /**
+     * Get saved SPK Coils (headers + details) for a given SPK Material
+     *
+     * @param string $spk_no
+     * @return array Array of SPK Coil headers with 'coils' key containing details
+     */
+    public function get_saved_spk_coils_grouped($spk_no)
+    {
+        $headers = $this->db
+            ->where('spk_no', $spk_no)
+            ->where('status !=', 'Cancelled')
+            ->where('status !=', 'Rejected')
+            ->order_by('id', 'ASC')
+            ->get('tr_warehouse_request_header')
+            ->result_array();
+
+        if (empty($headers)) {
+            return array();
+        }
+
+        foreach ($headers as &$header) {
+            $this->db->select('wrcd.*, w.nm_gudang');
+            $this->db->from('tr_warehouse_request_coil_detail wrcd');
+            $this->db->join('warehouse w', 'w.id = wrcd.id_gudang_sumber', 'left');
+            $this->db->where('wrcd.request_id', $header['id']);
+            $header['coils'] = $this->db->get()->result_array();
+        }
+
+        return $headers;
+    }
+
+    /**
+     * Delete SPK Coil header & details by request ID, and update SPK Material status if empty
+     *
+     * @param int $request_id
+     * @return array Array containing status (bool) and message (string)
+     */
+    public function delete_spk_coil_by_id($request_id)
+    {
+        $header = $this->db->where('id', $request_id)->get('tr_warehouse_request_header')->row_array();
+        if (!$header) {
+            return array('status' => false, 'message' => 'SPK Coil tidak ditemukan.');
+        }
+
+        if (in_array($header['status'], array('Material Confirmed', 'Confirmed', 'Released'))) {
+            return array('status' => false, 'message' => 'SPK Coil tidak dapat dihapus karena status sudah ' . $header['status']);
+        }
+
+        $scanned_count = $this->db
+            ->where('request_id', $request_id)
+            ->where('scan_status', 1)
+            ->count_all_results('tr_warehouse_request_coil_detail');
+
+        if ($scanned_count > 0) {
+            return array('status' => false, 'message' => 'SPK Coil tidak dapat dihapus karena terdapat coil yang sudah discan.');
+        }
+
+        $spk_no = $header['spk_no'];
+
+        $this->db->trans_start();
+
+        // Delete coil details
+        $this->db->where('request_id', $request_id)->delete('tr_warehouse_request_coil_detail');
+
+        // Delete request header
+        $this->db->where('id', $request_id)->delete('tr_warehouse_request_header');
+
+        // Check remaining active SPK Coils for this spk_no
+        $remaining_count = $this->db
+            ->where('spk_no', $spk_no)
+            ->where('status !=', 'Cancelled')
+            ->where('status !=', 'Rejected')
+            ->count_all_results('tr_warehouse_request_header');
+
+        if ($remaining_count == 0) {
+            $this->db->where('spk_no', $spk_no)->update('tr_spk_material_header', array(
+                'status' => 'Material Requested'
+            ));
+        }
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === false) {
+            return array('status' => false, 'message' => 'Gagal menghapus SPK Coil.');
+        }
+
+        return array('status' => true, 'message' => 'SPK Coil ' . $header['spk_coil_no'] . ' berhasil dihapus.', 'spk_no' => $spk_no);
+    }
+
+    /**
+     * Delete 1 coil item from SPK Coil detail by detail ID
+     *
+     * @param int $detail_id
+     * @return array Array containing status (bool) and message (string)
+     */
+    public function delete_spk_coil_detail_item($detail_id)
+    {
+        $detail = $this->db->where('id', $detail_id)->get('tr_warehouse_request_coil_detail')->row_array();
+        if (!$detail) {
+            return array('status' => false, 'message' => 'Detail coil tidak ditemukan.');
+        }
+
+        $request_id = $detail['request_id'];
+        $header     = $this->db->where('id', $request_id)->get('tr_warehouse_request_header')->row_array();
+
+        if (!$header) {
+            return array('status' => false, 'message' => 'SPK Coil tidak ditemukan.');
+        }
+
+        if (in_array($header['status'], array('Material Confirmed', 'Confirmed', 'Released'))) {
+            return array('status' => false, 'message' => 'Item tidak dapat dihapus karena status SPK Coil sudah ' . $header['status']);
+        }
+
+        if (isset($detail['scan_status']) && $detail['scan_status'] == 1) {
+            return array('status' => false, 'message' => 'Coil ' . (!empty($detail['no_coil']) ? $detail['no_coil'] : $detail['kode_internal']) . ' sudah discan dan tidak dapat dihapus.');
+        }
+
+        $spk_no = $header['spk_no'];
+        $no_coil = !empty($detail['no_coil']) ? $detail['no_coil'] : $detail['kode_internal'];
+
+        $this->db->trans_start();
+
+        // Delete single detail item
+        $this->db->where('id', $detail_id)->delete('tr_warehouse_request_coil_detail');
+
+        // Check if SPK Coil has 0 items remaining -> cancel SPK Coil
+        $this->check_and_cancel_empty_spkc($request_id);
+
+        // Check remaining active SPK Coils for this spk_no
+        $remaining_count = $this->db
+            ->where('spk_no', $spk_no)
+            ->where('status !=', 'Cancelled')
+            ->where('status !=', 'Rejected')
+            ->count_all_results('tr_warehouse_request_header');
+
+        if ($remaining_count == 0) {
+            $this->db->where('spk_no', $spk_no)->update('tr_spk_material_header', array(
+                'status' => 'Material Requested'
+            ));
+        }
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === false) {
+            return array('status' => false, 'message' => 'Gagal menghapus item coil.');
+        }
+
+        return array('status' => true, 'message' => 'Coil ' . $no_coil . ' berhasil dikeluarkan dari SPK Coil.', 'spk_no' => $spk_no);
+    }
+
+    /**
+     * Add batch coils to an existing SPK Coil request_id
+     *
+     * @param int $request_id
+     * @param array $coils Array of coil records to insert
+     * @return array Array containing status (bool) and message (string)
+     */
+    public function add_coils_to_spkc($request_id, $coils)
+    {
+        $header = $this->db->where('id', $request_id)->get('tr_warehouse_request_header')->row_array();
+        if (!$header) {
+            return array('status' => false, 'message' => 'SPK Coil tidak ditemukan.');
+        }
+
+        if (in_array($header['status'], array('Material Confirmed', 'Confirmed', 'Released', 'Cancelled', 'Rejected'))) {
+            return array('status' => false, 'message' => 'Tidak dapat menambah coil ke SPK Coil dengan status: ' . $header['status']);
+        }
+
+        if (empty($coils) || !is_array($coils)) {
+            return array('status' => false, 'message' => 'Minimal 1 coil harus dipilih.');
+        }
+
+        $this->db->trans_start();
+
+        $detail_records = array();
+        foreach ($coils as $coil) {
+            $assigned_req_id = isset($coil['assigned_request_id']) ? $coil['assigned_request_id'] : '';
+            if (!empty($assigned_req_id) && $assigned_req_id != $request_id) {
+                $this->remove_coil_from_spkc($assigned_req_id, $coil['id_coil']);
+                $this->check_and_cancel_empty_spkc($assigned_req_id);
+            }
+
+            $detail_records[] = array(
+                'request_id'       => $request_id,
+                'id_coil'          => isset($coil['id_coil']) ? $coil['id_coil'] : 0,
+                'id_material'      => isset($coil['id_material']) ? $coil['id_material'] : '',
+                'nm_material'      => isset($coil['nm_material']) ? $coil['nm_material'] : '',
+                'kode_internal'    => isset($coil['kode_internal']) ? $coil['kode_internal'] : '',
+                'no_coil'          => isset($coil['no_coil']) ? $coil['no_coil'] : '',
+                'id_gudang_sumber' => isset($coil['id_gudang_sumber']) ? (int) $coil['id_gudang_sumber'] : 0,
+            );
+        }
+
+        if (!empty($detail_records)) {
+            $this->insert_coil_details($detail_records);
+        }
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === false) {
+            return array('status' => false, 'message' => 'Gagal menambah coil ke SPK Coil.');
+        }
+
+        return array('status' => true, 'message' => count($detail_records) . ' coil berhasil ditambahkan ke ' . $header['spk_coil_no'] . '.', 'spk_no' => $header['spk_no']);
     }
 }

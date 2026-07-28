@@ -101,7 +101,7 @@ class Request_list extends Admin_Controller
             }
 
             if ($show_create_btn) {
-                $btn_create = ' <a href="' . site_url('request_list/create_spk_coil/' . $row['spk_no']) . '" class="btn btn-sm btn-primary" title="Create SPK Coil"><i class="fa fa-plus"></i></a>';
+                $btn_create = ' <a href="' . site_url('request_list/create_spk_coil/' . $row['spk_no']) . '" class="btn btn-sm btn-warning" title="Manage Request Coil"><i class="fa fa-cogs"></i></a>';
                 $aksi .= $btn_create;
             }
 
@@ -169,7 +169,7 @@ class Request_list extends Admin_Controller
     }
 
     // ---------------------------------------------------------------
-    // CREATE SPK COIL
+    // CREATE / MANAGE SPK COIL
     // ---------------------------------------------------------------
 
     public function create_spk_coil($spk_no = null)
@@ -192,15 +192,133 @@ class Request_list extends Admin_Controller
         // Validate status — allow creation if status is 'Material Requested' or 'Material On Load'
         $valid_statuses = array('Material Requested', 'Material On Load');
         if (!in_array($spk_data['header']['status'], $valid_statuses)) {
-            $this->session->set_flashdata('error', 'SPK tidak dapat dibuatkan SPK Coil karena status: ' . $spk_data['header']['status']);
+            $this->session->set_flashdata('error', 'SPK tidak dapat dikelola/dibuatkan SPK Coil karena status: ' . $spk_data['header']['status']);
             redirect('request_list');
         }
 
-        $data['spk_no']   = $spk_no;
-        $data['header']   = $spk_data['header'];
-        $data['products'] = $spk_data['products'];
+        $saved_spk_coils = $this->Request_list_model->get_saved_spk_coils_grouped($spk_no);
+
+        $data['spk_no']          = $spk_no;
+        $data['header']          = $spk_data['header'];
+        $data['products']        = $spk_data['products'];
+        $data['saved_spk_coils'] = $saved_spk_coils;
 
         $this->template->render('form_create_spk_coil', $data);
+    }
+
+    // ---------------------------------------------------------------
+    // AJAX: GET SAVED SPK COILS FOR A SPK MATERIAL
+    // ---------------------------------------------------------------
+
+    public function get_saved_spk_coils($spk_no = null)
+    {
+        $this->auth->restrict($this->viewPermission);
+
+        if (!$spk_no) {
+            return $this->_json(array('status' => 0, 'message' => 'SPK No wajib diisi.'));
+        }
+
+        $saved_spk_coils = $this->Request_list_model->get_saved_spk_coils_grouped($spk_no);
+
+        return $this->_json(array(
+            'status' => 1,
+            'data'   => $saved_spk_coils
+        ));
+    }
+
+    // ---------------------------------------------------------------
+    // AJAX: DELETE SPK COIL
+    // ---------------------------------------------------------------
+
+    public function delete_spk_coil()
+    {
+        $this->auth->restrict($this->managePermission);
+
+        $request_id = $this->input->post('request_id');
+
+        if (!$request_id) {
+            return $this->_json(array('status' => 0, 'message' => 'Request ID tidak valid.'));
+        }
+
+        $res = $this->Request_list_model->delete_spk_coil_by_id($request_id);
+
+        if ($res['status']) {
+            return $this->_json(array(
+                'status'  => 1,
+                'message' => $res['message'],
+                'spk_no'  => isset($res['spk_no']) ? $res['spk_no'] : ''
+            ));
+        } else {
+            return $this->_json(array(
+                'status'  => 0,
+                'message' => $res['message']
+            ));
+        }
+    }
+
+    // ---------------------------------------------------------------
+    // AJAX: DELETE SINGLE COIL ITEM FROM SPK COIL
+    // ---------------------------------------------------------------
+
+    public function delete_spk_coil_item()
+    {
+        $this->auth->restrict($this->managePermission);
+
+        $detail_id = $this->input->post('detail_id');
+
+        if (!$detail_id) {
+            return $this->_json(array('status' => 0, 'message' => 'Detail ID tidak valid.'));
+        }
+
+        $res = $this->Request_list_model->delete_spk_coil_detail_item($detail_id);
+
+        if ($res['status']) {
+            return $this->_json(array(
+                'status'  => 1,
+                'message' => $res['message'],
+                'spk_no'  => isset($res['spk_no']) ? $res['spk_no'] : ''
+            ));
+        } else {
+            return $this->_json(array(
+                'status'  => 0,
+                'message' => $res['message']
+            ));
+        }
+    }
+
+    // ---------------------------------------------------------------
+    // AJAX: ADD COILS TO EXISTING SPK COIL
+    // ---------------------------------------------------------------
+
+    public function add_coils_to_spkc()
+    {
+        $this->auth->restrict($this->managePermission);
+
+        $request_id = $this->input->post('request_id');
+        $coils      = $this->input->post('coils');
+
+        if (!$request_id) {
+            return $this->_json(array('status' => 0, 'message' => 'Request ID tidak valid.'));
+        }
+
+        if (empty($coils) || !is_array($coils)) {
+            return $this->_json(array('status' => 0, 'message' => 'Minimal 1 coil harus dipilih.'));
+        }
+
+        $res = $this->Request_list_model->add_coils_to_spkc($request_id, $coils);
+
+        if ($res['status']) {
+            return $this->_json(array(
+                'status'  => 1,
+                'message' => $res['message'],
+                'spk_no'  => isset($res['spk_no']) ? $res['spk_no'] : ''
+            ));
+        } else {
+            return $this->_json(array(
+                'status'  => 0,
+                'message' => $res['message']
+            ));
+        }
     }
 
     // ---------------------------------------------------------------
@@ -304,7 +422,7 @@ class Request_list extends Admin_Controller
         $this->db->trans_start();
 
         // Generate SPK Coil number
-        $spk_coil_no = $this->Request_list_model->generate_spk_coil_no();
+        $spk_coil_no = $this->Request_list_model->generate_spk_coil_no($spk_no);
 
         // Insert request header
         $header_data = array(

@@ -125,6 +125,10 @@
       /* sedikit bayangan supaya lebih jelas */
       text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
     }
+
+    .swal2-container {
+      z-index: 9999 !important;
+    }
   </style>
 </head>
 

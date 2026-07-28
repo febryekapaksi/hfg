@@ -267,9 +267,48 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
         let scannedCoils = 0;
         let isProcessingScan = false;
 
-        // Play Beep Sound
-        function playBeep() {
+        // Load Sound Config dari Master Sound App
+        let activeSoundConfig = {};
+        function loadSoundConfig() {
+            $.ajax({
+                url: siteurl + 'master_sound/get_sound_config',
+                type: 'GET',
+                dataType: 'json',
+                success: function(res) {
+                    if (res.status == 1) {
+                        activeSoundConfig = res.data;
+                    }
+                }
+            });
+        }
+        loadSoundConfig();
+
+        function triggerVibrate(level) {
+            level = parseInt(level) || 0;
+            if (level <= 0) return;
+
+            if ("vibrate" in navigator) {
+                try {
+                    const duration = level * 100;
+                    navigator.vibrate([duration, 50, duration]);
+                } catch(e) {
+                    try { navigator.vibrate(level * 100); } catch(err) {}
+                }
+            }
+        }
+
+        // Play Beep Sound & Trigger Vibrate
+        function playBeep(eventCode = 'scan_success') {
             try {
+                if (activeSoundConfig && activeSoundConfig[eventCode] && activeSoundConfig[eventCode].sound_url) {
+                    const audio = new Audio(activeSoundConfig[eventCode].sound_url);
+                    audio.play().catch(e => {});
+
+                    const vibLevel = activeSoundConfig[eventCode].vibrate_level || 0;
+                    triggerVibrate(vibLevel);
+                    return;
+                }
+
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 if (!AudioContext) return;
                 const ctx = new AudioContext();
@@ -296,10 +335,9 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                 playTone(1318.51, now + 0.15, 0.15); // E6
                 playTone(1567.98, now + 0.30, 0.35); // G6
 
-                // Getaran (hanya jalan di HP, browser Android umumnya support)
+                // Getaran (hanya jalan di HP)
                 if (navigator.vibrate) {
                     navigator.vibrate([50, 30, 50, 30, 100]);
-                    // pola: getar 50ms, jeda 30ms, getar 50ms, jeda 30ms, getar 100ms
                 }
 
             } catch (e) {}
