@@ -581,6 +581,7 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                                 timer: 1500
                             }).then(function() {
                                 $('#modal-confirm-spk').modal('hide');
+                                $('#btn-submit-confirm').prop('disabled', false).text('Confirm Pengeluaran');
                                 tableRequestList.ajax.reload(null, false);
                             });
                         } else {
