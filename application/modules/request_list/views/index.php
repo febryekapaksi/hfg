@@ -226,7 +226,8 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                     className: 'text-center'
                 },
                 {
-                    data: 1
+                    data: 1,
+                    className: 'text-nowrap'
                 },
                 {
                     data: 2

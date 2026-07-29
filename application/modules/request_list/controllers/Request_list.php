@@ -87,34 +87,26 @@ class Request_list extends Admin_Controller
             }
 
             $status_html = "<span class='badge rounded-pill " . $badge_class . "'>" . $display_status . "</span>";
-            // Action buttons
-            $btn_view = '<a href="' . site_url('request_list/view_spk_coil/' . $row['spk_no']) . '" class="btn btn-sm btn-info" title="View"><i class="fa fa-eye"></i></a>';
 
-            $aksi = $btn_view;
+            // --- ACTION BUTTONS (Disimpan dalam Array) ---
+            $btn_list = array();
 
-            // Show "Create SPK Coil" button logic:
-            // Hanya muncul jika statusnya adalah 'Material Requested' atau 'Material On Load'
-            $show_create_btn = false;
+            $btn_list[] = '<a href="' . site_url('request_list/view_spk_coil/' . $row['spk_no']) . '" class="btn btn-sm btn-info" title="View"><i class="fa fa-eye"></i></a>';
 
             if (in_array($display_status, ['Material Requested', 'Material On Load'])) {
-                $show_create_btn = true;
-            }
-
-            if ($show_create_btn) {
-                $btn_create = ' <a href="' . site_url('request_list/create_spk_coil/' . $row['spk_no']) . '" class="btn btn-sm btn-warning" title="Manage Request Coil"><i class="fa fa-cogs"></i></a>';
-                $aksi .= $btn_create;
+                $btn_list[] = '<a href="' . site_url('request_list/create_spk_coil/' . $row['spk_no']) . '" class="btn btn-sm btn-warning" title="Manage Request Coil"><i class="fa fa-cogs"></i></a>';
             }
 
             if ($display_status != 'Material Requested') {
-                $btn_print_pengambilan = ' <a href="' . site_url('request_list/print_spk_pengambilan/' . $row['spk_no']) . '" target="_blank" class="btn btn-sm btn-secondary" title="Print SPK Pengambilan Coil"><i class="fa fa-print"></i></a>';
-                $aksi .= $btn_print_pengambilan;
+                $btn_list[] = '<a href="' . site_url('request_list/print_spk_pengambilan/' . $row['spk_no']) . '" target="_blank" class="btn btn-sm btn-secondary" title="Print SPK Pengambilan Coil"><i class="fa fa-print"></i></a>';
             }
 
-            // Show Confirm button if status is Material On Load
             if ($display_status == 'Material On Load') {
-                $btn_confirm = ' <button type="button" class="btn btn-sm btn-success btn-confirm-spk" data-spk="' . $row['spk_no'] . '" title="Confirm SPK Coil"><i class="fa fa-check-circle"></i></button>';
-                $aksi .= $btn_confirm;
+                $btn_list[] = '<button type="button" class="btn btn-sm btn-success btn-confirm-spk" data-spk="' . $row['spk_no'] . '" title="Confirm SPK Coil"><i class="fa fa-check-circle"></i></button>';
             }
+
+            // Gabungkan tombol dengan wrapper Flexbox + Gap agar jarak konsisten & sejajar di tengah
+            $aksi = '<div class="d-flex justify-content-center align-items-center gap-1">' . implode('', $btn_list) . '</div>';
 
             $data[] = array(
                 "<div class='text-center'>" . $no . "</div>",
@@ -123,7 +115,7 @@ class Request_list extends Admin_Controller
                 htmlspecialchars(isset($row['shift_names']) ? $row['shift_names'] : ''),
                 "<div class='text-center'>" . $status_html . "</div>",
                 "<div class='text-center'>" . (isset($row['detail_count']) ? $row['detail_count'] : 0) . "</div>",
-                "<div class='text-center'>" . $aksi . "</div>",
+                $aksi, // Sudah termasuk text-center dari wrapper flex container
             );
             $no++;
         }
@@ -634,6 +626,98 @@ class Request_list extends Admin_Controller
         ));
     }
 
+    // public function confirm_spk_coil($request_id = null)
+    // {
+    //     $this->auth->restrict($this->managePermission);
+
+    //     if (!$request_id) {
+    //         return $this->_json(array('status' => 0, 'message' => 'Request ID tidak valid.'));
+    //     }
+
+    //     $request = $this->Request_list_model->get_request_by_id($request_id);
+
+    //     if (!$request) {
+    //         return $this->_json(array('status' => 0, 'message' => 'SPK Coil tidak ditemukan.'));
+    //     }
+
+    //     if ($request['status'] != 'Material On Load') {
+    //         return $this->_json(array('status' => 0, 'message' => 'SPK Coil tidak dapat dikonfirmasi karena status: ' . $request['status']));
+    //     }
+
+    //     if (!$this->Request_list_model->all_coils_scanned($request_id)) {
+    //         return $this->_json(array('status' => 0, 'message' => 'Semua coil harus di-scan terlebih dahulu'));
+    //     }
+
+    //     $coil_details = $this->Request_list_model->get_coil_details($request_id);
+
+    //     $this->db->trans_start();
+
+    //     foreach ($coil_details as $coil) {
+    //         if ($coil['id_gudang_sumber'] == 1) {
+    //             $source_data = $this->Request_list_model->get_coil_source_data($coil['id_coil']);
+    //             $this->Request_list_model->reduce_coil_stock(
+    //                 $coil['id_coil'],
+    //                 $request['spk_coil_no'],
+    //                 $this->id_user
+    //             );
+
+    //             if ($source_data) {
+    //                 $transit_data = array(
+    //                     'id_request_header' => $request_id,
+    //                     'id_request_detail' => $coil['id'],
+    //                     'id_coil_source'    => $coil['id_coil'],
+    //                     'id_material'       => isset($source_data['id_material']) ? $source_data['id_material'] : '',
+    //                     'nm_material'       => isset($source_data['nm_material']) ? $source_data['nm_material'] : '',
+    //                     'trade_name'        => isset($source_data['trade_name']) ? $source_data['trade_name'] : '',
+    //                     'kode_internal'     => isset($source_data['kode_internal']) ? $source_data['kode_internal'] : '',
+    //                     'no_coil'           => isset($source_data['no_coil']) ? $source_data['no_coil'] : '',
+    //                     'no_ipp'            => isset($source_data['no_ipp']) ? $source_data['no_ipp'] : '',
+    //                     'no_po'             => isset($source_data['no_po']) ? $source_data['no_po'] : '',
+    //                     'no_ros'            => isset($source_data['no_ros']) ? $source_data['no_ros'] : '',
+    //                     'gross_weight'      => isset($source_data['gross_weight']) ? $source_data['gross_weight'] : 0,
+    //                     'net_weight'        => isset($source_data['net_weight']) ? $source_data['net_weight'] : 0,
+    //                     'length'            => isset($source_data['length']) ? $source_data['length'] : 0,
+    //                     'harga_beli'        => isset($source_data['harga_beli']) ? $source_data['harga_beli'] : 0,
+    //                     'total_nilai'       => isset($source_data['total_nilai']) ? $source_data['total_nilai'] : 0,
+    //                     'qty'               => 1,
+    //                     'kd_gudang'         => 'ONLOAD',
+    //                     'type'              => 'from_warehouse',
+    //                     'status'            => 1,
+    //                     'created_by'        => $this->id_user,
+    //                     'created_on'        => $this->datetime,
+    //                 );
+    //                 $this->Request_list_model->insert_production_transit_record($transit_data);
+    //             }
+    //         }
+    //     }
+
+    //     $this->Request_list_model->update_request_status($request_id, array(
+    //         'status'       => 'Material Confirmed',
+    //         'confirmed_by' => $this->id_user,
+    //         'confirmed_at' => $this->datetime,
+    //     ));
+
+    //     // Check if there are still pending SPKCs for this SPK
+    //     $spk_no = $request['spk_no'];
+    //     $pending_spkcs = $this->Request_list_model->get_pending_spkc_by_spk($spk_no);
+
+    //     if (empty($pending_spkcs)) {
+    //         $this->Request_list_model->update_spk_material_status($spk_no, array(
+    //             'status'     => 'Material Confirmed',
+    //             'updated_by' => $this->id_user,
+    //             'updated_at' => $this->datetime,
+    //         ));
+    //     }
+
+    //     $this->db->trans_complete();
+
+    //     if ($this->db->trans_status() === FALSE) {
+    //         return $this->_json(array('status' => 0, 'message' => 'Gagal mengkonfirmasi. Silakan coba lagi.'));
+    //     }
+
+    //     return $this->_json(array('status' => 1, 'message' => 'SPK Coil berhasil dikonfirmasi.'));
+    // }
+
     public function confirm_spk_coil($request_id = null)
     {
         $this->auth->restrict($this->managePermission);
@@ -660,43 +744,86 @@ class Request_list extends Admin_Controller
 
         $this->db->trans_start();
 
+        $summary_map = []; // accumulator: key = id_material_kd_gudang
+
         foreach ($coil_details as $coil) {
             if ($coil['id_gudang_sumber'] == 1) {
                 $source_data = $this->Request_list_model->get_coil_source_data($coil['id_coil']);
-                $this->Request_list_model->reduce_coil_stock(
+
+                $reduce_result = $this->Request_list_model->reduce_coil_stock(
                     $coil['id_coil'],
                     $request['spk_coil_no'],
                     $this->id_user
                 );
 
-                if ($source_data) {
-                    $transit_data = array(
-                        'id_request_header' => $request_id,
-                        'id_request_detail' => $coil['id'],
-                        'id_coil_source'    => $coil['id_coil'],
-                        'id_material'       => isset($source_data['id_material']) ? $source_data['id_material'] : '',
-                        'nm_material'       => isset($source_data['nm_material']) ? $source_data['nm_material'] : '',
-                        'trade_name'        => isset($source_data['trade_name']) ? $source_data['trade_name'] : '',
-                        'kode_internal'     => isset($source_data['kode_internal']) ? $source_data['kode_internal'] : '',
-                        'no_coil'           => isset($source_data['no_coil']) ? $source_data['no_coil'] : '',
-                        'no_ipp'            => isset($source_data['no_ipp']) ? $source_data['no_ipp'] : '',
-                        'no_po'             => isset($source_data['no_po']) ? $source_data['no_po'] : '',
-                        'no_ros'            => isset($source_data['no_ros']) ? $source_data['no_ros'] : '',
-                        'gross_weight'      => isset($source_data['gross_weight']) ? $source_data['gross_weight'] : 0,
-                        'net_weight'        => isset($source_data['net_weight']) ? $source_data['net_weight'] : 0,
-                        'length'            => isset($source_data['length']) ? $source_data['length'] : 0,
-                        'harga_beli'        => isset($source_data['harga_beli']) ? $source_data['harga_beli'] : 0,
-                        'total_nilai'       => isset($source_data['total_nilai']) ? $source_data['total_nilai'] : 0,
-                        'qty'               => 1,
-                        'kd_gudang'         => 'ONLOAD',
-                        'type'              => 'from_warehouse',
-                        'status'            => 1,
-                        'created_by'        => $this->id_user,
-                        'created_on'        => $this->datetime,
-                    );
-                    $this->Request_list_model->insert_production_transit_record($transit_data);
+                // Accumulate summary per material + gudang
+                if ($reduce_result) {
+                    $key = $reduce_result['id_material'] . '_' . $reduce_result['kd_gudang'];
+
+                    if (!isset($summary_map[$key])) {
+                        $summary_map[$key] = [
+                            'kode_trans'    => $request['spk_coil_no'],
+                            'id_material'   => $reduce_result['id_material'],
+                            'nm_material'   => $reduce_result['nm_material'],
+                            'id_gudang'     => $reduce_result['id_gudang'],
+                            'kd_gudang'     => $reduce_result['kd_gudang'],
+                            'tanggal'       => date('Y-m-d'),
+                            'jumlah_coil'   => 0,
+                            'qty_awal'      => $reduce_result['qty_awal'],   // dari panggilan PERTAMA di grup ini
+                            'qty_transaksi' => 0,
+                            'qty_akhir'     => 0, // di-update tiap iterasi ke nilai TERBARU
+                            'costbook'      => 0,
+                            'total_harga'   => 0,
+                            'saldo_awal'    => $reduce_result['saldo_awal'], // dari panggilan PERTAMA di grup ini
+                            'saldo_akhir'   => 0,
+                            'harga_lama'    => $reduce_result['harga_lama'],
+                            'created_by'    => $this->id_user,
+                            'created_at'    => $this->datetime,
+                        ];
+                    }
+
+                    $summary_map[$key]['jumlah_coil']++;
+                    $summary_map[$key]['qty_transaksi'] += (float) $reduce_result['net_weight'];
+                    $summary_map[$key]['total_harga']   += (float) $reduce_result['total_nilai'];
+                    // qty_akhir & saldo_akhir selalu ditimpa nilai terbaru -> otomatis jadi nilai dari panggilan TERAKHIR
+                    $summary_map[$key]['qty_akhir']   = $reduce_result['qty_akhir'];
+                    $summary_map[$key]['saldo_akhir'] = $reduce_result['saldo_akhir'];
+                    $summary_map[$key]['costbook']    = $reduce_result['costbook'];
+
+                    if ($source_data) {
+                        $transit_data = array(
+                            'id_request_header' => $request_id,
+                            'id_request_detail' => $coil['id'],
+                            'id_coil_source'    => $coil['id_coil'],
+                            'id_material'       => isset($source_data['id_material']) ? $source_data['id_material'] : '',
+                            'nm_material'       => isset($source_data['nm_material']) ? $source_data['nm_material'] : '',
+                            'trade_name'        => isset($source_data['trade_name']) ? $source_data['trade_name'] : '',
+                            'kode_internal'     => isset($source_data['kode_internal']) ? $source_data['kode_internal'] : '',
+                            'no_coil'           => isset($source_data['no_coil']) ? $source_data['no_coil'] : '',
+                            'no_ipp'            => isset($source_data['no_ipp']) ? $source_data['no_ipp'] : '',
+                            'no_po'             => isset($source_data['no_po']) ? $source_data['no_po'] : '',
+                            'no_ros'            => isset($source_data['no_ros']) ? $source_data['no_ros'] : '',
+                            'gross_weight'      => isset($source_data['gross_weight']) ? $source_data['gross_weight'] : 0,
+                            'net_weight'        => isset($source_data['net_weight']) ? $source_data['net_weight'] : 0,
+                            'length'            => isset($source_data['length']) ? $source_data['length'] : 0,
+                            'harga_beli'        => isset($source_data['harga_beli']) ? $source_data['harga_beli'] : 0,
+                            'total_nilai'       => isset($source_data['total_nilai']) ? $source_data['total_nilai'] : 0,
+                            'qty'               => 1,
+                            'kd_gudang'         => 'ONLOAD',
+                            'type'              => 'from_warehouse',
+                            'status'            => 1,
+                            'created_by'        => $this->id_user,
+                            'created_on'        => $this->datetime,
+                        );
+                        $this->Request_list_model->insert_production_transit_record($transit_data);
+                    }
                 }
             }
+        }
+
+        // Insert summary sekali per grup material+gudang (setelah loop selesai)
+        foreach ($summary_map as $s) {
+            $this->Request_list_model->insert_transaction_summary($s);
         }
 
         $this->Request_list_model->update_request_status($request_id, array(

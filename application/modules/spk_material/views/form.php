@@ -424,6 +424,23 @@ $catatan    = $is_edit ? $spk['catatan'] : '';
     // ---------------------------------------------------------------
     // INIT SELECT2 - PRODUK
     // ---------------------------------------------------------------
+
+    /**
+     * Ambil daftar ID produk yang sudah dipilih di baris lain
+     * (exclude baris dengan idx tertentu agar tidak memblokir dirinya sendiri)
+     */
+    function getSelectedProductIds(excludeIdx) {
+        var ids = [];
+        $('#product-lines-container .select-produk').each(function() {
+            var thisIdx = $(this).data('idx');
+            if (thisIdx != excludeIdx) {
+                var val = $(this).val();
+                if (val) ids.push(String(val));
+            }
+        });
+        return ids;
+    }
+
     function initProdukSelect2(idx) {
         $('#produk_' + idx).select2({
             placeholder: '-- Pilih Produk --',
@@ -439,19 +456,35 @@ $catatan    = $is_edit ? $spk['catatan'] : '';
                     };
                 },
                 processResults: function(res) {
+                    // Ambil produk yang sudah dipilih di baris lain
+                    var selectedIds = getSelectedProductIds(idx);
+
                     var items = (res.data || []).map(function(p) {
+                        var isUsed = selectedIds.indexOf(String(p.code_lv4)) > -1;
                         return {
                             id: p.code_lv4,
-                            text: p.nama
+                            text: isUsed ? p.nama + ' (sudah dipilih)' : p.nama,
+                            disabled: isUsed
                         };
                     });
                     return {
                         results: items
                     };
                 },
-                cache: true
+                cache: false
             },
             minimumInputLength: 0
+        });
+
+        // Intercept pilihan: cegah duplikat meskipun disabled gagal
+        $('#produk_' + idx).on('select2:selecting', function(e) {
+            var choosingId = String(e.params.args.data.id);
+            var selectedIds = getSelectedProductIds(idx);
+            if (selectedIds.indexOf(choosingId) > -1) {
+                e.preventDefault();
+                Swal.fire('Perhatian', 'Produk ini sudah dipilih di baris lain.', 'warning');
+                return false;
+            }
         });
 
         $('#produk_' + idx).on('change', function() {

@@ -316,11 +316,11 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
 
             <!-- Submit Button -->
             <div class="mt-4 d-flex gap-2 justify-content-end">
-                <a href="<?= site_url('request_list') ?>" class="btn btn-secondary">
+                <a href="<?= site_url('request_list') ?>" class="btn btn-sm btn-secondary">
                     <i class="fa fa-arrow-left"></i> Kembali
                 </a>
                 <?php if ($ENABLE_MANAGE): ?>
-                    <button type="button" class="btn btn-primary" id="btnSaveSpkCoil">
+                    <button type="button" class="btn btn-sm btn-primary" id="btnSaveSpkCoil">
                         <i class="fa fa-save"></i> Save & Create SPK
                     </button>
                 <?php endif; ?>
