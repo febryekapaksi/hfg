@@ -707,48 +707,61 @@ $catatan    = $is_edit ? $spk['catatan'] : '';
             return;
         }
 
-        var $btn = $('#btnSubmitSpk');
-        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
+        // Konfirmasi sebelum simpan
+        Swal.fire({
+            icon: 'question',
+            title: 'Konfirmasi',
+            text: MODE === 'edit' ? 'Apakah Anda yakin ingin mengupdate SPK ini?' : 'Apakah Anda yakin ingin membuat SPK ini?',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Simpan',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then(function(result) {
+            if (!result.isConfirmed) return;
 
-        var formData = {
-            mode: MODE,
-            tgl_spk: $('#tgl_spk').val(),
-            due_date: $('#due_date').val(),
-            shift_ids: $('#shift_ids').val(),
-            shift_names: $('#shift_names').val(),
-            catatan: $('#catatan').val(),
-            products: products
-        };
-        if (MODE === 'edit') {
-            formData.spk_no = '<?= htmlspecialchars($spk_no) ?>';
-        }
+            var $btn = $('#btnSubmitSpk');
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
 
-        $.ajax({
-            url: BASE_URL + '/save',
-            type: 'POST',
-            data: formData,
-            dataType: 'json',
-            success: function(res) {
-                $btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? "Update SPK" : "Create SPK" ?>');
-                if (res.status == 1) {
-                    Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil',
-                            text: res.message,
-                            showConfirmButton: false,
-                            timer: 1500
-                        })
-                        .then(function() {
-                            window.location.href = siteurl + 'spk_material';
-                        });
-                } else {
-                    Swal.fire('Error', res.message || 'Gagal menyimpan SPK.', 'error');
-                }
-            },
-            error: function() {
-                $btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? "Update SPK" : "Create SPK" ?>');
-                Swal.fire('Error', 'Terjadi kesalahan jaringan.', 'error');
+            var formData = {
+                mode: MODE,
+                tgl_spk: $('#tgl_spk').val(),
+                due_date: $('#due_date').val(),
+                shift_ids: $('#shift_ids').val(),
+                shift_names: $('#shift_names').val(),
+                catatan: $('#catatan').val(),
+                products: products
+            };
+            if (MODE === 'edit') {
+                formData.spk_no = '<?= htmlspecialchars($spk_no) ?>';
             }
+
+            $.ajax({
+                url: BASE_URL + '/save',
+                type: 'POST',
+                data: formData,
+                dataType: 'json',
+                success: function(res) {
+                    $btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? "Update SPK" : "Create SPK" ?>');
+                    if (res.status == 1) {
+                        Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: res.message,
+                                showConfirmButton: false,
+                                timer: 1500
+                            })
+                            .then(function() {
+                                window.location.href = siteurl + 'spk_material';
+                            });
+                    } else {
+                        Swal.fire('Error', res.message || 'Gagal menyimpan SPK.', 'error');
+                    }
+                },
+                error: function() {
+                    $btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? "Update SPK" : "Create SPK" ?>');
+                    Swal.fire('Error', 'Terjadi kesalahan jaringan.', 'error');
+                }
+            });
         });
     }
 

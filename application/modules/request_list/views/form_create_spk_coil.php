@@ -439,7 +439,9 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                 var hasAnyScannedCoil = false;
                 if (spkc.coils && spkc.coils.length > 0) {
                     $.each(spkc.coils, function(idx, c) {
-                        if (c.scan_status == 1 || c.scan_status == '1') {
+                        // Hanya coil non-WIP yang sudah discan manual yang dianggap "scanned" (tidak bisa dihapus)
+                        var isWip = (c.id_gudang_sumber == 4 || c.id_gudang_sumber == '4');
+                        if ((c.scan_status == 1 || c.scan_status == '1') && !isWip) {
                             hasAnyScannedCoil = true;
                         }
                     });
@@ -478,10 +480,19 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                 if (spkc.coils && spkc.coils.length > 0) {
                     $.each(spkc.coils, function(idx, c) {
                         var isCoilScanned = (c.scan_status == 1 || c.scan_status == '1');
+                        var isWip = (c.id_gudang_sumber == 4 || c.id_gudang_sumber == '4');
                         var actionHtml = '';
 
-                        if (isCoilScanned) {
+                        if (isCoilScanned && !isWip) {
+                            // Coil non-WIP yang sudah discan manual — tidak bisa dihapus
                             actionHtml = '<span class="badge bg-success py-1 px-2"><i class="fa fa-check-circle me-1"></i> Scanned</span>';
+                        } else if (isWip && isCoilScanned) {
+                            // Coil WIP auto-scan — tetap bisa dihapus
+                            if (isDeletable) {
+                                actionHtml = '<button type="button" class="btn btn-sm btn-outline-danger btn-delete-coil-item" data-id="' + c.id + '" data-no="' + escHtml(c.no_coil || c.kode_internal) + '" title="Hapus Coil Ini"><i class="fa fa-times"></i> Hapus</button>';
+                            } else {
+                                actionHtml = '<span class="text-muted">-</span>';
+                            }
                         } else if (isDeletable) {
                             actionHtml = '<button type="button" class="btn btn-sm btn-outline-danger btn-delete-coil-item" data-id="' + c.id + '" data-no="' + escHtml(c.no_coil || c.kode_internal) + '" title="Hapus Coil Ini Dari ' + escHtml(spkc.spk_coil_no) + '"><i class="fa fa-times me-1"></i> Hapus</button>';
                         } else {
@@ -493,7 +504,7 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                         html += '<td>' + escHtml(c.no_coil || '-') + '</td>';
                         html += '<td>' + escHtml(c.kode_internal || '-') + '</td>';
                         html += '<td>' + escHtml(c.nm_material || '-') + '</td>';
-                        html += '<td>' + escHtml(c.nm_gudang || (c.id_gudang_sumber == 3 ? 'WIP' : 'Produksi')) + '</td>';
+                        html += '<td>' + escHtml(c.nm_gudang || (c.id_gudang_sumber == 4 ? 'WIP' : 'Produksi')) + '</td>';
                         html += '<td class="text-center">' + actionHtml + '</td>';
                         html += '</tr>';
                     });
@@ -601,7 +612,7 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                         nm_material: $cb.data('nm-material') || nmMaterial
                     };
 
-                    if (coilObj.id_gudang == 3) {
+                    if (coilObj.id_gudang == 4) {
                         wipCoils.push(coilObj);
                     } else {
                         proCoils.push(coilObj);
@@ -622,11 +633,12 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
 
                         wipCoils.forEach(function(coil) {
                             var isAssignedToThis = (String(coil.assigned_req_id) === String(targetReqId));
-                            var disabledAttr = (isAssignedToThis || coil.is_scanned) ? 'disabled' : '';
+                            // Coil WIP: meskipun is_scanned (auto), tetap bisa dipindah
+                            var disabledAttr = isAssignedToThis ? 'disabled' : '';
                             var badgeInfo = '';
-                            if (coil.is_scanned) {
-                                var scannedLoc = coil.assigned_spkc ? ' di ' + escHtml(coil.assigned_spkc) : '';
-                                badgeInfo = ' <span class="badge bg-success"><i class="fa fa-check-circle me-1"></i> Scanned' + scannedLoc + '</span>';
+                            if (coil.is_scanned && coil.assigned_spkc) {
+                                var scannedLoc = ' di ' + escHtml(coil.assigned_spkc);
+                                badgeInfo = ' <span class="badge bg-warning text-dark">Terdaftar' + scannedLoc + '</span>';
                             } else if (isAssignedToThis) {
                                 badgeInfo = ' <span class="badge bg-secondary">Sudah ada di SPK Coil ini</span>';
                             } else if (coil.assigned_spkc) {
@@ -640,7 +652,7 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                                 'data-nm-material="' + escHtml(coil.nm_material) + '" ' +
                                 'data-no-coil="' + escHtml(coil.no_coil) + '" ' +
                                 'data-kode-internal="' + escHtml(coil.kode_internal) + '" ' +
-                                'data-id-gudang="3" ' +
+                                'data-id-gudang="4" ' +
                                 'data-assigned-spkc="' + escHtml(coil.assigned_spkc) + '" ' +
                                 'data-assigned-req-id="' + escHtml(String(coil.assigned_req_id)) + '"></td>';
                             html += '<td>' + escHtml(coil.no_coil || '-') + badgeInfo + '</td>';
@@ -788,9 +800,15 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
             if (isChecked && assignedSpkc) {
                 $checkbox.prop('checked', false);
 
+                var idGudang = $checkbox.data('id-gudang');
+                var isWip = (idGudang == 4 || idGudang == '4');
+                var alertText = isWip
+                    ? 'Coil ini sudah ada di ' + assignedSpkc + '. Apakah Anda ingin memindahkannya ke SPK Coil ini?'
+                    : 'Coil ini sudah ada di ' + assignedSpkc + ' dan belum discan. Apakah Anda ingin mengeluarkannya dan memasukannya ke SPK Coil ini?';
+
                 Swal.fire({
                     title: 'Peringatan',
-                    text: 'Coil ini sudah ada di ' + assignedSpkc + ' dan belum discan. Apakah Anda ingin mengeluarkannya dan memasukannya ke SPK Coil ini?',
+                    text: alertText,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Ya, pindahkan',
@@ -977,13 +995,14 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                     var isScanned = (coil.scan_status == 1) ? true : false;
                     var assignedSPKC = coil.assigned_spkc || '';
                     var assignedReqId = coil.assigned_request_id || '';
-                    var disabledAttr = isScanned ? 'disabled' : '';
+                    // Coil WIP: meskipun scan_status=1 (auto), tetap bisa dipindah (tidak disabled)
+                    var disabledAttr = '';
                     var badgeHtml = '';
 
-                    if (isScanned) {
-                        badgeHtml = '<br><span class="badge bg-success">Scanned di ' + assignedSPKC + '</span>';
+                    if (isScanned && assignedSPKC) {
+                        badgeHtml = '<br><span class="badge bg-warning text-dark">Terdaftar di ' + escHtml(assignedSPKC) + '</span>';
                     } else if (assignedSPKC) {
-                        badgeHtml = '<br><span class="badge bg-warning text-dark">Terdaftar di ' + assignedSPKC + '</span>';
+                        badgeHtml = '<br><span class="badge bg-warning text-dark">Terdaftar di ' + escHtml(assignedSPKC) + '</span>';
                     }
 
                     tbodyWip += '<tr>';
@@ -993,7 +1012,7 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                         'data-id-coil="' + escHtml(String(coil.id)) + '" ' +
                         'data-no-coil="' + escHtml(coil.no_coil || '') + '" ' +
                         'data-kode-internal="' + escHtml(coil.kode_internal || '') + '" ' +
-                        'data-id-gudang="3" ' +
+                        'data-id-gudang="4" ' +
                         'data-target="wip" ' +
                         'data-is-scanned="' + (isScanned ? '1' : '0') + '" ' +
                         'data-assigned-spkc="' + escHtml(assignedSPKC) + '" ' +
@@ -1090,9 +1109,15 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                 // Prevent default/temporary uncheck
                 $checkbox.prop('checked', false);
 
+                var idGudang = $checkbox.data('id-gudang');
+                var isWip = (idGudang == 4 || idGudang == '4');
+                var alertText = isWip
+                    ? 'Coil ini sudah ada di ' + assignedSpkc + '. Apakah Anda ingin memindahkannya ke SPK Coil baru ini?'
+                    : 'Coil ini sudah ada di ' + assignedSpkc + ' dan belum discan. Apakah Anda ingin mengeluarkannya dan memasukannya ke SPK Coil baru ini?';
+
                 Swal.fire({
                     title: 'Peringatan',
-                    text: 'Coil ini sudah ada di ' + assignedSpkc + ' dan belum discan. Apakah Anda ingin mengeluarkannya dan memasukannya ke SPK Coil baru ini?',
+                    text: alertText,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Ya, pindahkan',

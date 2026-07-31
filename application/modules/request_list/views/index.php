@@ -12,6 +12,32 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
         z-index: 1000000 !important;
     }
 
+    /* Fix dropdown menu di DataTable agar muncul di depan */
+    .table-responsive {
+        overflow: visible !important;
+    }
+
+    .dropdown-menu {
+        z-index: 9999 !important;
+        position: fixed !important;
+    }
+
+    .card, .card-body {
+        overflow: visible !important;
+    }
+
+    #table-request-list tbody td {
+        overflow: visible !important;
+    }
+
+    .dataTables_wrapper {
+        overflow: visible !important;
+    }
+
+    #table-request-list {
+        margin-bottom: 60px !important;
+    }
+
     .skeleton {
         border-radius: 4px;
         animation: shimmer 1.5s infinite linear;
@@ -88,6 +114,12 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
         background-color: #ebfbee !important;
         color: #099268 !important;
         border: 1px solid #b2f2bb;
+    }
+
+    .status-pill.auto-wip {
+        background-color: #e7f1ff !important;
+        color: #0d6efd !important;
+        border: 1px solid #9ec5fe;
     }
 
     #qr-reader {
@@ -258,6 +290,20 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
             }
         });
 
+        // Fix dropdown position di dalam DataTable
+        $(document).on('show.bs.dropdown', '#table-request-list .dropdown', function() {
+            var $btn = $(this).find('[data-bs-toggle="dropdown"]');
+            var $menu = $(this).find('.dropdown-menu');
+            var btnRect = $btn[0].getBoundingClientRect();
+
+            $menu.css({
+                position: 'fixed',
+                top: btnRect.bottom + 'px',
+                left: (btnRect.right - $menu.outerWidth()) + 'px',
+                transform: 'none'
+            });
+        });
+
         // -----------------------------------------------------------------
         // CONFIRM SPK COIL LOGIC
         // -----------------------------------------------------------------
@@ -406,7 +452,12 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
 
                         $.each(res.data, function(i, c) {
                             var statusHtml = '';
-                            if (c.scan_status == 1) {
+                            var isWip = (c.id_gudang_sumber == 4 || c.id_gudang_sumber == '4');
+
+                            if (c.scan_status == 1 && isWip) {
+                                scannedCoils++;
+                                statusHtml = '<div class="status-pill auto-wip" id="status-pill-' + c.id + '"><i class="fa fa-bolt"></i> <span>Auto (WIP)</span></div>';
+                            } else if (c.scan_status == 1) {
                                 scannedCoils++;
                                 statusHtml = '<div class="status-pill scanned" id="status-pill-' + c.id + '"><i class="fa fa-check-circle"></i> <span>Sudah</span></div>';
                             } else {
@@ -601,6 +652,52 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                             text: 'Terjadi kesalahan jaringan'
                         });
                         $('#btn-submit-confirm').prop('disabled', false).text('Confirm Pengeluaran');
+                    }
+                });
+            });
+        });
+
+        // -----------------------------------------------------------------
+        // CLOSE SPK (Manual update status ke Material Confirmed)
+        // -----------------------------------------------------------------
+        $(document).on('click', '.btn-close-spk', function() {
+            var spkNo = $(this).data('spk');
+
+            Swal.fire({
+                icon: 'warning',
+                title: 'Close SPK?',
+                text: 'Apakah Anda yakin ingin menutup SPK ' + spkNo + '? Status akan berubah menjadi Material Confirmed.',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Close SPK',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#343a40',
+                cancelButtonColor: '#6c757d',
+                reverseButtons: true
+            }).then(function(result) {
+                if (!result.isConfirmed) return;
+
+                $.ajax({
+                    url: BASE_URL + '/close_spk',
+                    type: 'POST',
+                    data: { spk_no: spkNo },
+                    dataType: 'json',
+                    success: function(res) {
+                        if (res.status == 1) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: res.message,
+                                showConfirmButton: false,
+                                timer: 1500
+                            }).then(function() {
+                                tableRequestList.ajax.reload(null, false);
+                            });
+                        } else {
+                            Swal.fire('Gagal', res.message, 'error');
+                        }
+                    },
+                    error: function() {
+                        Swal.fire('Error', 'Terjadi kesalahan jaringan.', 'error');
                     }
                 });
             });

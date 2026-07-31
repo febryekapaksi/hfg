@@ -267,7 +267,7 @@
                             <?php
                             if ($coil['id_gudang_sumber'] == 1) {
                                 echo 'Gudang Coil';
-                            } elseif ($coil['id_gudang_sumber'] == 3) {
+                            } elseif ($coil['id_gudang_sumber'] == 4) {
                                 echo 'WIP';
                             } else {
                                 echo '-';

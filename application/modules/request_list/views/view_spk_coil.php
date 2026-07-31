@@ -154,7 +154,7 @@ foreach ($saved_coils as $coil) {
 
                                             <?php
                                             $mat_coils = isset($coils_by_material[$material['id_material']]) ? $coils_by_material[$material['id_material']] : [];
-                                            $wip_coils = array_filter($mat_coils, function($c) { return $c['id_gudang_sumber'] == 3; });
+                                            $wip_coils = array_filter($mat_coils, function($c) { return $c['id_gudang_sumber'] == 4; });
                                             $pro_coils = array_filter($mat_coils, function($c) { return $c['id_gudang_sumber'] == 1; });
                                             ?>
 
