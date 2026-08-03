@@ -37,6 +37,34 @@ class Spk_material_model extends BF_Model
         return $prefix . str_pad($next_counter, 4, '0', STR_PAD_LEFT);
     }
 
+    /**
+     * Generate nomor SPK dengan row-level lock (FOR UPDATE) untuk mencegah race condition.
+     * Harus dipanggil di dalam transaction (trans_begin sudah dipanggil sebelumnya).
+     *
+     * @return string Nomor SPK baru
+     */
+    public function generate_spk_no_locked()
+    {
+        $prefix = 'SPK-' . date('Ym') . '-';
+
+        // SELECT ... FOR UPDATE akan lock row sehingga concurrent request harus menunggu
+        $sql = "SELECT spk_no FROM tr_spk_material_header 
+                WHERE spk_no LIKE ? 
+                ORDER BY spk_no DESC 
+                LIMIT 1 
+                FOR UPDATE";
+
+        $last = $this->db->query($sql, [$prefix . '%'])->row();
+
+        $next_counter = 1;
+        if ($last) {
+            $parts = explode('-', $last->spk_no);
+            $next_counter = (int) end($parts) + 1;
+        }
+
+        return $prefix . str_pad($next_counter, 4, '0', STR_PAD_LEFT);
+    }
+
     // ---------------------------------------------------------------
     // SPK HEADER & DETAIL CRUD
     // ---------------------------------------------------------------

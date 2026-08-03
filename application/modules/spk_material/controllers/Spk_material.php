@@ -127,7 +127,7 @@ class Spk_material extends Admin_Controller
         $catatan    = $this->input->post('catatan');
         $products   = $this->input->post('products');
 
-        // Basic validation
+        // ===== VALIDASI (dilakukan SEBELUM transaction) =====
         if (empty($tgl_spk)) {
             return $this->_json(['status' => 0, 'message' => 'Tanggal SPK wajib diisi.']);
         }
@@ -170,43 +170,50 @@ class Spk_material extends Admin_Controller
             return $this->_json(['status' => 0, 'message' => 'BOM belum dibuat untuk produk: ' . implode(', ', $no_bom_products)]);
         }
 
-        // Start transaction
-        $this->db->trans_start();
-
+        // Validasi edit: cek SPK exist dan editable SEBELUM transaction
         if ($mode === 'edit') {
             $spk_no = $this->input->post('spk_no');
-
-            // Validate SPK exists and is editable
             $spk = $this->Spk_material_model->get_spk($spk_no);
             if (!$spk || !in_array($spk['status'], ['Material Requested', 'Material Confirmed'])) {
-                $this->db->trans_rollback();
                 return $this->_json(['status' => 0, 'message' => 'SPK tidak dapat diedit.']);
             }
+        }
+
+        // ===== BUILD DATA =====
+        $details = [];
+        $total_target_qty = 0;
+        $total_weight_header = 0;
+
+        foreach ($products as $i => $prod) {
+            $t_qty = (int) $prod['target_qty'];
+            $t_weight = (float) (isset($prod['total_weight']) ? $prod['total_weight'] : 0);
+
+            $details[] = [
+                'spk_no'        => '', // akan diisi setelah generate/dapat spk_no
+                'urut'          => $i + 1,
+                'id_produk_fg'  => $prod['id_produk_fg'],
+                'nm_produk_fg'  => isset($prod['nm_produk_fg']) ? $prod['nm_produk_fg'] : '',
+                'target_qty'    => $t_qty,
+                'berat_per_unit'=> (float) (isset($prod['berat_per_unit']) ? $prod['berat_per_unit'] : 0),
+                'total_weight'  => $t_weight,
+            ];
+
+            $total_target_qty += $t_qty;
+            $total_weight_header += $t_weight;
+        }
+
+        // ===== TRANSACTION (hanya operasi write DB) =====
+        $this->db->trans_begin();
+
+        if ($mode === 'edit') {
+            // Set spk_no di details
+            foreach ($details as &$d) {
+                $d['spk_no'] = $spk_no;
+            }
+            unset($d);
 
             // Delete old details and insert new ones
             $this->Spk_material_model->delete_spk_details($spk_no);
-
-            // Build detail records
-            $details = [];
-            $total_target_qty = 0;
-            $total_weight_header = 0;
-            foreach ($products as $i => $prod) {
-                $t_qty = (int) $prod['target_qty'];
-                $t_weight = (float) (isset($prod['total_weight']) ? $prod['total_weight'] : 0);
-                
-                $details[] = [
-                    'spk_no'        => $spk_no,
-                    'urut'          => $i + 1,
-                    'id_produk_fg'  => $prod['id_produk_fg'],
-                    'nm_produk_fg'  => isset($prod['nm_produk_fg']) ? $prod['nm_produk_fg'] : '',
-                    'target_qty'    => $t_qty,
-                    'berat_per_unit'=> (float) (isset($prod['berat_per_unit']) ? $prod['berat_per_unit'] : 0),
-                    'total_weight'  => $t_weight,
-                ];
-                
-                $total_target_qty += $t_qty;
-                $total_weight_header += $t_weight;
-            }
             $this->Spk_material_model->insert_spk_details($details);
 
             // Update header
@@ -223,30 +230,14 @@ class Spk_material extends Admin_Controller
             ]);
 
         } else {
-            // CREATE MODE
-            $spk_no = $this->Spk_material_model->generate_spk_no();
+            // CREATE MODE — generate SPK No dengan lock untuk race condition
+            $spk_no = $this->Spk_material_model->generate_spk_no_locked();
 
-            // Build detail records first to get totals
-            $details = [];
-            $total_target_qty = 0;
-            $total_weight_header = 0;
-            foreach ($products as $i => $prod) {
-                $t_qty = (int) $prod['target_qty'];
-                $t_weight = (float) (isset($prod['total_weight']) ? $prod['total_weight'] : 0);
-                
-                $details[] = [
-                    'spk_no'        => $spk_no,
-                    'urut'          => $i + 1,
-                    'id_produk_fg'  => $prod['id_produk_fg'],
-                    'nm_produk_fg'  => isset($prod['nm_produk_fg']) ? $prod['nm_produk_fg'] : '',
-                    'target_qty'    => $t_qty,
-                    'berat_per_unit'=> (float) (isset($prod['berat_per_unit']) ? $prod['berat_per_unit'] : 0),
-                    'total_weight'  => $t_weight,
-                ];
-                
-                $total_target_qty += $t_qty;
-                $total_weight_header += $t_weight;
+            // Set spk_no di details
+            foreach ($details as &$d) {
+                $d['spk_no'] = $spk_no;
             }
+            unset($d);
 
             // Insert header
             $this->Spk_material_model->insert_spk_header([
@@ -267,11 +258,12 @@ class Spk_material extends Admin_Controller
             $this->Spk_material_model->insert_spk_details($details);
         }
 
-        $this->db->trans_complete();
-
         if ($this->db->trans_status() === FALSE) {
+            $this->db->trans_rollback();
             return $this->_json(['status' => 0, 'message' => 'Gagal menyimpan SPK. Silakan coba lagi.']);
         }
+
+        $this->db->trans_commit();
 
         $msg = ($mode === 'edit') ? 'SPK berhasil diupdate.' : 'SPK berhasil dibuat.';
         return $this->_json(['status' => 1, 'message' => $msg, 'spk_no' => $spk_no]);

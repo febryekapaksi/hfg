@@ -6,6 +6,11 @@ class Request_list extends Admin_Controller
     protected $viewPermission   = 'Request_List.View';
     protected $managePermission = 'Request_List.Manage';
 
+    // Deklarasi property (#8)
+    protected $id_user;
+    protected $username;
+    protected $datetime;
+
     public function __construct()
     {
         parent::__construct();
@@ -38,12 +43,18 @@ class Request_list extends Admin_Controller
     {
         $this->auth->restrict($this->viewPermission);
 
-        $search    = isset($_REQUEST['search']['value']) ? $_REQUEST['search']['value'] : '';
-        $start     = isset($_REQUEST['start']) ? (int) $_REQUEST['start'] : 0;
-        $length    = isset($_REQUEST['length']) ? (int) $_REQUEST['length'] : 10;
-        $order_col = isset($_REQUEST['order'][0]['column']) ? $_REQUEST['order'][0]['column'] : 1;
+        // #5: Pakai CI input class bukan $_REQUEST
+        $search    = $this->input->get_post('search[value]') ? $this->input->get_post('search[value]') : '';
+        $start     = (int) $this->input->get_post('start', TRUE);
+        $length    = (int) $this->input->get_post('length', TRUE);
+        $draw      = (int) $this->input->get_post('draw', TRUE);
+
+        // Order column & direction dari nested array — fallback manual
+        $order_col = isset($_REQUEST['order'][0]['column']) ? (int) $_REQUEST['order'][0]['column'] : 1;
         $order_dir = isset($_REQUEST['order'][0]['dir']) ? $_REQUEST['order'][0]['dir'] : 'desc';
-        $draw      = isset($_REQUEST['draw']) ? intval($_REQUEST['draw']) : 1;
+
+        // #1: Whitelist order_dir — prevent SQL injection
+        $order_dir = in_array(strtolower($order_dir), array('asc', 'desc')) ? strtolower($order_dir) : 'desc';
 
         $col_map = array(
             1 => 'h.spk_no',
@@ -651,6 +662,7 @@ class Request_list extends Admin_Controller
             return $this->_json(array('status' => 0, 'message' => 'Request ID tidak valid.'));
         }
 
+        // #2: Validasi awal tanpa lock (fast-fail untuk UX)
         $request = $this->Request_list_model->get_request_by_id($request_id);
 
         if (!$request) {
@@ -667,7 +679,15 @@ class Request_list extends Admin_Controller
 
         $coil_details = $this->Request_list_model->get_coil_details($request_id);
 
-        $this->db->trans_start();
+        // #2: Mulai transaction dengan lock status untuk prevent double-confirm
+        $this->db->trans_begin();
+
+        // Re-check status dengan FOR UPDATE lock
+        $locked_request = $this->Request_list_model->get_request_by_id_locked($request_id);
+        if (!$locked_request || $locked_request['status'] != 'Material On Load') {
+            $this->db->trans_rollback();
+            return $this->_json(array('status' => 0, 'message' => 'SPK Coil sudah dikonfirmasi oleh user lain.'));
+        }
 
         $summary_map = []; // accumulator: key = id_material_kd_gudang
 
@@ -726,11 +746,12 @@ class Request_list extends Admin_Controller
             'confirmed_at' => $this->datetime,
         ));
 
-        $this->db->trans_complete();
-
         if ($this->db->trans_status() === FALSE) {
+            $this->db->trans_rollback();
             return $this->_json(array('status' => 0, 'message' => 'Gagal mengkonfirmasi. Silakan coba lagi.'));
         }
+
+        $this->db->trans_commit();
 
         return $this->_json(array('status' => 1, 'message' => 'SPK Coil berhasil dikonfirmasi.'));
     }
@@ -749,20 +770,29 @@ class Request_list extends Admin_Controller
             return $this->_json(array('status' => 0, 'message' => 'SPK No tidak valid.'));
         }
 
-        // Validate SPK exists
-        $spk_data = $this->Request_list_model->get_spk_with_details($spk_no);
-        if (!$spk_data) {
+        // #4: Wrap dalam transaction untuk prevent TOCTOU
+        $this->db->trans_begin();
+
+        // Lock SPK header row untuk prevent concurrent close
+        $spk_header = $this->db->query(
+            "SELECT status FROM tr_spk_material_header WHERE spk_no = ? LIMIT 1 FOR UPDATE",
+            array($spk_no)
+        )->row_array();
+
+        if (!$spk_header) {
+            $this->db->trans_rollback();
             return $this->_json(array('status' => 0, 'message' => 'SPK tidak ditemukan.'));
         }
 
-        // Hanya bisa close jika status = 'Material On Load'
-        if ($spk_data['header']['status'] != 'Material On Load') {
-            return $this->_json(array('status' => 0, 'message' => 'SPK tidak dapat di-close karena status: ' . $spk_data['header']['status']));
+        if ($spk_header['status'] != 'Material On Load') {
+            $this->db->trans_rollback();
+            return $this->_json(array('status' => 0, 'message' => 'SPK tidak dapat di-close karena status: ' . $spk_header['status']));
         }
 
-        // Cek apakah masih ada SPK Coil yang pending (Material On Load)
+        // Cek apakah masih ada SPK Coil yang pending
         $pending_spkcs = $this->Request_list_model->get_pending_spkc_by_spk($spk_no);
         if (!empty($pending_spkcs)) {
+            $this->db->trans_rollback();
             return $this->_json(array('status' => 0, 'message' => 'Masih ada ' . count($pending_spkcs) . ' SPK Coil yang belum dikonfirmasi. Konfirmasi semua terlebih dahulu.'));
         }
 
@@ -772,6 +802,13 @@ class Request_list extends Admin_Controller
             'updated_by' => $this->id_user,
             'updated_at' => $this->datetime,
         ));
+
+        if ($this->db->trans_status() === FALSE) {
+            $this->db->trans_rollback();
+            return $this->_json(array('status' => 0, 'message' => 'Gagal menutup SPK. Silakan coba lagi.'));
+        }
+
+        $this->db->trans_commit();
 
         return $this->_json(array('status' => 1, 'message' => 'SPK berhasil di-close. Status: Material Confirmed.'));
     }
