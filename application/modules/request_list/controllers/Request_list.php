@@ -44,7 +44,8 @@ class Request_list extends Admin_Controller
         $this->auth->restrict($this->viewPermission);
 
         // #5: Pakai CI input class bukan $_REQUEST
-        $search    = $this->input->get_post('search[value]') ? $this->input->get_post('search[value]') : '';
+        $search_param = $this->input->get_post('search', TRUE); // TRUE = xss_clean
+        $search = (is_array($search_param) && isset($search_param['value'])) ? $search_param['value'] : '';
         $start     = (int) $this->input->get_post('start', TRUE);
         $length    = (int) $this->input->get_post('length', TRUE);
         $draw      = (int) $this->input->get_post('draw', TRUE);
@@ -109,7 +110,7 @@ class Request_list extends Admin_Controller
             }
 
             if ($display_status != 'Material Requested') {
-                $dropdown_items[] = '<a class="dropdown-item" href="' . site_url('request_list/print_spk_pengambilan/' . $row['spk_no']) . '" target="_blank"><i class="fa fa-print me-2 text-secondary"></i> Print SPK Pengambilan</a>';
+                $dropdown_items[] = '<a class="dropdown-item btn-print-spk" href="javascript:void(0)" data-spk="' . $row['spk_no'] . '"><i class="fa fa-print me-2 text-secondary"></i> Print SPK Pengambilan</a>';
             }
 
             if ($display_status == 'Material On Load') {
@@ -501,6 +502,27 @@ class Request_list extends Admin_Controller
             'message'     => 'SPK Coil berhasil dibuat.',
             'spk_coil_no' => $spk_coil_no
         ));
+    }
+
+    // ---------------------------------------------------------------
+    // AJAX: GET ALL SPK COIL REQUESTS FOR PRINT
+    // ---------------------------------------------------------------
+
+    public function get_spkc_for_print($spk_no = null)
+    {
+        $this->auth->restrict($this->viewPermission);
+
+        if (!$spk_no) {
+            return $this->_json(['status' => 0, 'message' => 'SPK No tidak valid']);
+        }
+
+        $all_spkc = $this->Request_list_model->get_all_spkc_by_spk($spk_no);
+
+        if (empty($all_spkc)) {
+            return $this->_json(['status' => 0, 'message' => 'Tidak ada SPK Coil (Request) untuk SPK ini']);
+        }
+
+        return $this->_json(['status' => 1, 'data' => $all_spkc]);
     }
 
     // ---------------------------------------------------------------

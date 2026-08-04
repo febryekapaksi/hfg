@@ -21,6 +21,12 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" id="tab-on-hold-tab"
+                    data-bs-toggle="tab" href="#tab-on-hold" role="tab">
+                    <i class="fa fa-pause-circle"></i> On Hold
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" id="tab-history-tab"
                     data-bs-toggle="tab" href="#tab-history" role="tab">
                     <i class="fa fa-history"></i> History Per Days
@@ -32,6 +38,11 @@
 
             <!-- TAB: Production Transit -->
             <div class="tab-pane fade show active" id="tab-transit" role="tabpanel">
+                <div class="mb-3">
+                    <button class="btn btn-success btn-sm" id="btn-excel-transit">
+                        <i class="fa fa-file-excel-o"></i> Download Excel
+                    </button>
+                </div>
                 <div class="table-responsive">
                     <table id="table-stock-transit"
                         class="table table-bordered table-striped table-hover">
@@ -53,10 +64,41 @@
 
             <!-- TAB: WIP -->
             <div class="tab-pane fade" id="tab-wip" role="tabpanel">
+                <div class="mb-3">
+                    <button class="btn btn-success btn-sm" id="btn-excel-wip">
+                        <i class="fa fa-file-excel-o"></i> Download Excel
+                    </button>
+                </div>
                 <div class="table-responsive">
                     <table id="table-stock-wip"
                         class="table table-bordered table-striped table-hover">
                         <thead class="bg-green">
+                            <tr>
+                                <th width="4%">No</th>
+                                <th>Material Name</th>
+                                <th class="text-center">No. Coil</th>
+                                <th class="text-center">Internal Code</th>
+                                <th class="text-right">Nett Weight (Kg)</th>
+                                <th class="text-right">Gross Weight (Kg)</th>
+                                <th class="text-right">Length (M)</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: On Hold -->
+            <div class="tab-pane fade" id="tab-on-hold" role="tabpanel">
+                <div class="mb-3">
+                    <button class="btn btn-success btn-sm" id="btn-excel-on-hold">
+                        <i class="fa fa-file-excel-o"></i> Download Excel
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table id="table-stock-on-hold"
+                        class="table table-bordered table-striped table-hover">
+                        <thead class="bg-danger text-white">
                             <tr>
                                 <th width="4%">No</th>
                                 <th>Material Name</th>
@@ -287,6 +329,40 @@
                 }
             });
 
+        // ── Tab On Hold (lazy load) ──
+        var dtOnHold = null;
+        document.getElementById('tab-on-hold-tab')
+            .addEventListener('shown.bs.tab', function() {
+                if (!dtOnHold) {
+                    dtOnHold = $('#table-stock-on-hold').DataTable({
+                        processing: true,
+                        serverSide: true,
+                        destroy: true,
+                        autoWidth: false,
+                        sPaginationType: 'simple_numbers',
+                        iDisplayLength: 25,
+                        aLengthMenu: [
+                            [10, 25, 50, 100],
+                            [10, 25, 50, 100]
+                        ],
+                        ajax: {
+                            url: BASE_URL + '/data_side_on_hold',
+                            type: 'POST',
+                            cache: false
+                        },
+                        columns: colDef7,
+                        order: [
+                            [1, 'asc']
+                        ],
+                        language: {
+                            processing: '<i class="fa fa-spinner fa-spin fa-fw"></i> Loading data...',
+                            zeroRecords: 'No coil data available.',
+                            emptyTable: 'No data available.',
+                        }
+                    });
+                }
+            });
+
         // ── Flatpickr ──
         var fpHist = flatpickr('#hist_date', {
             locale: 'id',
@@ -368,8 +444,71 @@
                 date_filter: getYmd($('#hist_date').val()),
                 kd_gudang: $('#hist_source').val(),
             });
-            window.location.href = BASE_URL + '/export_excel_history?' + params.toString();
+            downloadWithLoading(BASE_URL + '/export_excel_history?' + params.toString());
         });
+
+        // ── Download Excel with loading — Transit ──
+        $('#btn-excel-transit').on('click', function() {
+            downloadWithLoading(BASE_URL + '/export_excel_transit');
+        });
+
+        // ── Download Excel with loading — WIP ──
+        $('#btn-excel-wip').on('click', function() {
+            downloadWithLoading(BASE_URL + '/export_excel_wip');
+        });
+
+        // ── Download Excel with loading — On Hold ──
+        $('#btn-excel-on-hold').on('click', function() {
+            downloadWithLoading(BASE_URL + '/export_excel_on_hold');
+        });
+
+        // ── Helper: Download file with loading overlay ──
+        function downloadWithLoading(url) {
+            Swal.fire({
+                title: 'Memproses...',
+                text: 'Sedang menyiapkan file Excel, mohon tunggu.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: function() {
+                    Swal.showLoading();
+                }
+            });
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.responseType = 'blob';
+
+            xhr.onload = function() {
+                Swal.close();
+                if (xhr.status === 200) {
+                    var disposition = xhr.getResponseHeader('Content-Disposition');
+                    var filename = 'export.xls';
+                    if (disposition && disposition.indexOf('filename=') !== -1) {
+                        var match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                        if (match && match[1]) {
+                            filename = match[1].replace(/['"]/g, '');
+                        }
+                    }
+                    var blob = xhr.response;
+                    var link = document.createElement('a');
+                    link.href = window.URL.createObjectURL(blob);
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(link.href);
+                } else {
+                    Swal.fire('Error', 'Gagal mengunduh file.', 'error');
+                }
+            };
+
+            xhr.onerror = function() {
+                Swal.close();
+                Swal.fire('Error', 'Terjadi kesalahan saat mengunduh file.', 'error');
+            };
+
+            xhr.send();
+        }
 
     });
 </script>

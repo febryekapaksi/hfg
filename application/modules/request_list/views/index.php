@@ -172,6 +172,24 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
+<!-- Modal Pilih Request untuk Print SPK Pengambilan -->
+<div class="modal fade" id="modal-print-spk" tabindex="-1" aria-labelledby="modalPrintLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalPrintLabel"><i class="fa fa-print"></i> Print SPK Pengambilan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow: auto;">
+                <p class="text-muted mb-3">Pilih nomor request yang ingin dicetak:</p>
+                <div id="print-spk-list">
+                    <div class="text-center py-3"><i class="fa fa-spinner fa-spin"></i> Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Confirm SPK Coil -->
 <div class="modal fade" id="modal-confirm-spk" data-bs-backdrop="static" tabindex="-1" aria-labelledby="modalConfirmLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -301,6 +319,47 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                 top: btnRect.bottom + 'px',
                 left: (btnRect.right - $menu.outerWidth()) + 'px',
                 transform: 'none'
+            });
+        });
+
+        // -----------------------------------------------------------------
+        // PRINT SPK PENGAMBILAN — Pilih Request dulu
+        // -----------------------------------------------------------------
+
+        $(document).on('click', '.btn-print-spk', function() {
+            var spkNo = $(this).data('spk');
+
+            $('#print-spk-list').html('<div class="text-center py-3"><i class="fa fa-spinner fa-spin"></i> Loading...</div>');
+            $('#modal-print-spk').modal('show');
+
+            $.ajax({
+                url: BASE_URL + '/get_spkc_for_print/' + spkNo,
+                type: 'GET',
+                dataType: 'json',
+                success: function(res) {
+                    if (res.status == 1 && res.data.length > 0) {
+                        var html = '<div class="list-group">';
+                        $.each(res.data, function(i, v) {
+                            var statusBadge = '<span class="badge bg-success ms-2">Confirmed</span>';
+
+                            html += '<a href="' + siteurl + 'request_list/print_spk_coil/' + v.id + '" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">';
+                            html += '<div>';
+                            html += '<i class="fa fa-file-text me-2 text-primary"></i>';
+                            html += '<strong>' + v.spk_coil_no + '</strong>';
+                            html += '<br><small class="text-muted">Tanggal: ' + v.request_date + '</small>';
+                            html += '</div>';
+                            html += '<div>' + statusBadge + ' <i class="fa fa-print text-secondary ms-2"></i></div>';
+                            html += '</a>';
+                        });
+                        html += '</div>';
+                        $('#print-spk-list').html(html);
+                    } else {
+                        $('#print-spk-list').html('<div class="alert alert-warning mb-0"><i class="fa fa-info-circle"></i> ' + (res.message || 'Tidak ada request yang sudah dikonfirmasi untuk SPK ini.') + '</div>');
+                    }
+                },
+                error: function() {
+                    $('#print-spk-list').html('<div class="alert alert-danger mb-0">Gagal memuat data.</div>');
+                }
             });
         });
 

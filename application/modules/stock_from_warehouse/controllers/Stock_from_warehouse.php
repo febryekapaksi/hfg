@@ -47,6 +47,16 @@ class Stock_from_warehouse extends Admin_Controller
     }
 
     // ---------------------------------------------------------------
+    // DATATABLES SERVER-SIDE — On Hold
+    // ---------------------------------------------------------------
+
+    public function data_side_on_hold()
+    {
+        $this->auth->restrict($this->viewPermission);
+        $this->Stock_from_warehouse_model->get_json_on_hold();
+    }
+
+    // ---------------------------------------------------------------
     // DATATABLES SERVER-SIDE — History Per Days
     // ---------------------------------------------------------------
 
@@ -54,6 +64,36 @@ class Stock_from_warehouse extends Admin_Controller
     {
         $this->auth->restrict($this->viewPermission);
         $this->Stock_from_warehouse_model->get_json_history();
+    }
+
+    // ---------------------------------------------------------------
+    // EXPORT EXCEL — Transit
+    // ---------------------------------------------------------------
+
+    public function export_excel_transit()
+    {
+        $this->auth->restrict($this->viewPermission);
+        $this->Stock_from_warehouse_model->export_stock('PRT', 'WRH Production 2');
+    }
+
+    // ---------------------------------------------------------------
+    // EXPORT EXCEL — WIP
+    // ---------------------------------------------------------------
+
+    public function export_excel_wip()
+    {
+        $this->auth->restrict($this->viewPermission);
+        $this->Stock_from_warehouse_model->export_stock('WIP', 'WIP (Coil Remains)');
+    }
+
+    // ---------------------------------------------------------------
+    // EXPORT EXCEL — On Hold
+    // ---------------------------------------------------------------
+
+    public function export_excel_on_hold()
+    {
+        $this->auth->restrict($this->viewPermission);
+        $this->Stock_from_warehouse_model->export_stock('HLD', 'On Hold', 5);
     }
 
     // ---------------------------------------------------------------

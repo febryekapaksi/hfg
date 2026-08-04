@@ -391,8 +391,11 @@ class Request_list_model extends BF_Model
     public function get_coil_details($request_id)
     {
         return $this->db
-            ->where('request_id', $request_id)
-            ->get('tr_warehouse_request_coil_detail')
+            ->select('d.*, c.net_weight')
+            ->from('tr_warehouse_request_coil_detail d')
+            ->join('warehouse_stock_coil c', 'c.id = d.id_coil', 'left')
+            ->where('d.request_id', $request_id)
+            ->get()
             ->result_array();
     }
 
@@ -466,6 +469,17 @@ class Request_list_model extends BF_Model
     {
         $this->db->where('spk_no', $spk_no);
         $this->db->where('status', 'Material On Load');
+        return $this->db->get('tr_warehouse_request_header')->result_array();
+    }
+
+    /**
+     * Get ALL SPK Coils (request headers) by SPK Material — untuk print (hanya yang confirmed)
+     */
+    public function get_all_spkc_by_spk($spk_no)
+    {
+        $this->db->where('spk_no', $spk_no);
+        $this->db->where('status', 'Material Confirmed');
+        $this->db->order_by('created_at', 'ASC');
         return $this->db->get('tr_warehouse_request_header')->result_array();
     }
 
