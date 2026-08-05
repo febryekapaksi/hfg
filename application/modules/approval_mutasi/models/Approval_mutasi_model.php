@@ -159,10 +159,17 @@ class Approval_mutasi_model extends BF_Model
 
                     // warehouse_stock_per_day (gudang asal)
                     $this->_upsert_stock_per_day(
-                        $id_material, $nm_material, $id_gudang_from, $kd_gudang_from,
-                        $qty_akhir_from, (float) $stock_from->qty_booking,
-                        $qty_free_from - $net_weight, $costbook_from,
-                        $saldo_akhir_from, $now, $approved_by
+                        $id_material,
+                        $nm_material,
+                        $id_gudang_from,
+                        $kd_gudang_from,
+                        $qty_akhir_from,
+                        (float) $stock_from->qty_booking,
+                        $qty_free_from - $net_weight,
+                        $costbook_from,
+                        $saldo_akhir_from,
+                        $now,
+                        $approved_by
                     );
 
                     // warehouse_history (gudang asal - OUT)
@@ -281,10 +288,17 @@ class Approval_mutasi_model extends BF_Model
 
                 // warehouse_stock_per_day (gudang tujuan)
                 $this->_upsert_stock_per_day(
-                    $id_material, $nm_material, $id_gudang_to, $kd_gudang_to,
-                    $qty_akhir_to, $qty_book_to,
-                    $qty_free_to + $net_weight, $costbook_to,
-                    $saldo_akhir_to, $now, $approved_by
+                    $id_material,
+                    $nm_material,
+                    $id_gudang_to,
+                    $kd_gudang_to,
+                    $qty_akhir_to,
+                    $qty_book_to,
+                    $qty_free_to + $net_weight,
+                    $costbook_to,
+                    $saldo_akhir_to,
+                    $now,
+                    $approved_by
                 );
 
                 // warehouse_history (gudang tujuan - IN)
@@ -353,25 +367,43 @@ class Approval_mutasi_model extends BF_Model
                 // ═══════════════════════════════════════════════════
 
                 $this->_upsert_coil_per_day(
-                    $id_material, $nm_material, $id_gudang_from, $kd_gudang_from,
-                    $no_coil, $kode_internal, $gross_weight, $net_weight, $length,
-                    'OUT', $now, $approved_by
+                    $id_material,
+                    $nm_material,
+                    $id_gudang_from,
+                    $kd_gudang_from,
+                    $no_coil,
+                    $kode_internal,
+                    $gross_weight,
+                    $net_weight,
+                    $length,
+                    'OUT',
+                    $now,
+                    $approved_by
                 );
 
                 $this->_upsert_coil_per_day(
-                    $id_material, $nm_material, $id_gudang_to, $kd_gudang_to,
-                    $no_coil, $kode_internal, $gross_weight, $net_weight, $length,
-                    'IN', $now, $approved_by
+                    $id_material,
+                    $nm_material,
+                    $id_gudang_to,
+                    $kd_gudang_to,
+                    $no_coil,
+                    $kode_internal,
+                    $gross_weight,
+                    $net_weight,
+                    $length,
+                    'IN',
+                    $now,
+                    $approved_by
                 );
 
                 // ═══════════════════════════════════════════════════
-                // E. warehouse_incoming_summary_detail (KEDUA GUDANG)
+                // E. warehouse_stock_transaction_detail (KEDUA GUDANG)
                 // ═══════════════════════════════════════════════════
 
                 // E1. Detail gudang ASAL (OUT)
                 if ($stock_from) {
-                    $this->db->insert('warehouse_incoming_summary_detail', [
-                        'no_ipp'         => $mutation['mutation_number'],
+                    $this->db->insert('warehouse_stock_transaction_detail', [
+                        'kode_trans'     => $mutation['mutation_number'],
                         'id_material'    => $id_material,
                         'nm_material'    => $nm_material,
                         'id_gudang'      => $id_gudang_from,
@@ -389,8 +421,8 @@ class Approval_mutasi_model extends BF_Model
                 }
 
                 // E2. Detail gudang TUJUAN (IN)
-                $this->db->insert('warehouse_incoming_summary_detail', [
-                    'no_ipp'         => $mutation['mutation_number'],
+                $this->db->insert('warehouse_stock_transaction_detail', [
+                    'kode_trans'     => $mutation['mutation_number'],
                     'id_material'    => $id_material,
                     'nm_material'    => $nm_material,
                     'id_gudang'      => $id_gudang_to,
@@ -407,7 +439,7 @@ class Approval_mutasi_model extends BF_Model
                 ]);
 
                 // ═══════════════════════════════════════════════════
-                // F. Aggregate warehouse_incoming_summary (KEDUA GUDANG)
+                // F. Aggregate warehouse_stock_transaction_summary (KEDUA GUDANG)
                 // ═══════════════════════════════════════════════════
 
                 // F1. Summary gudang ASAL (OUT — qty berkurang)
@@ -415,7 +447,7 @@ class Approval_mutasi_model extends BF_Model
                     $summary_key_from = $id_material . '_' . $id_gudang_from . '_OUT';
                     if (!isset($summary_map[$summary_key_from])) {
                         $summary_map[$summary_key_from] = [
-                            'no_ipp'        => $mutation['mutation_number'],
+                            'kode_trans'    => $mutation['mutation_number'],
                             'id_material'   => $id_material,
                             'nm_material'   => $nm_material,
                             'id_gudang'     => $id_gudang_from,
@@ -446,7 +478,7 @@ class Approval_mutasi_model extends BF_Model
                 $summary_key_to = $id_material . '_' . $id_gudang_to . '_IN';
                 if (!isset($summary_map[$summary_key_to])) {
                     $summary_map[$summary_key_to] = [
-                        'no_ipp'        => $mutation['mutation_number'],
+                        'kode_trans'    => $mutation['mutation_number'],
                         'id_material'   => $id_material,
                         'nm_material'   => $nm_material,
                         'id_gudang'     => $id_gudang_to,
@@ -474,9 +506,9 @@ class Approval_mutasi_model extends BF_Model
             }
         }
 
-        // Insert warehouse_incoming_summary (aggregated per material)
+        // Insert warehouse_stock_transaction_summary (aggregated per material)
         foreach ($summary_map as $s) {
-            $this->db->insert('warehouse_incoming_summary', $s);
+            $this->db->insert('warehouse_stock_transaction_summary', $s);
         }
 
         $this->db->trans_complete();
@@ -488,9 +520,17 @@ class Approval_mutasi_model extends BF_Model
     // ---------------------------------------------------------------
 
     private function _upsert_stock_per_day(
-        $id_material, $nm_material, $id_gudang, $kd_gudang,
-        $qty_stock, $qty_booking, $qty_free, $harga_beli,
-        $total_nilai, $now, $user
+        $id_material,
+        $nm_material,
+        $id_gudang,
+        $kd_gudang,
+        $qty_stock,
+        $qty_booking,
+        $qty_free,
+        $harga_beli,
+        $total_nilai,
+        $now,
+        $user
     ) {
         $today = date('Y-m-d');
         $snap = $this->db->query("
@@ -526,9 +566,18 @@ class Approval_mutasi_model extends BF_Model
     // ---------------------------------------------------------------
 
     private function _upsert_coil_per_day(
-        $id_material, $nm_material, $id_gudang, $kd_gudang,
-        $no_coil, $kode_internal, $gross_weight, $net_weight, $length,
-        $status, $now, $user
+        $id_material,
+        $nm_material,
+        $id_gudang,
+        $kd_gudang,
+        $no_coil,
+        $kode_internal,
+        $gross_weight,
+        $net_weight,
+        $length,
+        $status,
+        $now,
+        $user
     ) {
         $today = date('Y-m-d');
         $coil_snap = $this->db->query("

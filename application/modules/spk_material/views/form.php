@@ -384,7 +384,7 @@ $catatan    = $is_edit ? $spk['catatan'] : '';
                 <i class="fa fa-times"></i>
             </button>
             <div class="row g-3 mt-1">
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <label class="form-label">Produk <span class="text-danger">*</span></label>
                     <select class="form-select select-produk" id="produk_${idx}" data-idx="${idx}">
                         <option value="">-- Pilih Produk --</option>
@@ -395,13 +395,17 @@ $catatan    = $is_edit ? $spk['catatan'] : '';
                     <label class="form-label">Target Qty <span class="text-danger">*</span></label>
                     <input type="number" class="form-control input-target-qty" id="qty_${idx}" data-idx="${idx}"
                            min="1" max="999999" step="1" placeholder="0" value="${targetQty}">
-                    <input type="hidden" class="input-berat-per-unit" id="berat_${idx}" value="${beratPerUnit}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Berat/Unit (Kg)</label>
+                    <input type="text" class="form-control input-berat-per-unit" id="berat_${idx}" readonly
+                           value="${beratPerUnit ? parseFloat(beratPerUnit).toFixed(2) : '0.00'}">
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Total Weight (Kg)</label>
                     <input type="text" class="form-control input-total-weight" id="weight_${idx}" readonly
                            value="${totalWeight ? parseFloat(totalWeight).toFixed(2) : '0.00'}">
-                    <div class="weight-warning" id="weight_warn_${idx}" style="display:none;">Berat/Unit belum diset</div>
+                    <div class="weight-warning" id="weight_warn_${idx}" style="display:none; font-size: 11px; color: #dc3545;">Berat/Unit belum diset</div>
                 </div>
                 <div class="col-md-1 d-flex align-items-end">
                     <button type="button" class="btn btn-sm btn-outline-info w-100 btn-show-material"
@@ -420,6 +424,23 @@ $catatan    = $is_edit ? $spk['catatan'] : '';
     // ---------------------------------------------------------------
     // INIT SELECT2 - PRODUK
     // ---------------------------------------------------------------
+
+    /**
+     * Ambil daftar ID produk yang sudah dipilih di baris lain
+     * (exclude baris dengan idx tertentu agar tidak memblokir dirinya sendiri)
+     */
+    function getSelectedProductIds(excludeIdx) {
+        var ids = [];
+        $('#product-lines-container .select-produk').each(function() {
+            var thisIdx = $(this).data('idx');
+            if (thisIdx != excludeIdx) {
+                var val = $(this).val();
+                if (val) ids.push(String(val));
+            }
+        });
+        return ids;
+    }
+
     function initProdukSelect2(idx) {
         $('#produk_' + idx).select2({
             placeholder: '-- Pilih Produk --',
@@ -435,19 +456,35 @@ $catatan    = $is_edit ? $spk['catatan'] : '';
                     };
                 },
                 processResults: function(res) {
+                    // Ambil produk yang sudah dipilih di baris lain
+                    var selectedIds = getSelectedProductIds(idx);
+
                     var items = (res.data || []).map(function(p) {
+                        var isUsed = selectedIds.indexOf(String(p.code_lv4)) > -1;
                         return {
                             id: p.code_lv4,
-                            text: p.nama
+                            text: isUsed ? p.nama + ' (sudah dipilih)' : p.nama,
+                            disabled: isUsed
                         };
                     });
                     return {
                         results: items
                     };
                 },
-                cache: true
+                cache: false
             },
             minimumInputLength: 0
+        });
+
+        // Intercept pilihan: cegah duplikat meskipun disabled gagal
+        $('#produk_' + idx).on('select2:selecting', function(e) {
+            var choosingId = String(e.params.args.data.id);
+            var selectedIds = getSelectedProductIds(idx);
+            if (selectedIds.indexOf(choosingId) > -1) {
+                e.preventDefault();
+                Swal.fire('Perhatian', 'Produk ini sudah dipilih di baris lain.', 'warning');
+                return false;
+            }
         });
 
         $('#produk_' + idx).on('change', function() {
@@ -670,48 +707,61 @@ $catatan    = $is_edit ? $spk['catatan'] : '';
             return;
         }
 
-        var $btn = $('#btnSubmitSpk');
-        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
+        // Konfirmasi sebelum simpan
+        Swal.fire({
+            icon: 'question',
+            title: 'Konfirmasi',
+            text: MODE === 'edit' ? 'Apakah Anda yakin ingin mengupdate SPK ini?' : 'Apakah Anda yakin ingin membuat SPK ini?',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Simpan',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then(function(result) {
+            if (!result.isConfirmed) return;
 
-        var formData = {
-            mode: MODE,
-            tgl_spk: $('#tgl_spk').val(),
-            due_date: $('#due_date').val(),
-            shift_ids: $('#shift_ids').val(),
-            shift_names: $('#shift_names').val(),
-            catatan: $('#catatan').val(),
-            products: products
-        };
-        if (MODE === 'edit') {
-            formData.spk_no = '<?= htmlspecialchars($spk_no) ?>';
-        }
+            var $btn = $('#btnSubmitSpk');
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
 
-        $.ajax({
-            url: BASE_URL + '/save',
-            type: 'POST',
-            data: formData,
-            dataType: 'json',
-            success: function(res) {
-                $btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? "Update SPK" : "Create SPK" ?>');
-                if (res.status == 1) {
-                    Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil',
-                            text: res.message,
-                            showConfirmButton: false,
-                            timer: 1500
-                        })
-                        .then(function() {
-                            window.location.href = siteurl + 'spk_material';
-                        });
-                } else {
-                    Swal.fire('Error', res.message || 'Gagal menyimpan SPK.', 'error');
-                }
-            },
-            error: function() {
-                $btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? "Update SPK" : "Create SPK" ?>');
-                Swal.fire('Error', 'Terjadi kesalahan jaringan.', 'error');
+            var formData = {
+                mode: MODE,
+                tgl_spk: $('#tgl_spk').val(),
+                due_date: $('#due_date').val(),
+                shift_ids: $('#shift_ids').val(),
+                shift_names: $('#shift_names').val(),
+                catatan: $('#catatan').val(),
+                products: products
+            };
+            if (MODE === 'edit') {
+                formData.spk_no = '<?= htmlspecialchars($spk_no) ?>';
             }
+
+            $.ajax({
+                url: BASE_URL + '/save',
+                type: 'POST',
+                data: formData,
+                dataType: 'json',
+                success: function(res) {
+                    $btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? "Update SPK" : "Create SPK" ?>');
+                    if (res.status == 1) {
+                        Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: res.message,
+                                showConfirmButton: false,
+                                timer: 1500
+                            })
+                            .then(function() {
+                                window.location.href = siteurl + 'spk_material';
+                            });
+                    } else {
+                        Swal.fire('Error', res.message || 'Gagal menyimpan SPK.', 'error');
+                    }
+                },
+                error: function() {
+                    $btn.prop('disabled', false).html('<i class="fa fa-save"></i> <?= $is_edit ? "Update SPK" : "Create SPK" ?>');
+                    Swal.fire('Error', 'Terjadi kesalahan jaringan.', 'error');
+                }
+            });
         });
     }
 

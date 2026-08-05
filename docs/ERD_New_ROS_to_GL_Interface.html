@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             font-size: 11px;
@@ -17,13 +19,32 @@
             line-height: 1.5;
             padding: 20px 30px;
         }
+
         @media print {
-            body { padding: 10px 15px; font-size: 10px; }
-            .page-break { page-break-before: always; }
-            .no-print { display: none; }
-            h1 { font-size: 16px; }
-            h2 { font-size: 13px; }
-            h3 { font-size: 11px; }
+            body {
+                padding: 10px 15px;
+                font-size: 10px;
+            }
+
+            .page-break {
+                page-break-before: always;
+            }
+
+            .no-print {
+                display: none;
+            }
+
+            h1 {
+                font-size: 16px;
+            }
+
+            h2 {
+                font-size: 13px;
+            }
+
+            h3 {
+                font-size: 11px;
+            }
         }
 
         /* Header */
@@ -33,15 +54,18 @@
             padding-bottom: 15px;
             margin-bottom: 25px;
         }
+
         .doc-header h1 {
             font-size: 18px;
             color: #2c3e50;
             margin-bottom: 5px;
         }
+
         .doc-header .subtitle {
             font-size: 12px;
             color: #7f8c8d;
         }
+
         .doc-header .date {
             font-size: 10px;
             color: #95a5a6;
@@ -56,6 +80,7 @@
             padding-bottom: 5px;
             margin: 25px 0 15px 0;
         }
+
         h3 {
             font-size: 12px;
             color: #34495e;
@@ -73,6 +98,7 @@
             margin: 20px 0;
             flex-wrap: wrap;
         }
+
         .flow-box {
             background: #ecf0f1;
             border: 2px solid #3498db;
@@ -81,6 +107,7 @@
             text-align: center;
             min-width: 150px;
         }
+
         .flow-box .step-num {
             font-size: 9px;
             color: #fff;
@@ -90,15 +117,18 @@
             display: inline-block;
             margin-bottom: 5px;
         }
+
         .flow-box .step-title {
             font-weight: bold;
             font-size: 11px;
             color: #2c3e50;
         }
+
         .flow-box .step-desc {
             font-size: 9px;
             color: #7f8c8d;
         }
+
         .flow-arrow {
             font-size: 20px;
             color: #3498db;
@@ -112,6 +142,7 @@
             margin: 10px 0;
             font-size: 10px;
         }
+
         table th {
             background: #2c3e50;
             color: #fff;
@@ -119,19 +150,36 @@
             text-align: left;
             font-weight: 600;
         }
+
         table td {
             padding: 5px 8px;
             border-bottom: 1px solid #e0e0e0;
         }
+
         table tr:nth-child(even) {
             background: #f8f9fa;
         }
+
         table tr:hover {
             background: #eef5fc;
         }
-        .col-pk { color: #e74c3c; font-weight: bold; }
-        .col-fk { color: #2980b9; font-weight: bold; }
-        .col-type { color: #7f8c8d; font-family: monospace; font-size: 9px; }
+
+        .col-pk {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .col-fk {
+            color: #2980b9;
+            font-weight: bold;
+        }
+
+        .col-type {
+            color: #7f8c8d;
+            font-family: monospace;
+            font-size: 9px;
+        }
+
         .badge {
             display: inline-block;
             padding: 1px 5px;
@@ -139,9 +187,21 @@
             font-size: 8px;
             font-weight: bold;
         }
-        .badge-pk { background: #fde8e8; color: #e74c3c; }
-        .badge-fk { background: #e8f4fd; color: #2980b9; }
-        .badge-idx { background: #fef9e7; color: #f39c12; }
+
+        .badge-pk {
+            background: #fde8e8;
+            color: #e74c3c;
+        }
+
+        .badge-fk {
+            background: #e8f4fd;
+            color: #2980b9;
+        }
+
+        .badge-idx {
+            background: #fef9e7;
+            color: #f39c12;
+        }
 
         /* ERD visual */
         .erd-container {
@@ -151,46 +211,99 @@
             border: 1px solid #e0e0e0;
             border-radius: 5px;
         }
+
         .erd-legend {
             display: flex;
             gap: 20px;
             margin-bottom: 15px;
             font-size: 10px;
         }
+
         .erd-legend span {
             display: flex;
             align-items: center;
             gap: 5px;
         }
+
         .legend-color {
             width: 12px;
             height: 12px;
             border-radius: 2px;
             display: inline-block;
         }
-        .legend-ros { background: #e8f8f5; border: 2px solid #1abc9c; }
-        .legend-inc { background: #eaf2f8; border: 2px solid #2980b9; }
-        .legend-gl { background: #fef9e7; border: 2px solid #f39c12; }
-        .legend-wh { background: #f4ecf7; border: 2px solid #8e44ad; }
+
+        .legend-ros {
+            background: #e8f8f5;
+            border: 2px solid #1abc9c;
+        }
+
+        .legend-inc {
+            background: #eaf2f8;
+            border: 2px solid #2980b9;
+        }
+
+        .legend-gl {
+            background: #fef9e7;
+            border: 2px solid #f39c12;
+        }
+
+        .legend-wh {
+            background: #f4ecf7;
+            border: 2px solid #8e44ad;
+        }
 
         /* Module section coloring */
-        .module-ros { border-left: 4px solid #1abc9c; padding-left: 10px; margin-bottom: 20px; }
-        .module-inc { border-left: 4px solid #2980b9; padding-left: 10px; margin-bottom: 20px; }
-        .module-gl { border-left: 4px solid #f39c12; padding-left: 10px; margin-bottom: 20px; }
-        .module-wh { border-left: 4px solid #8e44ad; padding-left: 10px; margin-bottom: 20px; }
+        .module-ros {
+            border-left: 4px solid #1abc9c;
+            padding-left: 10px;
+            margin-bottom: 20px;
+        }
+
+        .module-inc {
+            border-left: 4px solid #2980b9;
+            padding-left: 10px;
+            margin-bottom: 20px;
+        }
+
+        .module-gl {
+            border-left: 4px solid #f39c12;
+            padding-left: 10px;
+            margin-bottom: 20px;
+        }
+
+        .module-wh {
+            border-left: 4px solid #8e44ad;
+            padding-left: 10px;
+            margin-bottom: 20px;
+        }
 
         .module-title {
             font-size: 13px;
             font-weight: bold;
             margin-bottom: 5px;
         }
-        .module-ros .module-title { color: #1abc9c; }
-        .module-inc .module-title { color: #2980b9; }
-        .module-gl .module-title { color: #f39c12; }
-        .module-wh .module-title { color: #8e44ad; }
+
+        .module-ros .module-title {
+            color: #1abc9c;
+        }
+
+        .module-inc .module-title {
+            color: #2980b9;
+        }
+
+        .module-gl .module-title {
+            color: #f39c12;
+        }
+
+        .module-wh .module-title {
+            color: #8e44ad;
+        }
 
         /* Relation table */
-        .rel-table th { background: #34495e; }
+        .rel-table th {
+            background: #34495e;
+        }
+
         .rel-type {
             font-family: monospace;
             font-weight: bold;
@@ -204,17 +317,37 @@
             margin: 8px 0;
             flex-wrap: wrap;
         }
+
         .status-badge {
             padding: 3px 8px;
             border-radius: 12px;
             font-size: 9px;
             font-weight: bold;
         }
-        .status-draft { background: #fdebd0; color: #e67e22; }
-        .status-final { background: #d5f5e3; color: #27ae60; }
-        .status-submitted { background: #d6eaf8; color: #2980b9; }
-        .status-closed { background: #fadbd8; color: #e74c3c; }
-        .status-arrow { color: #95a5a6; }
+
+        .status-draft {
+            background: #fdebd0;
+            color: #e67e22;
+        }
+
+        .status-final {
+            background: #d5f5e3;
+            color: #27ae60;
+        }
+
+        .status-submitted {
+            background: #d6eaf8;
+            color: #2980b9;
+        }
+
+        .status-closed {
+            background: #fadbd8;
+            color: #e74c3c;
+        }
+
+        .status-arrow {
+            color: #95a5a6;
+        }
 
         /* Notes */
         .note-box {
@@ -225,6 +358,7 @@
             margin: 10px 0;
             font-size: 10px;
         }
+
         .note-box strong {
             color: #d68910;
         }
@@ -252,9 +386,12 @@
             border-radius: 5px;
             cursor: pointer;
             font-size: 12px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
-        .print-btn:hover { background: #2980b9; }
+
+        .print-btn:hover {
+            background: #2980b9;
+        }
 
         /* TOC */
         .toc {
@@ -264,1032 +401,2782 @@
             padding: 15px;
             margin: 15px 0;
         }
+
         .toc-title {
             font-weight: bold;
             font-size: 12px;
             margin-bottom: 8px;
             color: #2c3e50;
         }
+
         .toc ul {
             list-style: none;
             padding-left: 0;
         }
+
         .toc li {
             padding: 2px 0;
             font-size: 10px;
         }
+
         .toc li::before {
             content: "▸ ";
             color: #3498db;
         }
     </style>
 </head>
+
 <body>
 
-<button class="print-btn no-print" onclick="window.print()">🖨️ Print / Save PDF</button>
+    <button class="print-btn no-print" onclick="window.print()">🖨️ Print / Save PDF</button>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- HEADER -->
-<!-- ═══════════════════════════════════════════ -->
-<div class="doc-header">
-    <h1>Entity Relationship Diagram (ERD)</h1>
-    <div class="subtitle">Modul: New ROS → Create Incoming → Finalize Incoming → GL Interface</div>
-    <div class="date">Dokumen dibuat: 4 Juni 2026</div>
-</div>
-
-<!-- TOC -->
-<div class="toc">
-    <div class="toc-title">Daftar Isi</div>
-    <ul>
-        <li>Alur Proses (Flow Diagram)</li>
-        <li>Status Flow</li>
-        <li>Modul 1: New ROS (5 tabel)</li>
-        <li>Modul 2: Finalize Incoming (2 tabel)</li>
-        <li>Modul 3: GL Interface (2 tabel)</li>
-        <li>Modul 4: Warehouse (8 tabel)</li>
-        <li>Ringkasan Relasi Antar Tabel</li>
-        <li>Rumus Kalkulasi</li>
-    </ul>
-</div>
-
-<!-- ═══════════════════════════════════════════ -->
-<!-- FLOW DIAGRAM -->
-<!-- ═══════════════════════════════════════════ -->
-<h2>1. Alur Proses</h2>
-
-<div class="flow-container">
-    <div class="flow-box">
-        <span class="step-num">STEP 1</span>
-        <div class="step-title">New ROS</div>
-        <div class="step-desc">Kalkulasi biaya import</div>
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- HEADER -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="doc-header">
+        <h1>Entity Relationship Diagram (ERD)</h1>
+        <div class="subtitle">Modul: New ROS → Create Incoming → Finalize Incoming → GL Interface</div>
+        <div class="date">Dokumen dibuat: 4 Juni 2026</div>
     </div>
-    <span class="flow-arrow">→</span>
-    <div class="flow-box">
-        <span class="step-num">STEP 2</span>
-        <div class="step-title">Create Incoming</div>
-        <div class="step-desc">Assign gudang + submit</div>
-    </div>
-    <span class="flow-arrow">→</span>
-    <div class="flow-box">
-        <span class="step-num">STEP 3</span>
-        <div class="step-title">Finalize Incoming</div>
-        <div class="step-desc">Stok masuk gudang</div>
-    </div>
-    <span class="flow-arrow">→</span>
-    <div class="flow-box">
-        <span class="step-num">STEP 4</span>
-        <div class="step-title">GL Interface</div>
-        <div class="step-desc">Jurnal akuntansi</div>
-    </div>
-</div>
 
-<h3>Status Flow pada tr_ros_header</h3>
-<div class="status-flow">
-    <span class="status-badge status-draft">status=0 (Draft)</span>
-    <span class="status-arrow">→</span>
-    <span class="status-badge status-final">status=1 (Final)</span>
-    <span class="status-arrow">→</span>
-    <span class="status-badge status-submitted">status_incoming=submitted</span>
-    <span class="status-arrow">→</span>
-    <span class="status-badge status-closed">status_incoming=closed</span>
-</div>
-
-<!-- LEGEND -->
-<div class="erd-container">
-    <div class="erd-legend">
-        <span><span class="legend-color legend-ros"></span> Modul ROS</span>
-        <span><span class="legend-color legend-inc"></span> Modul Incoming</span>
-        <span><span class="legend-color legend-gl"></span> Modul GL Interface</span>
-        <span><span class="legend-color legend-wh"></span> Modul Warehouse</span>
+    <!-- TOC -->
+    <div class="toc">
+        <div class="toc-title">Daftar Isi</div>
+        <ul>
+            <li>Alur Proses (Flow Diagram)</li>
+            <li>Status Flow</li>
+            <li>Modul 1: New ROS (5 tabel)</li>
+            <li>Modul 2: Finalize Incoming (2 tabel)</li>
+            <li>Modul 3: GL Interface (2 tabel)</li>
+            <li>Modul 4: Warehouse (8 tabel)</li>
+            <li>Ringkasan Relasi Antar Tabel</li>
+            <li>Rumus Kalkulasi</li>
+        </ul>
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- ERD VISUAL DIAGRAM -->
+    <!-- FLOW DIAGRAM -->
     <!-- ═══════════════════════════════════════════ -->
-    <h3 style="border-left:none; padding-left:0;">ERD Diagram (Visual)</h3>
+    <h2>1. Alur Proses</h2>
 
-    <svg viewBox="0 -5 1150 1070" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:1200px; height:auto; margin:10px auto; display:block; font-family:'Segoe UI',sans-serif;">
-        
-        <!-- ═══ ARROWHEAD MARKERS (defined first) ═══ -->
-        <defs>
-            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                <polygon points="0 0, 10 3.5, 0 7" fill="#2c3e50"/>
-            </marker>
-            <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                <polygon points="0 0, 10 3.5, 0 7" fill="#1abc9c"/>
-            </marker>
-            <marker id="arrowhead-blue" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                <polygon points="0 0, 10 3.5, 0 7" fill="#2980b9"/>
-            </marker>
-            <marker id="arrowhead-orange" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                <polygon points="0 0, 10 3.5, 0 7" fill="#f39c12"/>
-            </marker>
-            <marker id="arrowhead-purple" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                <polygon points="0 0, 10 3.5, 0 7" fill="#8e44ad"/>
-            </marker>
-        </defs>
-
-        <!-- ═══ BACKGROUND GROUPS ═══ -->
-        <!-- ROS Group (kiri atas) -->
-        <rect x="20" y="20" width="440" height="520" rx="12" fill="#e8f8f5" stroke="#1abc9c" stroke-width="2" stroke-dasharray="6,3"/>
-        <text x="40" y="45" font-size="12" font-weight="bold" fill="#1abc9c">MODUL 1: NEW ROS</text>
-
-        <!-- Incoming Group (tengah atas) -->
-        <rect x="500" y="20" width="280" height="280" rx="12" fill="#eaf2f8" stroke="#2980b9" stroke-width="2" stroke-dasharray="6,3"/>
-        <text x="520" y="45" font-size="12" font-weight="bold" fill="#2980b9">MODUL 2: INCOMING</text>
-
-        <!-- GL Group (kanan atas) -->
-        <rect x="820" y="20" width="260" height="280" rx="12" fill="#fef9e7" stroke="#f39c12" stroke-width="2" stroke-dasharray="6,3"/>
-        <text x="840" y="45" font-size="12" font-weight="bold" fill="#f39c12">MODUL 3: GL INTERFACE</text>
-
-        <!-- Warehouse Group (kanan bawah) -->
-        <rect x="500" y="340" width="580" height="690" rx="12" fill="#f4ecf7" stroke="#8e44ad" stroke-width="2" stroke-dasharray="6,3"/>
-        <text x="520" y="365" font-size="12" font-weight="bold" fill="#8e44ad">MODUL 4: WAREHOUSE</text>
-
-        <!-- ═══════════════════════════════════════ -->
-        <!-- ENTITY BOXES -->
-        <!-- ═══════════════════════════════════════ -->
-
-        <!-- ── tr_ros_header ── -->
-        <rect x="50" y="65" width="220" height="105" rx="6" fill="#fff" stroke="#1abc9c" stroke-width="2"/>
-        <rect x="50" y="65" width="220" height="24" rx="6" fill="#1abc9c"/>
-        <text x="160" y="82" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">tr_ros_header</text>
-        <text x="62" y="104" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (VARCHAR 30)</text>
-        <text x="62" y="118" font-size="8.5" fill="#555">no_po, id_supplier, nm_supplier</text>
-        <text x="62" y="132" font-size="8.5" fill="#555">kurs_pib, nilai_po_usd, cost_bm</text>
-        <text x="62" y="146" font-size="8.5" fill="#555">biaya_ls, insurance, status</text>
-        <text x="62" y="160" font-size="8.5" fill="#555">status_incoming</text>
-
-        <!-- ── tr_ros_material ── -->
-        <rect x="50" y="210" width="220" height="100" rx="6" fill="#fff" stroke="#1abc9c" stroke-width="2"/>
-        <rect x="50" y="210" width="220" height="24" rx="6" fill="#1abc9c"/>
-        <text x="160" y="227" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">tr_ros_material</text>
-        <text x="62" y="249" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
-        <text x="62" y="263" font-size="8.5" fill="#2980b9">🔗 id_ros → tr_ros_header.id</text>
-        <text x="62" y="277" font-size="8.5" fill="#555">id_barang, kg_unit, cost_book</text>
-        <text x="62" y="291" font-size="8.5" fill="#555">total_nilai_inventory, bm_persen</text>
-
-        <!-- ── tr_ros_material_coil ── -->
-        <rect x="50" y="350" width="220" height="100" rx="6" fill="#fff" stroke="#1abc9c" stroke-width="2"/>
-        <rect x="50" y="350" width="220" height="24" rx="6" fill="#1abc9c"/>
-        <text x="160" y="367" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">tr_ros_material_coil</text>
-        <text x="62" y="389" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
-        <text x="62" y="403" font-size="8.5" fill="#2980b9">🔗 id_ros_material → tr_ros_material.id</text>
-        <text x="62" y="417" font-size="8.5" fill="#555">no_coil, berat_bersih, panjang</text>
-        <text x="62" y="431" font-size="8.5" fill="#555">kode_internal, id_gudang_ke, status_qc</text>
-
-        <!-- ── tr_ros_others ── -->
-        <rect x="300" y="140" width="140" height="75" rx="6" fill="#fff" stroke="#1abc9c" stroke-width="2"/>
-        <rect x="300" y="140" width="140" height="24" rx="6" fill="#1abc9c"/>
-        <text x="370" y="157" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle">tr_ros_others</text>
-        <text x="310" y="177" font-size="8.5" fill="#e74c3c">🔑 id (INT)</text>
-        <text x="310" y="191" font-size="8" fill="#2980b9">🔗 id_ros → header</text>
-        <text x="310" y="205" font-size="8" fill="#555">keterangan, nilai</text>
-
-        <!-- ── tr_ros_upload_temp ── -->
-        <rect x="300" y="240" width="140" height="75" rx="6" fill="#fff" stroke="#1abc9c" stroke-width="2"/>
-        <rect x="300" y="240" width="140" height="24" rx="6" fill="#1abc9c"/>
-        <text x="370" y="257" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle">tr_ros_upload_temp</text>
-        <text x="310" y="277" font-size="8.5" fill="#e74c3c">🔑 id (INT)</text>
-        <text x="310" y="291" font-size="8" fill="#2980b9">🔗 id_ros → header</text>
-        <text x="310" y="305" font-size="8" fill="#555">session_id, no_coil</text>
-
-        <!-- ── tr_incoming_header ── -->
-        <rect x="520" y="65" width="240" height="110" rx="6" fill="#fff" stroke="#2980b9" stroke-width="2"/>
-        <rect x="520" y="65" width="240" height="24" rx="6" fill="#2980b9"/>
-        <text x="640" y="82" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">tr_incoming_header</text>
-        <text x="532" y="104" font-size="9" fill="#e74c3c" font-weight="bold">🔑 kode_trans (VARCHAR 30)</text>
-        <text x="532" y="118" font-size="8.5" fill="#2980b9">🔗 no_ros → tr_ros_header.id</text>
-        <text x="532" y="132" font-size="8.5" fill="#555">no_po, nm_supplier, tanggal</text>
-        <text x="532" y="146" font-size="8.5" fill="#555">total_berat_bersih, total_nilai</text>
-        <text x="532" y="160" font-size="8.5" fill="#555">status = finalized</text>
-
-        <!-- ── tr_incoming_detail ── -->
-        <rect x="520" y="200" width="240" height="85" rx="6" fill="#fff" stroke="#2980b9" stroke-width="2"/>
-        <rect x="520" y="200" width="240" height="24" rx="6" fill="#2980b9"/>
-        <text x="640" y="217" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">tr_incoming_detail</text>
-        <text x="532" y="239" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
-        <text x="532" y="253" font-size="8.5" fill="#2980b9">🔗 kode_trans → tr_incoming_header</text>
-        <text x="532" y="267" font-size="8.5" fill="#2980b9">🔗 id_ros_material_coil → coil</text>
-        <text x="532" y="281" font-size="8.5" fill="#555">no_coil, berat_bersih, price_per_coil</text>
-
-        <!-- ── gl_interface ── -->
-        <rect x="840" y="65" width="220" height="100" rx="6" fill="#fff" stroke="#f39c12" stroke-width="2"/>
-        <rect x="840" y="65" width="220" height="24" rx="6" fill="#f39c12"/>
-        <text x="950" y="82" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">gl_interface</text>
-        <text x="852" y="104" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
-        <text x="852" y="118" font-size="8.5" fill="#555">nomor, tgl, jenis_transaksi</text>
-        <text x="852" y="132" font-size="8.5" fill="#555">status (pending/posted)</text>
-        <text x="852" y="146" font-size="8.5" fill="#555">memo (JSON: supplier, reff, ros)</text>
-
-        <!-- ── gl_interface_detail ── -->
-        <rect x="840" y="190" width="220" height="90" rx="6" fill="#fff" stroke="#f39c12" stroke-width="2"/>
-        <rect x="840" y="190" width="220" height="24" rx="6" fill="#f39c12"/>
-        <text x="950" y="207" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">gl_interface_detail</text>
-        <text x="852" y="229" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
-        <text x="852" y="243" font-size="8.5" fill="#2980b9">🔗 id_gl_interface → gl_interface.id</text>
-        <text x="852" y="257" font-size="8.5" fill="#555">no_perkiraan (COA), debet, kredit</text>
-        <text x="852" y="271" font-size="8.5" fill="#555">no_reff, no_request, keterangan</text>
-
-        <!-- ── warehouse_stock ── -->
-        <rect x="520" y="385" width="250" height="90" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2"/>
-        <rect x="520" y="385" width="250" height="24" rx="6" fill="#8e44ad"/>
-        <text x="645" y="402" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">warehouse_stock</text>
-        <text x="532" y="424" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
-        <text x="532" y="438" font-size="8.5" fill="#555">code_lv4 + id_gudang (composite unique)</text>
-        <text x="532" y="452" font-size="8.5" fill="#555">qty_stock, harga_beli (moving avg)</text>
-        <text x="532" y="466" font-size="8.5" fill="#555">total_nilai, incoming, outgoing</text>
-
-        <!-- ── warehouse_stock_coil ── -->
-        <rect x="820" y="385" width="240" height="85" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2"/>
-        <rect x="820" y="385" width="240" height="24" rx="6" fill="#8e44ad"/>
-        <text x="940" y="402" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">warehouse_stock_coil</text>
-        <text x="832" y="424" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
-        <text x="832" y="438" font-size="8.5" fill="#555">id_material + no_coil + id_gudang</text>
-        <text x="832" y="452" font-size="8.5" fill="#555">net_weight, gross_weight, length</text>
-        <text x="832" y="466" font-size="8.5" fill="#555">no_ipp, no_ros</text>
-
-        <!-- ── warehouse_history ── -->
-        <rect x="520" y="510" width="250" height="85" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2"/>
-        <rect x="520" y="510" width="250" height="24" rx="6" fill="#8e44ad"/>
-        <text x="645" y="527" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">warehouse_history</text>
-        <text x="532" y="549" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
-        <text x="532" y="563" font-size="8.5" fill="#555">qty_stock_awal / akhir</text>
-        <text x="532" y="577" font-size="8.5" fill="#555">saldo_awal / akhir, harga_baru / lama</text>
-        <text x="532" y="591" font-size="8.5" fill="#555">no_coil, no_ipp, jumlah_mat</text>
-
-        <!-- ── warehouse_stock_per_day ── -->
-        <rect x="820" y="510" width="240" height="72" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2"/>
-        <rect x="820" y="510" width="240" height="24" rx="6" fill="#8e44ad"/>
-        <text x="940" y="527" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">warehouse_stock_per_day</text>
-        <text x="832" y="549" font-size="8.5" fill="#555">id_material, id_gudang, hist_date</text>
-        <text x="832" y="563" font-size="8.5" fill="#555">qty_stock, harga_beli, total_nilai</text>
-        <text x="832" y="577" font-size="8.5" fill="#555">qty_booking, qty_free</text>
-
-        <!-- ── warehouse_coil_per_day ── -->
-        <rect x="820" y="620" width="240" height="72" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2"/>
-        <rect x="820" y="620" width="240" height="24" rx="6" fill="#8e44ad"/>
-        <text x="940" y="637" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">warehouse_coil_per_day</text>
-        <text x="832" y="659" font-size="8.5" fill="#555">id_material, no_coil, id_gudang</text>
-        <text x="832" y="673" font-size="8.5" fill="#555">status (IN/OUT), hist_date</text>
-        <text x="832" y="687" font-size="8.5" fill="#555">net_weight, gross_weight, length</text>
-
-        <!-- ── warehouse_incoming_summary ── -->
-        <rect x="520" y="630" width="260" height="85" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2"/>
-        <rect x="520" y="630" width="260" height="24" rx="6" fill="#8e44ad"/>
-        <text x="650" y="647" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle">warehouse_incoming_summary</text>
-        <text x="532" y="669" font-size="8.5" fill="#2980b9">🔗 no_ipp → tr_incoming_header.kode_trans</text>
-        <text x="532" y="683" font-size="8.5" fill="#555">jumlah_coil, qty_transaksi, costbook</text>
-        <text x="532" y="697" font-size="8.5" fill="#555">qty_awal, qty_akhir, saldo_awal/akhir</text>
-
-        <!-- ── warehouse_incoming_summary_detail ── -->
-        <rect x="520" y="750" width="260" height="72" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2"/>
-        <rect x="520" y="750" width="260" height="24" rx="6" fill="#8e44ad"/>
-        <text x="650" y="767" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle">warehouse_incoming_summary_detail</text>
-        <text x="532" y="789" font-size="8.5" fill="#2980b9">🔗 no_ipp → tr_incoming_header.kode_trans</text>
-        <text x="532" y="803" font-size="8.5" fill="#555">no_coil, net_weight, price_per_coil, status_qc</text>
-
-        <!-- ── kartu_stok ── -->
-        <rect x="520" y="860" width="260" height="85" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2"/>
-        <rect x="520" y="860" width="260" height="24" rx="6" fill="#8e44ad"/>
-        <text x="650" y="877" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">kartu_stok</text>
-        <text x="532" y="899" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
-        <text x="532" y="913" font-size="8.5" fill="#555">no_transaksi, qty, qty_transaksi, qty_akhir</text>
-        <text x="532" y="927" font-size="8.5" fill="#555">harga_stok, status_transaksi (in/out)</text>
-        <text x="532" y="941" font-size="8.5" fill="#555">code_lv4, id_gudang, tgl_transaksi</text>
-
-        <!-- ═══════════════════════════════════════ -->
-        <!-- RELATIONSHIP LINES (dirapikan) -->
-        <!-- ═══════════════════════════════════════ -->
-
-        <!-- ─── MODUL ROS: relasi internal ─── -->
-
-        <!-- tr_ros_header ─(1:N)─▶ tr_ros_material (vertikal tengah) -->
-        <line x1="160" y1="170" x2="160" y2="210" stroke="#1abc9c" stroke-width="2.5" marker-end="url(#arrowhead-green)"/>
-        <rect x="130" y="183" width="35" height="14" rx="3" fill="#1abc9c"/>
-        <text x="147" y="193" font-size="8" fill="#fff" text-anchor="middle">1:N</text>
-
-        <!-- tr_ros_material ─(1:N)─▶ tr_ros_material_coil (vertikal tengah) -->
-        <line x1="160" y1="310" x2="160" y2="350" stroke="#1abc9c" stroke-width="2.5" marker-end="url(#arrowhead-green)"/>
-        <rect x="130" y="323" width="35" height="14" rx="3" fill="#1abc9c"/>
-        <text x="147" y="333" font-size="8" fill="#fff" text-anchor="middle">1:N</text>
-
-        <!-- tr_ros_header ─(1:N)─▶ tr_ros_others (horizontal ke kanan) -->
-        <line x1="270" y1="120" x2="300" y2="155" stroke="#1abc9c" stroke-width="1.8" marker-end="url(#arrowhead-green)"/>
-        <text x="276" y="133" font-size="8" fill="#1abc9c" font-weight="bold">1:N</text>
-
-        <!-- tr_ros_header ─(1:N)─▶ tr_ros_upload_temp (horizontal ke kanan) -->
-        <line x1="270" y1="145" x2="300" y2="260" stroke="#1abc9c" stroke-width="1.8" marker-end="url(#arrowhead-green)"/>
-        <text x="276" y="200" font-size="8" fill="#1abc9c" font-weight="bold">1:N</text>
-
-        <!-- ─── CROSS-MODULE: ROS → INCOMING ─── -->
-
-        <!-- tr_ros_header ═══(1:1)═══▶ tr_incoming_header -->
-        <path d="M 270 100 L 460 100 L 460 100 L 520 100" fill="none" stroke="#2c3e50" stroke-width="3" marker-end="url(#arrowhead)"/>
-        <rect x="365" y="88" width="55" height="18" rx="4" fill="#2c3e50"/>
-        <text x="392" y="101" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">1 : 1</text>
-
-        <!-- tr_ros_material_coil ─(1:1)─▶ tr_incoming_detail (L-route ke kanan lalu naik) -->
-        <path d="M 270 400 L 480 400 L 480 250 L 520 250" fill="none" stroke="#34495e" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#arrowhead)"/>
-        <rect x="420" y="318" width="35" height="14" rx="3" fill="#34495e"/>
-        <text x="437" y="328" font-size="8" fill="#fff" text-anchor="middle">1:1</text>
-
-        <!-- ─── ROS CLOSE → GL (jenis_transaksi = 'ros') ─── -->
-
-        <!-- tr_ros_header ═══(1:1)═══▶ gl_interface (atas, garis melengkung lewat atas) -->
-        <path d="M 270 70 L 460 30 L 830 30 L 950 55" fill="none" stroke="#e67e22" stroke-width="2.5" stroke-dasharray="8,4" marker-end="url(#arrowhead-orange)"/>
-        <rect x="600" y="12" width="130" height="18" rx="4" fill="#e67e22"/>
-        <text x="665" y="25" font-size="8.5" fill="#fff" text-anchor="middle" font-weight="bold">1:1 (close → GL ros)</text>
-
-        <!-- ─── INCOMING → GL (jenis_transaksi = 'incoming') ─── -->
-
-        <!-- tr_incoming_header ═══(1:1)═══▶ gl_interface -->
-        <path d="M 760 100 L 840 100" fill="none" stroke="#f39c12" stroke-width="3" marker-end="url(#arrowhead-orange)"/>
-        <rect x="770" y="82" width="75" height="18" rx="4" fill="#f39c12"/>
-        <text x="807" y="95" font-size="8" fill="#fff" text-anchor="middle" font-weight="bold">1:1 (incoming)</text>
-
-        <!-- gl_interface ─(1:N)─▶ gl_interface_detail (vertikal) -->
-        <line x1="950" y1="165" x2="950" y2="190" stroke="#f39c12" stroke-width="2.5" marker-end="url(#arrowhead-orange)"/>
-        <rect x="957" y="170" width="35" height="14" rx="3" fill="#f39c12"/>
-        <text x="974" y="180" font-size="8" fill="#fff" text-anchor="middle">1:N</text>
-
-        <!-- ─── INCOMING → INCOMING DETAIL ─── -->
-
-        <!-- tr_incoming_header ─(1:N)─▶ tr_incoming_detail (vertikal) -->
-        <line x1="640" y1="175" x2="640" y2="200" stroke="#2980b9" stroke-width="2.5" marker-end="url(#arrowhead-blue)"/>
-        <rect x="647" y="181" width="35" height="14" rx="3" fill="#2980b9"/>
-        <text x="664" y="191" font-size="8" fill="#fff" text-anchor="middle">1:N</text>
-
-        <!-- ─── INCOMING DETAIL → WAREHOUSE (spread out, no overlap) ─── -->
-
-        <!-- tr_incoming_detail ─(N:1)─▶ warehouse_stock (left side, straight down) -->
-        <path d="M 570 285 L 570 385" fill="none" stroke="#8e44ad" stroke-width="2" marker-end="url(#arrowhead-purple)"/>
-        <rect x="575" y="330" width="35" height="14" rx="3" fill="#8e44ad"/>
-        <text x="592" y="340" font-size="8" fill="#fff" text-anchor="middle">N:1</text>
-
-        <!-- tr_incoming_detail ─(1:1)─▶ warehouse_stock_coil (right side, L-path to right) -->
-        <path d="M 760 242 L 800 242 L 800 340 L 820 385" fill="none" stroke="#8e44ad" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#arrowhead-purple)"/>
-        <rect x="803" y="330" width="35" height="14" rx="3" fill="#8e44ad"/>
-        <text x="820" y="340" font-size="8" fill="#fff" text-anchor="middle">1:1</text>
-
-        <!-- tr_incoming_detail ─(1:1)─▶ warehouse_history (left, L-path down) -->
-        <path d="M 540 285 L 540 510" fill="none" stroke="#8e44ad" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#arrowhead-purple)"/>
-        <rect x="545" y="470" width="35" height="14" rx="3" fill="#8e44ad"/>
-        <text x="562" y="480" font-size="8" fill="#fff" text-anchor="middle">1:1</text>
-
-        <!-- tr_incoming_detail ─(N:1)─▶ warehouse_stock_per_day (far right path) -->
-        <path d="M 760 260 L 1080 260 L 1080 510" fill="none" stroke="#8e44ad" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead-purple)"/>
-        <rect x="1048" y="470" width="35" height="14" rx="3" fill="#8e44ad"/>
-        <text x="1065" y="480" font-size="8" fill="#fff" text-anchor="middle">N:1</text>
-
-        <!-- tr_incoming_detail ─(1:1)─▶ warehouse_coil_per_day (far far right path) -->
-        <path d="M 760 270 L 1100 270 L 1100 620" fill="none" stroke="#8e44ad" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead-purple)"/>
-        <rect x="1068" y="590" width="35" height="14" rx="3" fill="#8e44ad"/>
-        <text x="1085" y="600" font-size="8" fill="#fff" text-anchor="middle">1:1</text>
-
-        <!-- tr_incoming_header ─(1:N)─▶ warehouse_incoming_summary (left outer path) -->
-        <path d="M 520 160 L 505 160 L 505 670 L 520 670" fill="none" stroke="#8e44ad" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#arrowhead-purple)"/>
-        <rect x="488" y="560" width="35" height="14" rx="3" fill="#8e44ad"/>
-        <text x="505" y="570" font-size="8" fill="#fff" text-anchor="middle">1:N</text>
-
-        <!-- warehouse_incoming_summary ─(1:N)─▶ warehouse_incoming_summary_detail -->
-        <line x1="650" y1="715" x2="650" y2="750" stroke="#8e44ad" stroke-width="2" marker-end="url(#arrowhead-purple)"/>
-        <rect x="655" y="725" width="35" height="14" rx="3" fill="#8e44ad"/>
-        <text x="672" y="735" font-size="8" fill="#fff" text-anchor="middle">1:N</text>
-
-        <!-- tr_incoming_detail ─(N:1)─▶ kartu_stok (far left outer path) -->
-        <path d="M 530 285 L 530 340 L 515 340 L 515 900 L 520 900" fill="none" stroke="#8e44ad" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowhead-purple)"/>
-        <rect x="488" y="800" width="35" height="14" rx="3" fill="#8e44ad"/>
-        <text x="505" y="810" font-size="8" fill="#fff" text-anchor="middle">N:1</text>
-
-    </svg>
-</div>
-
-<!-- ═══════════════════════════════════════════ -->
-<!-- MODUL 1: NEW ROS -->
-<!-- ═══════════════════════════════════════════ -->
-<div class="page-break"></div>
-<h2>2. Modul 1: New ROS (Kalkulasi Biaya Import)</h2>
-
-<div class="module-ros">
-    <div class="module-title">2.1 tr_ros_header</div>
-    <p style="margin-bottom:8px; color:#666;">Menyimpan data header kalkulasi biaya import per shipment. 1 header = 1 PO.</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">VARCHAR(30)</td><td><span class="badge badge-pk">PK</span></td><td>Format: NROS-MM-YY-000001</td></tr>
-            <tr><td>id_supplier</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode supplier</td></tr>
-            <tr><td>nm_supplier</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama supplier (denormalisasi)</td></tr>
-            <tr><td>no_po</td><td class="col-type">VARCHAR(50)</td><td></td><td>Nomor PO</td></tr>
-            <tr><td>no_surat</td><td class="col-type">VARCHAR(100)</td><td></td><td>Nomor surat PO</td></tr>
-            <tr><td>nilai_po_usd</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Nilai PO (USD) CIF/C&F</td></tr>
-            <tr><td>kurs_pib</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Kurs PIB</td></tr>
-            <tr><td>nilai_po_pib_rp</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Nilai PO PIB (Rp)</td></tr>
-            <tr><td>total_kg_kotor_pib</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Total KG kotor PIB</td></tr>
-            <tr><td>total_kg_bersih_pib</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Total KG bersih PIB</td></tr>
-            <tr><td>cost_bm</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Bea Masuk</td></tr>
-            <tr><td>cost_bm_kite</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>BM KITE</td></tr>
-            <tr><td>cost_bmt</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Bea Masuk Tambahan</td></tr>
-            <tr><td>cost_cukai</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Cukai</td></tr>
-            <tr><td>cost_ppn</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>PPN</td></tr>
-            <tr><td>cost_ppnbm</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>PPnBM</td></tr>
-            <tr><td>cost_pph_import</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>PPh Import</td></tr>
-            <tr><td>biaya_ls</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Biaya LS (Surveyor)</td></tr>
-            <tr><td>ppn_ls</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>PPN atas LS</td></tr>
-            <tr><td>pph_ls</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>PPh atas LS</td></tr>
-            <tr><td>insurance</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Biaya asuransi</td></tr>
-            <tr><td>status</td><td class="col-type">TINYINT(1)</td><td></td><td>0=Draft, 1=Final</td></tr>
-            <tr><td>status_incoming</td><td class="col-type">VARCHAR(20)</td><td></td><td>saved / submitted / closed</td></tr>
-            <tr><td>file_original_name</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama asli file packing list</td></tr>
-            <tr><td>file_hash_name</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama file terenkripsi di server</td></tr>
-            <tr><td>submitted_by</td><td class="col-type">INT(11)</td><td></td><td>User yang submit</td></tr>
-            <tr><td>submitted_date</td><td class="col-type">DATETIME</td><td></td><td>Tanggal submit</td></tr>
-            <tr><td>revised_by</td><td class="col-type">INT(11)</td><td></td><td>User yang revisi</td></tr>
-            <tr><td>revised_date</td><td class="col-type">DATETIME</td><td></td><td>Tanggal revisi</td></tr>
-            <tr><td>revision_note</td><td class="col-type">TEXT</td><td></td><td>Catatan revisi</td></tr>
-            <tr><td>created_by</td><td class="col-type">INT(11)</td><td></td><td>User pembuat</td></tr>
-            <tr><td>created_on</td><td class="col-type">DATETIME</td><td></td><td>Tanggal dibuat</td></tr>
-            <tr><td>modified_by</td><td class="col-type">INT(11)</td><td></td><td>User terakhir edit</td></tr>
-            <tr><td>modified_on</td><td class="col-type">DATETIME</td><td></td><td>Tanggal terakhir edit</td></tr>
-        </tbody>
-    </table>
-</div>
-
-<div class="module-ros">
-    <div class="module-title">2.2 tr_ros_material</div>
-    <p style="margin-bottom:8px; color:#666;">Detail material per ROS beserta kalkulasi cost book.</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">INT(11)</td><td><span class="badge badge-pk">PK</span></td><td>Auto increment</td></tr>
-            <tr><td class="col-fk">id_ros</td><td class="col-type">VARCHAR(30)</td><td><span class="badge badge-fk">FK</span></td><td>→ tr_ros_header.id</td></tr>
-            <tr><td>id_po_detail</td><td class="col-type">INT(11)</td><td></td><td>FK ke dt_trans_po.id</td></tr>
-            <tr><td>id_barang</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode material</td></tr>
-            <tr><td>nm_barang</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama di PO (sistem)</td></tr>
-            <tr><td>nm_erp</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama di ERP (real)</td></tr>
-            <tr><td>nm_alias</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama PO (alias/trade name)</td></tr>
-            <tr><td>kg_unit</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Total Kg Unit</td></tr>
-            <tr><td>unit_price_usd</td><td class="col-type">DECIMAL(18,6)</td><td></td><td>Harga satuan (USD)</td></tr>
-            <tr><td>total_value_usd</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Total Value (USD)</td></tr>
-            <tr><td>total_value_rp</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Total Value (Rp) = usd × kurs</td></tr>
-            <tr><td>bm_persen</td><td class="col-type">DECIMAL(8,2)</td><td></td><td>BM % dari HS Code</td></tr>
-            <tr><td>bm_rp</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>BM (Rp) = value_rp × bm%</td></tr>
-            <tr><td>prorate_ls</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Prorate biaya LS</td></tr>
-            <tr><td>forwarding_cost</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Rp 200 × kg_unit</td></tr>
-            <tr><td>prorate_insurance</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Prorate asuransi</td></tr>
-            <tr><td>prorate_others</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Prorate biaya lain-lain</td></tr>
-            <tr><td>total_nilai_inventory</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Total nilai inventory</td></tr>
-            <tr><td>cost_book</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Costbook = total_nilai / kg_unit</td></tr>
-            <tr><td>ls_flag</td><td class="col-type">ENUM('YA','TIDAK')</td><td></td><td>Apakah kena biaya LS</td></tr>
-            <tr><td>created_by</td><td class="col-type">INT(11)</td><td></td><td>User pembuat</td></tr>
-            <tr><td>created_on</td><td class="col-type">DATETIME</td><td></td><td>Tanggal dibuat</td></tr>
-        </tbody>
-    </table>
-</div>
-
-<div class="module-ros">
-    <div class="module-title">2.3 tr_ros_material_coil</div>
-    <p style="margin-bottom:8px; color:#666;">Data fisik individual coil per material (dari packing list).</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">INT(11)</td><td><span class="badge badge-pk">PK</span></td><td>Auto increment</td></tr>
-            <tr><td class="col-fk">id_ros_material</td><td class="col-type">INT(11)</td><td><span class="badge badge-fk">FK</span></td><td>→ tr_ros_material.id</td></tr>
-            <tr><td>no_coil</td><td class="col-type">VARCHAR(100)</td><td></td><td>Nomor coil</td></tr>
-            <tr><td>berat_kotor</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Gross Weight (KG)</td></tr>
-            <tr><td>berat_bersih</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Net Weight (KG)</td></tr>
-            <tr><td>panjang</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Length (meter)</td></tr>
-            <tr><td>bpm</td><td class="col-type">DECIMAL(10,4)</td><td></td><td>BPM</td></tr>
-            <tr><td>kode_internal</td><td class="col-type">VARCHAR(100)</td><td></td><td>Kode internal (generated)</td></tr>
-            <tr><td>id_gudang_ke</td><td class="col-type">INT(11)</td><td></td><td>ID gudang tujuan</td></tr>
-            <tr><td>kd_gudang_ke</td><td class="col-type">VARCHAR(20)</td><td></td><td>Kode gudang tujuan (PRO/SLI)</td></tr>
-            <tr><td>status_qc</td><td class="col-type">VARCHAR(10)</td><td></td><td>OK / NG</td></tr>
-            <tr><td>price_per_coil</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Harga per coil (Rp)</td></tr>
-            <tr><td>created_by</td><td class="col-type">INT(11)</td><td></td><td>User pembuat</td></tr>
-            <tr><td>created_on</td><td class="col-type">DATETIME</td><td></td><td>Tanggal dibuat</td></tr>
-        </tbody>
-    </table>
-</div>
-
-<div class="module-ros">
-    <div class="module-title">2.4 tr_ros_others</div>
-    <p style="margin-bottom:8px; color:#666;">Biaya lain-lain dinamis (trucking, THC, dll).</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">INT(11)</td><td><span class="badge badge-pk">PK</span></td><td>Auto increment</td></tr>
-            <tr><td class="col-fk">id_ros</td><td class="col-type">VARCHAR(30)</td><td><span class="badge badge-fk">FK</span></td><td>→ tr_ros_header.id</td></tr>
-            <tr><td>keterangan</td><td class="col-type">VARCHAR(255)</td><td></td><td>Deskripsi biaya</td></tr>
-            <tr><td>nilai</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Nilai biaya (Rp)</td></tr>
-            <tr><td>created_by</td><td class="col-type">INT(11)</td><td></td><td>User pembuat</td></tr>
-            <tr><td>created_on</td><td class="col-type">DATETIME</td><td></td><td>Tanggal dibuat</td></tr>
-        </tbody>
-    </table>
-</div>
-
-<div class="module-ros">
-    <div class="module-title">2.5 tr_ros_upload_temp</div>
-    <p style="margin-bottom:8px; color:#666;">Data sementara saat upload packing list (sebelum disimpan permanen).</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">INT(11)</td><td><span class="badge badge-pk">PK</span></td><td>Auto increment</td></tr>
-            <tr><td class="col-fk">id_ros</td><td class="col-type">VARCHAR(30)</td><td><span class="badge badge-fk">FK</span></td><td>→ tr_ros_header.id</td></tr>
-            <tr><td>session_id</td><td class="col-type">VARCHAR(100)</td><td><span class="badge badge-idx">IDX</span></td><td>Session user untuk isolasi data</td></tr>
-            <tr><td>no_coil</td><td class="col-type">VARCHAR(100)</td><td></td><td>Nomor coil</td></tr>
-            <tr><td>nama_sesuai_po</td><td class="col-type">VARCHAR(255)</td><td></td><td>Key matching ke material</td></tr>
-            <tr><td>coil_number</td><td class="col-type">INT(5)</td><td></td><td>Urutan coil</td></tr>
-            <tr><td>berat_bersih</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Net Weight</td></tr>
-            <tr><td>berat_kotor</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Gross Weight</td></tr>
-            <tr><td>panjang</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Length</td></tr>
-            <tr><td>bpm</td><td class="col-type">DECIMAL(10,4)</td><td></td><td>BPM</td></tr>
-            <tr><td>id_ros_material</td><td class="col-type">INT(11)</td><td></td><td>Matched material ID</td></tr>
-            <tr><td>kode_internal</td><td class="col-type">VARCHAR(100)</td><td></td><td>Generated kode internal</td></tr>
-            <tr><td>is_matched</td><td class="col-type">TINYINT(1)</td><td></td><td>1=matched, 0=not matched</td></tr>
-            <tr><td>created_on</td><td class="col-type">DATETIME</td><td></td><td>Tanggal dibuat</td></tr>
-        </tbody>
-    </table>
-</div>
-
-<!-- ═══════════════════════════════════════════ -->
-<!-- MODUL 2: FINALIZE INCOMING -->
-<!-- ═══════════════════════════════════════════ -->
-<div class="page-break"></div>
-<h2>3. Modul 2: Finalize Incoming</h2>
-
-<div class="module-inc">
-    <div class="module-title">3.1 tr_incoming_header</div>
-    <p style="margin-bottom:8px; color:#666;">Record resmi penerimaan barang. Dibuat saat proses finalize berhasil.</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">kode_trans</td><td class="col-type">VARCHAR(30)</td><td><span class="badge badge-pk">PK</span></td><td>Format: INC-YYMM-000001</td></tr>
-            <tr><td class="col-fk">no_ros</td><td class="col-type">VARCHAR(30)</td><td><span class="badge badge-fk">FK</span></td><td>→ tr_ros_header.id</td></tr>
-            <tr><td>no_po</td><td class="col-type">VARCHAR(50)</td><td></td><td>Nomor PO</td></tr>
-            <tr><td>no_surat</td><td class="col-type">VARCHAR(100)</td><td></td><td>Nomor surat PO</td></tr>
-            <tr><td>id_supplier</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode supplier</td></tr>
-            <tr><td>nm_supplier</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama supplier</td></tr>
-            <tr><td>tanggal</td><td class="col-type">DATE</td><td></td><td>Tanggal incoming</td></tr>
-            <tr><td>total_berat_bersih</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Total berat bersih semua coil</td></tr>
-            <tr><td>total_nilai</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Total nilai incoming (Rp)</td></tr>
-            <tr><td>file_dokumen</td><td class="col-type">VARCHAR(255)</td><td></td><td>File dokumen (hash)</td></tr>
-            <tr><td>file_original</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama asli file</td></tr>
-            <tr><td>status</td><td class="col-type">VARCHAR(20)</td><td></td><td>finalized</td></tr>
-            <tr><td>created_by</td><td class="col-type">INT(11)</td><td></td><td>User pembuat</td></tr>
-            <tr><td>created_at</td><td class="col-type">DATETIME</td><td></td><td>Tanggal dibuat</td></tr>
-            <tr><td>finalized_by</td><td class="col-type">INT(11)</td><td></td><td>User yang finalize</td></tr>
-            <tr><td>finalized_at</td><td class="col-type">DATETIME</td><td></td><td>Tanggal finalize</td></tr>
-        </tbody>
-    </table>
-</div>
-
-<div class="module-inc">
-    <div class="module-title">3.2 tr_incoming_detail</div>
-    <p style="margin-bottom:8px; color:#666;">Detail setiap coil yang masuk gudang (1 row per coil).</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">INT(11)</td><td><span class="badge badge-pk">PK</span></td><td>Auto increment</td></tr>
-            <tr><td class="col-fk">kode_trans</td><td class="col-type">VARCHAR(30)</td><td><span class="badge badge-fk">FK</span></td><td>→ tr_incoming_header.kode_trans</td></tr>
-            <tr><td class="col-fk">id_ros_material_coil</td><td class="col-type">INT(11)</td><td><span class="badge badge-fk">FK</span></td><td>→ tr_ros_material_coil.id</td></tr>
-            <tr><td>id_ros_material</td><td class="col-type">INT(11)</td><td></td><td>→ tr_ros_material.id</td></tr>
-            <tr><td>id_material</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode material</td></tr>
-            <tr><td>nm_material</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama material ERP</td></tr>
-            <tr><td>trade_name</td><td class="col-type">VARCHAR(255)</td><td></td><td>Trade name / alias</td></tr>
-            <tr><td>no_coil</td><td class="col-type">VARCHAR(100)</td><td></td><td>Nomor coil</td></tr>
-            <tr><td>kode_internal</td><td class="col-type">VARCHAR(100)</td><td></td><td>Kode internal</td></tr>
-            <tr><td>berat_kotor</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Gross Weight</td></tr>
-            <tr><td>berat_bersih</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Net Weight</td></tr>
-            <tr><td>panjang</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Length</td></tr>
-            <tr><td>bpm</td><td class="col-type">DECIMAL(10,4)</td><td></td><td>BPM</td></tr>
-            <tr><td>id_gudang_ke</td><td class="col-type">INT(11)</td><td></td><td>ID gudang tujuan</td></tr>
-            <tr><td>kd_gudang_ke</td><td class="col-type">VARCHAR(20)</td><td></td><td>Kode gudang (PRO/SLI)</td></tr>
-            <tr><td>status_qc</td><td class="col-type">VARCHAR(10)</td><td></td><td>OK / NG</td></tr>
-            <tr><td>price_per_coil</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Harga per coil (Rp)</td></tr>
-            <tr><td>cost_book</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Costbook per KG</td></tr>
-            <tr><td>nilai_inventory</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Nilai inventory coil</td></tr>
-        </tbody>
-    </table>
-</div>
-
-<!-- ═══════════════════════════════════════════ -->
-<!-- MODUL 3: GL INTERFACE -->
-<!-- ═══════════════════════════════════════════ -->
-<div class="page-break"></div>
-<h2>4. Modul 3: GL Interface (Jurnal Akuntansi)</h2>
-
-<div class="module-gl">
-    <div class="module-title">4.1 gl_interface</div>
-    <p style="margin-bottom:8px; color:#666;">Header jurnal akuntansi yang di-generate otomatis setelah finalize.</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">INT(11)</td><td><span class="badge badge-pk">PK</span></td><td>Auto increment</td></tr>
-            <tr><td>nomor</td><td class="col-type">VARCHAR(50)</td><td></td><td>Nomor JV (101-AJVyymm + urut)</td></tr>
-            <tr><td>tgl</td><td class="col-type">DATE</td><td></td><td>Tanggal jurnal</td></tr>
-            <tr><td>bulan</td><td class="col-type">VARCHAR(10)</td><td></td><td>Bulan</td></tr>
-            <tr><td>tahun</td><td class="col-type">VARCHAR(10)</td><td></td><td>Tahun</td></tr>
-            <tr><td>kdcab</td><td class="col-type">VARCHAR(10)</td><td></td><td>Kode cabang (101)</td></tr>
-            <tr><td>jenis</td><td class="col-type">VARCHAR(10)</td><td></td><td>Jenis jurnal (JV)</td></tr>
-            <tr><td>keterangan</td><td class="col-type">TEXT</td><td></td><td>Deskripsi jurnal</td></tr>
-            <tr><td>jenis_transaksi</td><td class="col-type">VARCHAR(50)</td><td></td><td>incoming / payment / dll</td></tr>
-            <tr><td>status</td><td class="col-type">VARCHAR(20)</td><td></td><td>pending / posted</td></tr>
-            <tr><td>user_id</td><td class="col-type">INT(11)</td><td></td><td>User pembuat</td></tr>
-            <tr><td>memo</td><td class="col-type">JSON</td><td></td><td>Metadata (supplier, reff, ros)</td></tr>
-        </tbody>
-    </table>
-
-    <div class="note-box">
-        <strong>Format Memo (JSON):</strong><br>
-        <code>{ "id_supplier": "...", "nama_supplier": "...", "no_reff": "no_surat", "no_request": "kode_trans", "no_ros": "..." }</code>
+    <div class="flow-container">
+        <div class="flow-box">
+            <span class="step-num">STEP 1</span>
+            <div class="step-title">New ROS</div>
+            <div class="step-desc">Kalkulasi biaya import</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box">
+            <span class="step-num">STEP 2</span>
+            <div class="step-title">Create Incoming</div>
+            <div class="step-desc">Assign gudang + submit</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box">
+            <span class="step-num">STEP 3</span>
+            <div class="step-title">Finalize Incoming</div>
+            <div class="step-desc">Stok masuk gudang</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box">
+            <span class="step-num">STEP 4</span>
+            <div class="step-title">GL Interface</div>
+            <div class="step-desc">Jurnal akuntansi</div>
+        </div>
     </div>
-</div>
 
-<div class="module-gl">
-    <div class="module-title">4.2 gl_interface_detail</div>
-    <p style="margin-bottom:8px; color:#666;">Baris debet/kredit per jurnal.</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">INT(11)</td><td><span class="badge badge-pk">PK</span></td><td>Auto increment</td></tr>
-            <tr><td class="col-fk">id_gl_interface</td><td class="col-type">INT(11)</td><td><span class="badge badge-fk">FK</span></td><td>→ gl_interface.id</td></tr>
-            <tr><td>no_batch</td><td class="col-type">VARCHAR(50)</td><td></td><td>Nomor batch JV</td></tr>
-            <tr><td>tipe</td><td class="col-type">VARCHAR(10)</td><td></td><td>Tipe (JV)</td></tr>
-            <tr><td>tanggal</td><td class="col-type">DATE</td><td></td><td>Tanggal jurnal</td></tr>
-            <tr><td>no_perkiraan</td><td class="col-type">VARCHAR(20)</td><td></td><td>Nomor COA</td></tr>
-            <tr><td>id_material</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode material (nullable)</td></tr>
-            <tr><td>nm_material</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama material (nullable)</td></tr>
-            <tr><td>id_gudang</td><td class="col-type">INT(11)</td><td></td><td>ID gudang (nullable)</td></tr>
-            <tr><td>no_coil</td><td class="col-type">VARCHAR(100)</td><td></td><td>Nomor coil (nullable)</td></tr>
-            <tr><td>keterangan</td><td class="col-type">TEXT</td><td></td><td>Deskripsi baris jurnal</td></tr>
-            <tr><td>no_reff</td><td class="col-type">VARCHAR(100)</td><td></td><td>No surat PO sebagai referensi</td></tr>
-            <tr><td>no_request</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode trans incoming</td></tr>
-            <tr><td>debet</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Nilai debet</td></tr>
-            <tr><td>kredit</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Nilai kredit</td></tr>
-            <tr><td>created_at</td><td class="col-type">DATETIME</td><td></td><td>Tanggal dibuat</td></tr>
-        </tbody>
-    </table>
-
-    <div class="note-box">
-        <strong>Jurnal Pattern A — Close ROS (jenis_transaksi = 'ros'):</strong><br>
-        <table style="width:auto; margin:5px 0;">
-            <tr><th>COA</th><th>Nama</th><th>Debet</th><th>Kredit</th></tr>
-            <tr><td>1105-01-03</td><td>Persediaan In-Transit</td><td>xxx</td><td>-</td></tr>
-            <tr><td>1104-01-02</td><td>Advance Purchase ($)</td><td>-</td><td>xxx</td></tr>
-            <tr><td>1108-01-09</td><td>BM Dibayar Dimuka</td><td>-</td><td>xxx</td></tr>
-            <tr><td>1111-01-01</td><td>Prepaid Expense LS</td><td>-</td><td>xxx</td></tr>
-            <tr><td>2104-01-14</td><td>Hutang Biaya Forwarding</td><td>-</td><td>xxx</td></tr>
-            <tr><td>1111-01-02</td><td>Prepaid Expense Insurance</td><td>-</td><td>xxx</td></tr>
-            <tr><td>1111-01-03</td><td>Prepaid Expense Other</td><td>-</td><td>xxx</td></tr>
-            <tr><td>7201-01-07</td><td>Selisih Kurs</td><td>xxx/-</td><td>-/xxx</td></tr>
-            <tr><td>7201-01-05</td><td>Pembulatan</td><td>xxx/-</td><td>-/xxx</td></tr>
-        </table>
-        <br>
-        <strong>Jurnal Pattern B — Finalize Incoming (jenis_transaksi = 'incoming'):</strong><br>
-        <table style="width:auto; margin:5px 0;">
-            <tr><th>COA</th><th>Nama</th><th>Debet</th><th>Kredit</th></tr>
-            <tr><td>1105-01-01</td><td>Persediaan Produksi</td><td>xxx</td><td>-</td></tr>
-            <tr><td>1105-01-02</td><td>Persediaan Slitting</td><td>xxx</td><td>-</td></tr>
-            <tr><td>1105-01-03</td><td>Persediaan In-Transit</td><td>-</td><td>xxx</td></tr>
-        </table>
-        <em style="font-size:9px; color:#888;">Jurnal B membalik saldo In-Transit yang di-debet oleh Jurnal A.</em>
+    <h3>Status Flow pada tr_ros_header</h3>
+    <div class="status-flow">
+        <span class="status-badge status-draft">status=0 (Draft)</span>
+        <span class="status-arrow">→</span>
+        <span class="status-badge status-final">status=1 (Final)</span>
+        <span class="status-arrow">→</span>
+        <span class="status-badge status-submitted">status_incoming=submitted</span>
+        <span class="status-arrow">→</span>
+        <span class="status-badge status-closed">status_incoming=closed</span>
     </div>
-</div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- MODUL 4: WAREHOUSE -->
-<!-- ═══════════════════════════════════════════ -->
-<div class="page-break"></div>
-<h2>5. Modul 4: Warehouse (Stok & Riwayat)</h2>
+    <!-- LEGEND -->
+    <div class="erd-container">
+        <div class="erd-legend">
+            <span><span class="legend-color legend-ros"></span> Modul ROS</span>
+            <span><span class="legend-color legend-inc"></span> Modul Incoming</span>
+            <span><span class="legend-color legend-gl"></span> Modul GL Interface</span>
+            <span><span class="legend-color legend-wh"></span> Modul Warehouse</span>
+        </div>
 
-<div class="module-wh">
-    <div class="module-title">5.1 warehouse_stock</div>
-    <p style="margin-bottom:8px; color:#666;">Posisi stok aktual per material per gudang. Costbook dihitung dengan metode Moving Average.</p>
-    <table>
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- ERD VISUAL DIAGRAM -->
+        <!-- ═══════════════════════════════════════════ -->
+        <h3 style="border-left:none; padding-left:0;">ERD Diagram (Visual)</h3>
+
+        <svg viewBox="0 -5 1150 1070" xmlns="http://www.w3.org/2000/svg"
+            style="width:100%; max-width:1200px; height:auto; margin:10px auto; display:block; font-family:'Segoe UI',sans-serif;">
+
+            <!-- ═══ ARROWHEAD MARKERS (defined first) ═══ -->
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#2c3e50" />
+                </marker>
+                <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#1abc9c" />
+                </marker>
+                <marker id="arrowhead-blue" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#2980b9" />
+                </marker>
+                <marker id="arrowhead-orange" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#f39c12" />
+                </marker>
+                <marker id="arrowhead-purple" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#8e44ad" />
+                </marker>
+            </defs>
+
+            <!-- ═══ BACKGROUND GROUPS ═══ -->
+            <!-- ROS Group (kiri atas) -->
+            <rect x="20" y="20" width="440" height="520" rx="12" fill="#e8f8f5" stroke="#1abc9c" stroke-width="2"
+                stroke-dasharray="6,3" />
+            <text x="40" y="45" font-size="12" font-weight="bold" fill="#1abc9c">MODUL 1: NEW ROS</text>
+
+            <!-- Incoming Group (tengah atas) -->
+            <rect x="500" y="20" width="280" height="280" rx="12" fill="#eaf2f8" stroke="#2980b9" stroke-width="2"
+                stroke-dasharray="6,3" />
+            <text x="520" y="45" font-size="12" font-weight="bold" fill="#2980b9">MODUL 2: INCOMING</text>
+
+            <!-- GL Group (kanan atas) -->
+            <rect x="820" y="20" width="260" height="280" rx="12" fill="#fef9e7" stroke="#f39c12" stroke-width="2"
+                stroke-dasharray="6,3" />
+            <text x="840" y="45" font-size="12" font-weight="bold" fill="#f39c12">MODUL 3: GL INTERFACE</text>
+
+            <!-- Warehouse Group (kanan bawah) -->
+            <rect x="500" y="340" width="580" height="690" rx="12" fill="#f4ecf7" stroke="#8e44ad" stroke-width="2"
+                stroke-dasharray="6,3" />
+            <text x="520" y="365" font-size="12" font-weight="bold" fill="#8e44ad">MODUL 4: WAREHOUSE</text>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!-- ENTITY BOXES -->
+            <!-- ═══════════════════════════════════════ -->
+
+            <!-- ── tr_ros_header ── -->
+            <rect x="50" y="65" width="220" height="105" rx="6" fill="#fff" stroke="#1abc9c" stroke-width="2" />
+            <rect x="50" y="65" width="220" height="24" rx="6" fill="#1abc9c" />
+            <text x="160" y="82" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">tr_ros_header</text>
+            <text x="62" y="104" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (VARCHAR 30)</text>
+            <text x="62" y="118" font-size="8.5" fill="#555">no_po, id_supplier, nm_supplier</text>
+            <text x="62" y="132" font-size="8.5" fill="#555">kurs_pib, nilai_po_usd, cost_bm</text>
+            <text x="62" y="146" font-size="8.5" fill="#555">biaya_ls, insurance, status</text>
+            <text x="62" y="160" font-size="8.5" fill="#555">status_incoming</text>
+
+            <!-- ── tr_ros_material ── -->
+            <rect x="50" y="210" width="220" height="100" rx="6" fill="#fff" stroke="#1abc9c" stroke-width="2" />
+            <rect x="50" y="210" width="220" height="24" rx="6" fill="#1abc9c" />
+            <text x="160" y="227" font-size="11" font-weight="bold" fill="#fff"
+                text-anchor="middle">tr_ros_material</text>
+            <text x="62" y="249" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
+            <text x="62" y="263" font-size="8.5" fill="#2980b9">🔗 id_ros → tr_ros_header.id</text>
+            <text x="62" y="277" font-size="8.5" fill="#555">id_barang, kg_unit, cost_book</text>
+            <text x="62" y="291" font-size="8.5" fill="#555">total_nilai_inventory, bm_persen</text>
+
+            <!-- ── tr_ros_material_coil ── -->
+            <rect x="50" y="350" width="220" height="100" rx="6" fill="#fff" stroke="#1abc9c" stroke-width="2" />
+            <rect x="50" y="350" width="220" height="24" rx="6" fill="#1abc9c" />
+            <text x="160" y="367" font-size="11" font-weight="bold" fill="#fff"
+                text-anchor="middle">tr_ros_material_coil</text>
+            <text x="62" y="389" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
+            <text x="62" y="403" font-size="8.5" fill="#2980b9">🔗 id_ros_material → tr_ros_material.id</text>
+            <text x="62" y="417" font-size="8.5" fill="#555">no_coil, berat_bersih, panjang</text>
+            <text x="62" y="431" font-size="8.5" fill="#555">kode_internal, id_gudang_ke, status_qc</text>
+
+            <!-- ── tr_ros_others ── -->
+            <rect x="300" y="140" width="140" height="75" rx="6" fill="#fff" stroke="#1abc9c" stroke-width="2" />
+            <rect x="300" y="140" width="140" height="24" rx="6" fill="#1abc9c" />
+            <text x="370" y="157" font-size="10" font-weight="bold" fill="#fff"
+                text-anchor="middle">tr_ros_others</text>
+            <text x="310" y="177" font-size="8.5" fill="#e74c3c">🔑 id (INT)</text>
+            <text x="310" y="191" font-size="8" fill="#2980b9">🔗 id_ros → header</text>
+            <text x="310" y="205" font-size="8" fill="#555">keterangan, nilai</text>
+
+            <!-- ── tr_ros_upload_temp ── -->
+            <rect x="300" y="240" width="140" height="75" rx="6" fill="#fff" stroke="#1abc9c" stroke-width="2" />
+            <rect x="300" y="240" width="140" height="24" rx="6" fill="#1abc9c" />
+            <text x="370" y="257" font-size="10" font-weight="bold" fill="#fff"
+                text-anchor="middle">tr_ros_upload_temp</text>
+            <text x="310" y="277" font-size="8.5" fill="#e74c3c">🔑 id (INT)</text>
+            <text x="310" y="291" font-size="8" fill="#2980b9">🔗 id_ros → header</text>
+            <text x="310" y="305" font-size="8" fill="#555">session_id, no_coil</text>
+
+            <!-- ── tr_incoming_header ── -->
+            <rect x="520" y="65" width="240" height="110" rx="6" fill="#fff" stroke="#2980b9" stroke-width="2" />
+            <rect x="520" y="65" width="240" height="24" rx="6" fill="#2980b9" />
+            <text x="640" y="82" font-size="11" font-weight="bold" fill="#fff"
+                text-anchor="middle">tr_incoming_header</text>
+            <text x="532" y="104" font-size="9" fill="#e74c3c" font-weight="bold">🔑 kode_trans (VARCHAR 30)</text>
+            <text x="532" y="118" font-size="8.5" fill="#2980b9">🔗 no_ros → tr_ros_header.id</text>
+            <text x="532" y="132" font-size="8.5" fill="#555">no_po, nm_supplier, tanggal</text>
+            <text x="532" y="146" font-size="8.5" fill="#555">total_berat_bersih, total_nilai</text>
+            <text x="532" y="160" font-size="8.5" fill="#555">status = finalized</text>
+
+            <!-- ── tr_incoming_detail ── -->
+            <rect x="520" y="200" width="240" height="85" rx="6" fill="#fff" stroke="#2980b9" stroke-width="2" />
+            <rect x="520" y="200" width="240" height="24" rx="6" fill="#2980b9" />
+            <text x="640" y="217" font-size="11" font-weight="bold" fill="#fff"
+                text-anchor="middle">tr_incoming_detail</text>
+            <text x="532" y="239" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
+            <text x="532" y="253" font-size="8.5" fill="#2980b9">🔗 kode_trans → tr_incoming_header</text>
+            <text x="532" y="267" font-size="8.5" fill="#2980b9">🔗 id_ros_material_coil → coil</text>
+            <text x="532" y="281" font-size="8.5" fill="#555">no_coil, berat_bersih, price_per_coil</text>
+
+            <!-- ── gl_interface ── -->
+            <rect x="840" y="65" width="220" height="100" rx="6" fill="#fff" stroke="#f39c12" stroke-width="2" />
+            <rect x="840" y="65" width="220" height="24" rx="6" fill="#f39c12" />
+            <text x="950" y="82" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">gl_interface</text>
+            <text x="852" y="104" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
+            <text x="852" y="118" font-size="8.5" fill="#555">nomor, tgl, jenis_transaksi</text>
+            <text x="852" y="132" font-size="8.5" fill="#555">status (pending/posted)</text>
+            <text x="852" y="146" font-size="8.5" fill="#555">memo (JSON: supplier, reff, ros)</text>
+
+            <!-- ── gl_interface_detail ── -->
+            <rect x="840" y="190" width="220" height="90" rx="6" fill="#fff" stroke="#f39c12" stroke-width="2" />
+            <rect x="840" y="190" width="220" height="24" rx="6" fill="#f39c12" />
+            <text x="950" y="207" font-size="11" font-weight="bold" fill="#fff"
+                text-anchor="middle">gl_interface_detail</text>
+            <text x="852" y="229" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
+            <text x="852" y="243" font-size="8.5" fill="#2980b9">🔗 id_gl_interface → gl_interface.id</text>
+            <text x="852" y="257" font-size="8.5" fill="#555">no_perkiraan (COA), debet, kredit</text>
+            <text x="852" y="271" font-size="8.5" fill="#555">no_reff, no_request, keterangan</text>
+
+            <!-- ── warehouse_stock ── -->
+            <rect x="520" y="385" width="250" height="90" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2" />
+            <rect x="520" y="385" width="250" height="24" rx="6" fill="#8e44ad" />
+            <text x="645" y="402" font-size="11" font-weight="bold" fill="#fff"
+                text-anchor="middle">warehouse_stock</text>
+            <text x="532" y="424" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
+            <text x="532" y="438" font-size="8.5" fill="#555">code_lv4 + id_gudang (composite unique)</text>
+            <text x="532" y="452" font-size="8.5" fill="#555">qty_stock, harga_beli (moving avg)</text>
+            <text x="532" y="466" font-size="8.5" fill="#555">total_nilai, incoming, outgoing</text>
+
+            <!-- ── warehouse_stock_coil ── -->
+            <rect x="820" y="385" width="240" height="85" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2" />
+            <rect x="820" y="385" width="240" height="24" rx="6" fill="#8e44ad" />
+            <text x="940" y="402" font-size="11" font-weight="bold" fill="#fff"
+                text-anchor="middle">warehouse_stock_coil</text>
+            <text x="832" y="424" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
+            <text x="832" y="438" font-size="8.5" fill="#555">id_material + no_coil + id_gudang</text>
+            <text x="832" y="452" font-size="8.5" fill="#555">net_weight, gross_weight, length</text>
+            <text x="832" y="466" font-size="8.5" fill="#555">no_ipp, no_ros</text>
+
+            <!-- ── warehouse_history ── -->
+            <rect x="520" y="510" width="250" height="85" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2" />
+            <rect x="520" y="510" width="250" height="24" rx="6" fill="#8e44ad" />
+            <text x="645" y="527" font-size="11" font-weight="bold" fill="#fff"
+                text-anchor="middle">warehouse_history</text>
+            <text x="532" y="549" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
+            <text x="532" y="563" font-size="8.5" fill="#555">qty_stock_awal / akhir</text>
+            <text x="532" y="577" font-size="8.5" fill="#555">saldo_awal / akhir, harga_baru / lama</text>
+            <text x="532" y="591" font-size="8.5" fill="#555">no_coil, no_ipp, jumlah_mat</text>
+
+            <!-- ── warehouse_stock_per_day ── -->
+            <rect x="820" y="510" width="240" height="72" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2" />
+            <rect x="820" y="510" width="240" height="24" rx="6" fill="#8e44ad" />
+            <text x="940" y="527" font-size="11" font-weight="bold" fill="#fff"
+                text-anchor="middle">warehouse_stock_per_day</text>
+            <text x="832" y="549" font-size="8.5" fill="#555">id_material, id_gudang, hist_date</text>
+            <text x="832" y="563" font-size="8.5" fill="#555">qty_stock, harga_beli, total_nilai</text>
+            <text x="832" y="577" font-size="8.5" fill="#555">qty_booking, qty_free</text>
+
+            <!-- ── warehouse_coil_per_day ── -->
+            <rect x="820" y="620" width="240" height="72" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2" />
+            <rect x="820" y="620" width="240" height="24" rx="6" fill="#8e44ad" />
+            <text x="940" y="637" font-size="11" font-weight="bold" fill="#fff"
+                text-anchor="middle">warehouse_coil_per_day</text>
+            <text x="832" y="659" font-size="8.5" fill="#555">id_material, no_coil, id_gudang</text>
+            <text x="832" y="673" font-size="8.5" fill="#555">status (IN/OUT), hist_date</text>
+            <text x="832" y="687" font-size="8.5" fill="#555">net_weight, gross_weight, length</text>
+
+            <!-- ── warehouse_stock_transaction_summary ── -->
+            <rect x="520" y="630" width="260" height="85" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2" />
+            <rect x="520" y="630" width="260" height="24" rx="6" fill="#8e44ad" />
+            <text x="650" y="647" font-size="10" font-weight="bold" fill="#fff"
+                text-anchor="middle">warehouse_stock_transaction_summary</text>
+            <text x="532" y="669" font-size="8.5" fill="#2980b9">🔗 no_ipp → tr_incoming_header.kode_trans</text>
+            <text x="532" y="683" font-size="8.5" fill="#555">jumlah_coil, qty_transaksi, costbook</text>
+            <text x="532" y="697" font-size="8.5" fill="#555">qty_awal, qty_akhir, saldo_awal/akhir</text>
+
+            <!-- ── warehouse_stock_transaction_detail ── -->
+            <rect x="520" y="750" width="260" height="72" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2" />
+            <rect x="520" y="750" width="260" height="24" rx="6" fill="#8e44ad" />
+            <text x="650" y="767" font-size="10" font-weight="bold" fill="#fff"
+                text-anchor="middle">warehouse_stock_transaction_detail</text>
+            <text x="532" y="789" font-size="8.5" fill="#2980b9">🔗 no_ipp → tr_incoming_header.kode_trans</text>
+            <text x="532" y="803" font-size="8.5" fill="#555">no_coil, net_weight, price_per_coil, status_qc</text>
+
+            <!-- ── kartu_stok ── -->
+            <rect x="520" y="860" width="260" height="85" rx="6" fill="#fff" stroke="#8e44ad" stroke-width="2" />
+            <rect x="520" y="860" width="260" height="24" rx="6" fill="#8e44ad" />
+            <text x="650" y="877" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">kartu_stok</text>
+            <text x="532" y="899" font-size="9" fill="#e74c3c" font-weight="bold">🔑 id (INT)</text>
+            <text x="532" y="913" font-size="8.5" fill="#555">no_transaksi, qty, qty_transaksi, qty_akhir</text>
+            <text x="532" y="927" font-size="8.5" fill="#555">harga_stok, status_transaksi (in/out)</text>
+            <text x="532" y="941" font-size="8.5" fill="#555">code_lv4, id_gudang, tgl_transaksi</text>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!-- RELATIONSHIP LINES (dirapikan) -->
+            <!-- ═══════════════════════════════════════ -->
+
+            <!-- ─── MODUL ROS: relasi internal ─── -->
+
+            <!-- tr_ros_header ─(1:N)─▶ tr_ros_material (vertikal tengah) -->
+            <line x1="160" y1="170" x2="160" y2="210" stroke="#1abc9c" stroke-width="2.5"
+                marker-end="url(#arrowhead-green)" />
+            <rect x="130" y="183" width="35" height="14" rx="3" fill="#1abc9c" />
+            <text x="147" y="193" font-size="8" fill="#fff" text-anchor="middle">1:N</text>
+
+            <!-- tr_ros_material ─(1:N)─▶ tr_ros_material_coil (vertikal tengah) -->
+            <line x1="160" y1="310" x2="160" y2="350" stroke="#1abc9c" stroke-width="2.5"
+                marker-end="url(#arrowhead-green)" />
+            <rect x="130" y="323" width="35" height="14" rx="3" fill="#1abc9c" />
+            <text x="147" y="333" font-size="8" fill="#fff" text-anchor="middle">1:N</text>
+
+            <!-- tr_ros_header ─(1:N)─▶ tr_ros_others (horizontal ke kanan) -->
+            <line x1="270" y1="120" x2="300" y2="155" stroke="#1abc9c" stroke-width="1.8"
+                marker-end="url(#arrowhead-green)" />
+            <text x="276" y="133" font-size="8" fill="#1abc9c" font-weight="bold">1:N</text>
+
+            <!-- tr_ros_header ─(1:N)─▶ tr_ros_upload_temp (horizontal ke kanan) -->
+            <line x1="270" y1="145" x2="300" y2="260" stroke="#1abc9c" stroke-width="1.8"
+                marker-end="url(#arrowhead-green)" />
+            <text x="276" y="200" font-size="8" fill="#1abc9c" font-weight="bold">1:N</text>
+
+            <!-- ─── CROSS-MODULE: ROS → INCOMING ─── -->
+
+            <!-- tr_ros_header ═══(1:1)═══▶ tr_incoming_header -->
+            <path d="M 270 100 L 460 100 L 460 100 L 520 100" fill="none" stroke="#2c3e50" stroke-width="3"
+                marker-end="url(#arrowhead)" />
+            <rect x="365" y="88" width="55" height="18" rx="4" fill="#2c3e50" />
+            <text x="392" y="101" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">1 : 1</text>
+
+            <!-- tr_ros_material_coil ─(1:1)─▶ tr_incoming_detail (L-route ke kanan lalu naik) -->
+            <path d="M 270 400 L 480 400 L 480 250 L 520 250" fill="none" stroke="#34495e" stroke-width="1.8"
+                stroke-dasharray="5,3" marker-end="url(#arrowhead)" />
+            <rect x="420" y="318" width="35" height="14" rx="3" fill="#34495e" />
+            <text x="437" y="328" font-size="8" fill="#fff" text-anchor="middle">1:1</text>
+
+            <!-- ─── ROS CLOSE → GL (jenis_transaksi = 'ros') ─── -->
+
+            <!-- tr_ros_header ═══(1:1)═══▶ gl_interface (atas, garis melengkung lewat atas) -->
+            <path d="M 270 70 L 460 30 L 830 30 L 950 55" fill="none" stroke="#e67e22" stroke-width="2.5"
+                stroke-dasharray="8,4" marker-end="url(#arrowhead-orange)" />
+            <rect x="600" y="12" width="130" height="18" rx="4" fill="#e67e22" />
+            <text x="665" y="25" font-size="8.5" fill="#fff" text-anchor="middle" font-weight="bold">1:1 (close → GL
+                ros)</text>
+
+            <!-- ─── INCOMING → GL (jenis_transaksi = 'incoming') ─── -->
+
+            <!-- tr_incoming_header ═══(1:1)═══▶ gl_interface -->
+            <path d="M 760 100 L 840 100" fill="none" stroke="#f39c12" stroke-width="3"
+                marker-end="url(#arrowhead-orange)" />
+            <rect x="770" y="82" width="75" height="18" rx="4" fill="#f39c12" />
+            <text x="807" y="95" font-size="8" fill="#fff" text-anchor="middle" font-weight="bold">1:1 (incoming)</text>
+
+            <!-- gl_interface ─(1:N)─▶ gl_interface_detail (vertikal) -->
+            <line x1="950" y1="165" x2="950" y2="190" stroke="#f39c12" stroke-width="2.5"
+                marker-end="url(#arrowhead-orange)" />
+            <rect x="957" y="170" width="35" height="14" rx="3" fill="#f39c12" />
+            <text x="974" y="180" font-size="8" fill="#fff" text-anchor="middle">1:N</text>
+
+            <!-- ─── INCOMING → INCOMING DETAIL ─── -->
+
+            <!-- tr_incoming_header ─(1:N)─▶ tr_incoming_detail (vertikal) -->
+            <line x1="640" y1="175" x2="640" y2="200" stroke="#2980b9" stroke-width="2.5"
+                marker-end="url(#arrowhead-blue)" />
+            <rect x="647" y="181" width="35" height="14" rx="3" fill="#2980b9" />
+            <text x="664" y="191" font-size="8" fill="#fff" text-anchor="middle">1:N</text>
+
+            <!-- ─── INCOMING DETAIL → WAREHOUSE (spread out, no overlap) ─── -->
+
+            <!-- tr_incoming_detail ─(N:1)─▶ warehouse_stock (left side, straight down) -->
+            <path d="M 570 285 L 570 385" fill="none" stroke="#8e44ad" stroke-width="2"
+                marker-end="url(#arrowhead-purple)" />
+            <rect x="575" y="330" width="35" height="14" rx="3" fill="#8e44ad" />
+            <text x="592" y="340" font-size="8" fill="#fff" text-anchor="middle">N:1</text>
+
+            <!-- tr_incoming_detail ─(1:1)─▶ warehouse_stock_coil (right side, L-path to right) -->
+            <path d="M 760 242 L 800 242 L 800 340 L 820 385" fill="none" stroke="#8e44ad" stroke-width="1.8"
+                stroke-dasharray="5,3" marker-end="url(#arrowhead-purple)" />
+            <rect x="803" y="330" width="35" height="14" rx="3" fill="#8e44ad" />
+            <text x="820" y="340" font-size="8" fill="#fff" text-anchor="middle">1:1</text>
+
+            <!-- tr_incoming_detail ─(1:1)─▶ warehouse_history (left, L-path down) -->
+            <path d="M 540 285 L 540 510" fill="none" stroke="#8e44ad" stroke-width="1.8" stroke-dasharray="5,3"
+                marker-end="url(#arrowhead-purple)" />
+            <rect x="545" y="470" width="35" height="14" rx="3" fill="#8e44ad" />
+            <text x="562" y="480" font-size="8" fill="#fff" text-anchor="middle">1:1</text>
+
+            <!-- tr_incoming_detail ─(N:1)─▶ warehouse_stock_per_day (far right path) -->
+            <path d="M 760 260 L 1080 260 L 1080 510" fill="none" stroke="#8e44ad" stroke-width="1.5"
+                stroke-dasharray="4,3" marker-end="url(#arrowhead-purple)" />
+            <rect x="1048" y="470" width="35" height="14" rx="3" fill="#8e44ad" />
+            <text x="1065" y="480" font-size="8" fill="#fff" text-anchor="middle">N:1</text>
+
+            <!-- tr_incoming_detail ─(1:1)─▶ warehouse_coil_per_day (far far right path) -->
+            <path d="M 760 270 L 1100 270 L 1100 620" fill="none" stroke="#8e44ad" stroke-width="1.5"
+                stroke-dasharray="4,3" marker-end="url(#arrowhead-purple)" />
+            <rect x="1068" y="590" width="35" height="14" rx="3" fill="#8e44ad" />
+            <text x="1085" y="600" font-size="8" fill="#fff" text-anchor="middle">1:1</text>
+
+            <!-- tr_incoming_header ─(1:N)─▶ warehouse_stock_transaction_summary (left outer path) -->
+            <path d="M 520 160 L 505 160 L 505 670 L 520 670" fill="none" stroke="#8e44ad" stroke-width="1.8"
+                stroke-dasharray="5,3" marker-end="url(#arrowhead-purple)" />
+            <rect x="488" y="560" width="35" height="14" rx="3" fill="#8e44ad" />
+            <text x="505" y="570" font-size="8" fill="#fff" text-anchor="middle">1:N</text>
+
+            <!-- warehouse_stock_transaction_summary ─(1:N)─▶ warehouse_stock_transaction_detail -->
+            <line x1="650" y1="715" x2="650" y2="750" stroke="#8e44ad" stroke-width="2"
+                marker-end="url(#arrowhead-purple)" />
+            <rect x="655" y="725" width="35" height="14" rx="3" fill="#8e44ad" />
+            <text x="672" y="735" font-size="8" fill="#fff" text-anchor="middle">1:N</text>
+
+            <!-- tr_incoming_detail ─(N:1)─▶ kartu_stok (far left outer path) -->
+            <path d="M 530 285 L 530 340 L 515 340 L 515 900 L 520 900" fill="none" stroke="#8e44ad" stroke-width="1.5"
+                stroke-dasharray="4,3" marker-end="url(#arrowhead-purple)" />
+            <rect x="488" y="800" width="35" height="14" rx="3" fill="#8e44ad" />
+            <text x="505" y="810" font-size="8" fill="#fff" text-anchor="middle">N:1</text>
+
+        </svg>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- MODUL 1: NEW ROS -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="page-break"></div>
+    <h2>2. Modul 1: New ROS (Kalkulasi Biaya Import)</h2>
+
+    <div class="module-ros">
+        <div class="module-title">2.1 tr_ros_header</div>
+        <p style="margin-bottom:8px; color:#666;">Menyimpan data header kalkulasi biaya import per shipment. 1 header =
+            1 PO.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">VARCHAR(30)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Format: NROS-MM-YY-000001</td>
+                </tr>
+                <tr>
+                    <td>id_supplier</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode supplier</td>
+                </tr>
+                <tr>
+                    <td>nm_supplier</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama supplier (denormalisasi)</td>
+                </tr>
+                <tr>
+                    <td>no_po</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Nomor PO</td>
+                </tr>
+                <tr>
+                    <td>no_surat</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>Nomor surat PO</td>
+                </tr>
+                <tr>
+                    <td>nilai_po_usd</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Nilai PO (USD) CIF/C&F</td>
+                </tr>
+                <tr>
+                    <td>kurs_pib</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Kurs PIB</td>
+                </tr>
+                <tr>
+                    <td>nilai_po_pib_rp</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Nilai PO PIB (Rp)</td>
+                </tr>
+                <tr>
+                    <td>total_kg_kotor_pib</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Total KG kotor PIB</td>
+                </tr>
+                <tr>
+                    <td>total_kg_bersih_pib</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Total KG bersih PIB</td>
+                </tr>
+                <tr>
+                    <td>cost_bm</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Bea Masuk</td>
+                </tr>
+                <tr>
+                    <td>cost_bm_kite</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>BM KITE</td>
+                </tr>
+                <tr>
+                    <td>cost_bmt</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Bea Masuk Tambahan</td>
+                </tr>
+                <tr>
+                    <td>cost_cukai</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Cukai</td>
+                </tr>
+                <tr>
+                    <td>cost_ppn</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>PPN</td>
+                </tr>
+                <tr>
+                    <td>cost_ppnbm</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>PPnBM</td>
+                </tr>
+                <tr>
+                    <td>cost_pph_import</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>PPh Import</td>
+                </tr>
+                <tr>
+                    <td>biaya_ls</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Biaya LS (Surveyor)</td>
+                </tr>
+                <tr>
+                    <td>ppn_ls</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>PPN atas LS</td>
+                </tr>
+                <tr>
+                    <td>pph_ls</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>PPh atas LS</td>
+                </tr>
+                <tr>
+                    <td>insurance</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Biaya asuransi</td>
+                </tr>
+                <tr>
+                    <td>status</td>
+                    <td class="col-type">TINYINT(1)</td>
+                    <td></td>
+                    <td>0=Draft, 1=Final</td>
+                </tr>
+                <tr>
+                    <td>status_incoming</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>saved / submitted / closed</td>
+                </tr>
+                <tr>
+                    <td>file_original_name</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama asli file packing list</td>
+                </tr>
+                <tr>
+                    <td>file_hash_name</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama file terenkripsi di server</td>
+                </tr>
+                <tr>
+                    <td>submitted_by</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User yang submit</td>
+                </tr>
+                <tr>
+                    <td>submitted_date</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal submit</td>
+                </tr>
+                <tr>
+                    <td>revised_by</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User yang revisi</td>
+                </tr>
+                <tr>
+                    <td>revised_date</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal revisi</td>
+                </tr>
+                <tr>
+                    <td>revision_note</td>
+                    <td class="col-type">TEXT</td>
+                    <td></td>
+                    <td>Catatan revisi</td>
+                </tr>
+                <tr>
+                    <td>created_by</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User pembuat</td>
+                </tr>
+                <tr>
+                    <td>created_on</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal dibuat</td>
+                </tr>
+                <tr>
+                    <td>modified_by</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User terakhir edit</td>
+                </tr>
+                <tr>
+                    <td>modified_on</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal terakhir edit</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-ros">
+        <div class="module-title">2.2 tr_ros_material</div>
+        <p style="margin-bottom:8px; color:#666;">Detail material per ROS beserta kalkulasi cost book.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Auto increment</td>
+                </tr>
+                <tr>
+                    <td class="col-fk">id_ros</td>
+                    <td class="col-type">VARCHAR(30)</td>
+                    <td><span class="badge badge-fk">FK</span></td>
+                    <td>→ tr_ros_header.id</td>
+                </tr>
+                <tr>
+                    <td>id_po_detail</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>FK ke dt_trans_po.id</td>
+                </tr>
+                <tr>
+                    <td>id_barang</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode material</td>
+                </tr>
+                <tr>
+                    <td>nm_barang</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama di PO (sistem)</td>
+                </tr>
+                <tr>
+                    <td>nm_erp</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama di ERP (real)</td>
+                </tr>
+                <tr>
+                    <td>nm_alias</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama PO (alias/trade name)</td>
+                </tr>
+                <tr>
+                    <td>kg_unit</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Total Kg Unit</td>
+                </tr>
+                <tr>
+                    <td>unit_price_usd</td>
+                    <td class="col-type">DECIMAL(18,6)</td>
+                    <td></td>
+                    <td>Harga satuan (USD)</td>
+                </tr>
+                <tr>
+                    <td>total_value_usd</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Total Value (USD)</td>
+                </tr>
+                <tr>
+                    <td>total_value_rp</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Total Value (Rp) = usd × kurs</td>
+                </tr>
+                <tr>
+                    <td>bm_persen</td>
+                    <td class="col-type">DECIMAL(8,2)</td>
+                    <td></td>
+                    <td>BM % dari HS Code</td>
+                </tr>
+                <tr>
+                    <td>bm_rp</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>BM (Rp) = value_rp × bm%</td>
+                </tr>
+                <tr>
+                    <td>prorate_ls</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Prorate biaya LS</td>
+                </tr>
+                <tr>
+                    <td>forwarding_cost</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Rp 200 × kg_unit</td>
+                </tr>
+                <tr>
+                    <td>prorate_insurance</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Prorate asuransi</td>
+                </tr>
+                <tr>
+                    <td>prorate_others</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Prorate biaya lain-lain</td>
+                </tr>
+                <tr>
+                    <td>total_nilai_inventory</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Total nilai inventory</td>
+                </tr>
+                <tr>
+                    <td>cost_book</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Costbook = total_nilai / kg_unit</td>
+                </tr>
+                <tr>
+                    <td>ls_flag</td>
+                    <td class="col-type">ENUM('YA','TIDAK')</td>
+                    <td></td>
+                    <td>Apakah kena biaya LS</td>
+                </tr>
+                <tr>
+                    <td>created_by</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User pembuat</td>
+                </tr>
+                <tr>
+                    <td>created_on</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal dibuat</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-ros">
+        <div class="module-title">2.3 tr_ros_material_coil</div>
+        <p style="margin-bottom:8px; color:#666;">Data fisik individual coil per material (dari packing list).</p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Auto increment</td>
+                </tr>
+                <tr>
+                    <td class="col-fk">id_ros_material</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-fk">FK</span></td>
+                    <td>→ tr_ros_material.id</td>
+                </tr>
+                <tr>
+                    <td>no_coil</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>Nomor coil</td>
+                </tr>
+                <tr>
+                    <td>berat_kotor</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Gross Weight (KG)</td>
+                </tr>
+                <tr>
+                    <td>berat_bersih</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Net Weight (KG)</td>
+                </tr>
+                <tr>
+                    <td>panjang</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Length (meter)</td>
+                </tr>
+                <tr>
+                    <td>bpm</td>
+                    <td class="col-type">DECIMAL(10,4)</td>
+                    <td></td>
+                    <td>BPM</td>
+                </tr>
+                <tr>
+                    <td>kode_internal</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>Kode internal (generated)</td>
+                </tr>
+                <tr>
+                    <td>id_gudang_ke</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>ID gudang tujuan</td>
+                </tr>
+                <tr>
+                    <td>kd_gudang_ke</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>Kode gudang tujuan (PRO/SLI)</td>
+                </tr>
+                <tr>
+                    <td>status_qc</td>
+                    <td class="col-type">VARCHAR(10)</td>
+                    <td></td>
+                    <td>OK / NG</td>
+                </tr>
+                <tr>
+                    <td>price_per_coil</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Harga per coil (Rp)</td>
+                </tr>
+                <tr>
+                    <td>created_by</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User pembuat</td>
+                </tr>
+                <tr>
+                    <td>created_on</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal dibuat</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-ros">
+        <div class="module-title">2.4 tr_ros_others</div>
+        <p style="margin-bottom:8px; color:#666;">Biaya lain-lain dinamis (trucking, THC, dll).</p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Auto increment</td>
+                </tr>
+                <tr>
+                    <td class="col-fk">id_ros</td>
+                    <td class="col-type">VARCHAR(30)</td>
+                    <td><span class="badge badge-fk">FK</span></td>
+                    <td>→ tr_ros_header.id</td>
+                </tr>
+                <tr>
+                    <td>keterangan</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Deskripsi biaya</td>
+                </tr>
+                <tr>
+                    <td>nilai</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Nilai biaya (Rp)</td>
+                </tr>
+                <tr>
+                    <td>created_by</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User pembuat</td>
+                </tr>
+                <tr>
+                    <td>created_on</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal dibuat</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-ros">
+        <div class="module-title">2.5 tr_ros_upload_temp</div>
+        <p style="margin-bottom:8px; color:#666;">Data sementara saat upload packing list (sebelum disimpan permanen).
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Auto increment</td>
+                </tr>
+                <tr>
+                    <td class="col-fk">id_ros</td>
+                    <td class="col-type">VARCHAR(30)</td>
+                    <td><span class="badge badge-fk">FK</span></td>
+                    <td>→ tr_ros_header.id</td>
+                </tr>
+                <tr>
+                    <td>session_id</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td><span class="badge badge-idx">IDX</span></td>
+                    <td>Session user untuk isolasi data</td>
+                </tr>
+                <tr>
+                    <td>no_coil</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>Nomor coil</td>
+                </tr>
+                <tr>
+                    <td>nama_sesuai_po</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Key matching ke material</td>
+                </tr>
+                <tr>
+                    <td>coil_number</td>
+                    <td class="col-type">INT(5)</td>
+                    <td></td>
+                    <td>Urutan coil</td>
+                </tr>
+                <tr>
+                    <td>berat_bersih</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Net Weight</td>
+                </tr>
+                <tr>
+                    <td>berat_kotor</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Gross Weight</td>
+                </tr>
+                <tr>
+                    <td>panjang</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Length</td>
+                </tr>
+                <tr>
+                    <td>bpm</td>
+                    <td class="col-type">DECIMAL(10,4)</td>
+                    <td></td>
+                    <td>BPM</td>
+                </tr>
+                <tr>
+                    <td>id_ros_material</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>Matched material ID</td>
+                </tr>
+                <tr>
+                    <td>kode_internal</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>Generated kode internal</td>
+                </tr>
+                <tr>
+                    <td>is_matched</td>
+                    <td class="col-type">TINYINT(1)</td>
+                    <td></td>
+                    <td>1=matched, 0=not matched</td>
+                </tr>
+                <tr>
+                    <td>created_on</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal dibuat</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- MODUL 2: FINALIZE INCOMING -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="page-break"></div>
+    <h2>3. Modul 2: Finalize Incoming</h2>
+
+    <div class="module-inc">
+        <div class="module-title">3.1 tr_incoming_header</div>
+        <p style="margin-bottom:8px; color:#666;">Record resmi penerimaan barang. Dibuat saat proses finalize berhasil.
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">kode_trans</td>
+                    <td class="col-type">VARCHAR(30)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Format: INC-YYMM-000001</td>
+                </tr>
+                <tr>
+                    <td class="col-fk">no_ros</td>
+                    <td class="col-type">VARCHAR(30)</td>
+                    <td><span class="badge badge-fk">FK</span></td>
+                    <td>→ tr_ros_header.id</td>
+                </tr>
+                <tr>
+                    <td>no_po</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Nomor PO</td>
+                </tr>
+                <tr>
+                    <td>no_surat</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>Nomor surat PO</td>
+                </tr>
+                <tr>
+                    <td>id_supplier</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode supplier</td>
+                </tr>
+                <tr>
+                    <td>nm_supplier</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama supplier</td>
+                </tr>
+                <tr>
+                    <td>tanggal</td>
+                    <td class="col-type">DATE</td>
+                    <td></td>
+                    <td>Tanggal incoming</td>
+                </tr>
+                <tr>
+                    <td>total_berat_bersih</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Total berat bersih semua coil</td>
+                </tr>
+                <tr>
+                    <td>total_nilai</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Total nilai incoming (Rp)</td>
+                </tr>
+                <tr>
+                    <td>file_dokumen</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>File dokumen (hash)</td>
+                </tr>
+                <tr>
+                    <td>file_original</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama asli file</td>
+                </tr>
+                <tr>
+                    <td>status</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>finalized</td>
+                </tr>
+                <tr>
+                    <td>created_by</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User pembuat</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal dibuat</td>
+                </tr>
+                <tr>
+                    <td>finalized_by</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User yang finalize</td>
+                </tr>
+                <tr>
+                    <td>finalized_at</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal finalize</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-inc">
+        <div class="module-title">3.2 tr_incoming_detail</div>
+        <p style="margin-bottom:8px; color:#666;">Detail setiap coil yang masuk gudang (1 row per coil).</p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Auto increment</td>
+                </tr>
+                <tr>
+                    <td class="col-fk">kode_trans</td>
+                    <td class="col-type">VARCHAR(30)</td>
+                    <td><span class="badge badge-fk">FK</span></td>
+                    <td>→ tr_incoming_header.kode_trans</td>
+                </tr>
+                <tr>
+                    <td class="col-fk">id_ros_material_coil</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-fk">FK</span></td>
+                    <td>→ tr_ros_material_coil.id</td>
+                </tr>
+                <tr>
+                    <td>id_ros_material</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>→ tr_ros_material.id</td>
+                </tr>
+                <tr>
+                    <td>id_material</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode material</td>
+                </tr>
+                <tr>
+                    <td>nm_material</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama material ERP</td>
+                </tr>
+                <tr>
+                    <td>trade_name</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Trade name / alias</td>
+                </tr>
+                <tr>
+                    <td>no_coil</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>Nomor coil</td>
+                </tr>
+                <tr>
+                    <td>kode_internal</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>Kode internal</td>
+                </tr>
+                <tr>
+                    <td>berat_kotor</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Gross Weight</td>
+                </tr>
+                <tr>
+                    <td>berat_bersih</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Net Weight</td>
+                </tr>
+                <tr>
+                    <td>panjang</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Length</td>
+                </tr>
+                <tr>
+                    <td>bpm</td>
+                    <td class="col-type">DECIMAL(10,4)</td>
+                    <td></td>
+                    <td>BPM</td>
+                </tr>
+                <tr>
+                    <td>id_gudang_ke</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>ID gudang tujuan</td>
+                </tr>
+                <tr>
+                    <td>kd_gudang_ke</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>Kode gudang (PRO/SLI)</td>
+                </tr>
+                <tr>
+                    <td>status_qc</td>
+                    <td class="col-type">VARCHAR(10)</td>
+                    <td></td>
+                    <td>OK / NG</td>
+                </tr>
+                <tr>
+                    <td>price_per_coil</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Harga per coil (Rp)</td>
+                </tr>
+                <tr>
+                    <td>cost_book</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Costbook per KG</td>
+                </tr>
+                <tr>
+                    <td>nilai_inventory</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Nilai inventory coil</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- MODUL 3: GL INTERFACE -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="page-break"></div>
+    <h2>4. Modul 3: GL Interface (Jurnal Akuntansi)</h2>
+
+    <div class="module-gl">
+        <div class="module-title">4.1 gl_interface</div>
+        <p style="margin-bottom:8px; color:#666;">Header jurnal akuntansi yang di-generate otomatis setelah finalize.
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Auto increment</td>
+                </tr>
+                <tr>
+                    <td>nomor</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Nomor JV (101-AJVyymm + urut)</td>
+                </tr>
+                <tr>
+                    <td>tgl</td>
+                    <td class="col-type">DATE</td>
+                    <td></td>
+                    <td>Tanggal jurnal</td>
+                </tr>
+                <tr>
+                    <td>bulan</td>
+                    <td class="col-type">VARCHAR(10)</td>
+                    <td></td>
+                    <td>Bulan</td>
+                </tr>
+                <tr>
+                    <td>tahun</td>
+                    <td class="col-type">VARCHAR(10)</td>
+                    <td></td>
+                    <td>Tahun</td>
+                </tr>
+                <tr>
+                    <td>kdcab</td>
+                    <td class="col-type">VARCHAR(10)</td>
+                    <td></td>
+                    <td>Kode cabang (101)</td>
+                </tr>
+                <tr>
+                    <td>jenis</td>
+                    <td class="col-type">VARCHAR(10)</td>
+                    <td></td>
+                    <td>Jenis jurnal (JV)</td>
+                </tr>
+                <tr>
+                    <td>keterangan</td>
+                    <td class="col-type">TEXT</td>
+                    <td></td>
+                    <td>Deskripsi jurnal</td>
+                </tr>
+                <tr>
+                    <td>jenis_transaksi</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>incoming / payment / dll</td>
+                </tr>
+                <tr>
+                    <td>status</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>pending / posted</td>
+                </tr>
+                <tr>
+                    <td>user_id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User pembuat</td>
+                </tr>
+                <tr>
+                    <td>memo</td>
+                    <td class="col-type">JSON</td>
+                    <td></td>
+                    <td>Metadata (supplier, reff, ros)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="note-box">
+            <strong>Format Memo (JSON):</strong><br>
+            <code>{ "id_supplier": "...", "nama_supplier": "...", "no_reff": "no_surat", "no_request": "kode_trans", "no_ros": "..." }</code>
+        </div>
+    </div>
+
+    <div class="module-gl">
+        <div class="module-title">4.2 gl_interface_detail</div>
+        <p style="margin-bottom:8px; color:#666;">Baris debet/kredit per jurnal.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Auto increment</td>
+                </tr>
+                <tr>
+                    <td class="col-fk">id_gl_interface</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-fk">FK</span></td>
+                    <td>→ gl_interface.id</td>
+                </tr>
+                <tr>
+                    <td>no_batch</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Nomor batch JV</td>
+                </tr>
+                <tr>
+                    <td>tipe</td>
+                    <td class="col-type">VARCHAR(10)</td>
+                    <td></td>
+                    <td>Tipe (JV)</td>
+                </tr>
+                <tr>
+                    <td>tanggal</td>
+                    <td class="col-type">DATE</td>
+                    <td></td>
+                    <td>Tanggal jurnal</td>
+                </tr>
+                <tr>
+                    <td>no_perkiraan</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>Nomor COA</td>
+                </tr>
+                <tr>
+                    <td>id_material</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode material (nullable)</td>
+                </tr>
+                <tr>
+                    <td>nm_material</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama material (nullable)</td>
+                </tr>
+                <tr>
+                    <td>id_gudang</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>ID gudang (nullable)</td>
+                </tr>
+                <tr>
+                    <td>no_coil</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>Nomor coil (nullable)</td>
+                </tr>
+                <tr>
+                    <td>keterangan</td>
+                    <td class="col-type">TEXT</td>
+                    <td></td>
+                    <td>Deskripsi baris jurnal</td>
+                </tr>
+                <tr>
+                    <td>no_reff</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>No surat PO sebagai referensi</td>
+                </tr>
+                <tr>
+                    <td>no_request</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode trans incoming</td>
+                </tr>
+                <tr>
+                    <td>debet</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Nilai debet</td>
+                </tr>
+                <tr>
+                    <td>kredit</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Nilai kredit</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal dibuat</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="note-box">
+            <strong>Jurnal Pattern A — Close ROS (jenis_transaksi = 'ros'):</strong><br>
+            <table style="width:auto; margin:5px 0;">
+                <tr>
+                    <th>COA</th>
+                    <th>Nama</th>
+                    <th>Debet</th>
+                    <th>Kredit</th>
+                </tr>
+                <tr>
+                    <td>1105-01-03</td>
+                    <td>Persediaan In-Transit</td>
+                    <td>xxx</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>1104-01-02</td>
+                    <td>Advance Purchase ($)</td>
+                    <td>-</td>
+                    <td>xxx</td>
+                </tr>
+                <tr>
+                    <td>1108-01-09</td>
+                    <td>BM Dibayar Dimuka</td>
+                    <td>-</td>
+                    <td>xxx</td>
+                </tr>
+                <tr>
+                    <td>1111-01-01</td>
+                    <td>Prepaid Expense LS</td>
+                    <td>-</td>
+                    <td>xxx</td>
+                </tr>
+                <tr>
+                    <td>2104-01-14</td>
+                    <td>Hutang Biaya Forwarding</td>
+                    <td>-</td>
+                    <td>xxx</td>
+                </tr>
+                <tr>
+                    <td>1111-01-02</td>
+                    <td>Prepaid Expense Insurance</td>
+                    <td>-</td>
+                    <td>xxx</td>
+                </tr>
+                <tr>
+                    <td>1111-01-03</td>
+                    <td>Prepaid Expense Other</td>
+                    <td>-</td>
+                    <td>xxx</td>
+                </tr>
+                <tr>
+                    <td>7201-01-07</td>
+                    <td>Selisih Kurs</td>
+                    <td>xxx/-</td>
+                    <td>-/xxx</td>
+                </tr>
+                <tr>
+                    <td>7201-01-05</td>
+                    <td>Pembulatan</td>
+                    <td>xxx/-</td>
+                    <td>-/xxx</td>
+                </tr>
+            </table>
+            <br>
+            <strong>Jurnal Pattern B — Finalize Incoming (jenis_transaksi = 'incoming'):</strong><br>
+            <table style="width:auto; margin:5px 0;">
+                <tr>
+                    <th>COA</th>
+                    <th>Nama</th>
+                    <th>Debet</th>
+                    <th>Kredit</th>
+                </tr>
+                <tr>
+                    <td>1105-01-01</td>
+                    <td>Persediaan Produksi</td>
+                    <td>xxx</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>1105-01-02</td>
+                    <td>Persediaan Slitting</td>
+                    <td>xxx</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>1105-01-03</td>
+                    <td>Persediaan In-Transit</td>
+                    <td>-</td>
+                    <td>xxx</td>
+                </tr>
+            </table>
+            <em style="font-size:9px; color:#888;">Jurnal B membalik saldo In-Transit yang di-debet oleh Jurnal A.</em>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- MODUL 4: WAREHOUSE -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="page-break"></div>
+    <h2>5. Modul 4: Warehouse (Stok & Riwayat)</h2>
+
+    <div class="module-wh">
+        <div class="module-title">5.1 warehouse_stock</div>
+        <p style="margin-bottom:8px; color:#666;">Posisi stok aktual per material per gudang. Costbook dihitung dengan
+            metode Moving Average.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Auto increment</td>
+                </tr>
+                <tr>
+                    <td>code_lv1</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Level 1 hierarki material</td>
+                </tr>
+                <tr>
+                    <td>code_lv2</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Level 2 hierarki material</td>
+                </tr>
+                <tr>
+                    <td>code_lv3</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Level 3 hierarki material</td>
+                </tr>
+                <tr>
+                    <td>code_lv4</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td><span class="badge badge-idx">IDX</span></td>
+                    <td>Kode material (id_material)</td>
+                </tr>
+                <tr>
+                    <td>code_incoming</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode trans terakhir incoming</td>
+                </tr>
+                <tr>
+                    <td>nm_material</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama material</td>
+                </tr>
+                <tr>
+                    <td>trade_name</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Trade name</td>
+                </tr>
+                <tr>
+                    <td>id_gudang</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-idx">IDX</span></td>
+                    <td>ID gudang</td>
+                </tr>
+                <tr>
+                    <td>kd_gudang</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>Kode gudang</td>
+                </tr>
+                <tr>
+                    <td>id_unit</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>Satuan</td>
+                </tr>
+                <tr>
+                    <td>id_unit_packing</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>Satuan packing</td>
+                </tr>
+                <tr>
+                    <td>begining</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Saldo awal</td>
+                </tr>
+                <tr>
+                    <td>incoming</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Total incoming</td>
+                </tr>
+                <tr>
+                    <td>outgoing</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Total outgoing</td>
+                </tr>
+                <tr>
+                    <td>qty_stock</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Saldo stok saat ini</td>
+                </tr>
+                <tr>
+                    <td>qty_booking</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty di-booking (reserved)</td>
+                </tr>
+                <tr>
+                    <td>qty_free</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty tersedia (free)</td>
+                </tr>
+                <tr>
+                    <td>use_qty_free</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty free yang sudah dipakai</td>
+                </tr>
+                <tr>
+                    <td>harga_beli</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Costbook (moving average)</td>
+                </tr>
+                <tr>
+                    <td>total_nilai</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Total nilai = qty × harga_beli</td>
+                </tr>
+                <tr>
+                    <td>update_by</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User terakhir update</td>
+                </tr>
+                <tr>
+                    <td>update_date</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal terakhir update</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="formula">
+            Moving Average: costbook = (saldo_lama + nilai_baru) / (qty_lama + qty_masuk)
+        </div>
+    </div>
+
+    <div class="module-wh">
+        <div class="module-title">5.2 warehouse_stock_coil</div>
+        <p style="margin-bottom:8px; color:#666;">Tracking individual coil di gudang. 1 record = 1 coil fisik di 1
+            gudang.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Auto increment</td>
+                </tr>
+                <tr>
+                    <td>id_material</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td><span class="badge badge-idx">IDX</span></td>
+                    <td>Kode material</td>
+                </tr>
+                <tr>
+                    <td>no_coil</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td><span class="badge badge-idx">IDX</span></td>
+                    <td>Nomor coil (unique per gudang)</td>
+                </tr>
+                <tr>
+                    <td>kode_internal</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>Kode internal</td>
+                </tr>
+                <tr>
+                    <td>nm_material</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama material</td>
+                </tr>
+                <tr>
+                    <td>trade_name</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Trade name</td>
+                </tr>
+                <tr>
+                    <td>gross_weight</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Berat kotor</td>
+                </tr>
+                <tr>
+                    <td>net_weight</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Berat bersih</td>
+                </tr>
+                <tr>
+                    <td>length</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Panjang</td>
+                </tr>
+                <tr>
+                    <td>id_gudang</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-idx">IDX</span></td>
+                    <td>ID gudang</td>
+                </tr>
+                <tr>
+                    <td>kd_gudang</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>Kode gudang</td>
+                </tr>
+                <tr>
+                    <td>no_ipp</td>
+                    <td class="col-type">VARCHAR(30)</td>
+                    <td></td>
+                    <td>Kode trans incoming</td>
+                </tr>
+                <tr>
+                    <td>no_ros</td>
+                    <td class="col-type">VARCHAR(30)</td>
+                    <td></td>
+                    <td>ID ROS asal</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-wh">
+        <div class="module-title">5.3 warehouse_history</div>
+        <p style="margin-bottom:8px; color:#666;">Log riwayat setiap pergerakan stok (incoming, transfer, outgoing). 1
+            record per event per coil.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Auto increment</td>
+                </tr>
+                <tr>
+                    <td>id_material</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode material</td>
+                </tr>
+                <tr>
+                    <td>nm_material</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama material</td>
+                </tr>
+                <tr>
+                    <td>id_gudang</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>ID gudang</td>
+                </tr>
+                <tr>
+                    <td>kd_gudang</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>Kode gudang</td>
+                </tr>
+                <tr>
+                    <td>id_gudang_dari</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>ID gudang asal</td>
+                </tr>
+                <tr>
+                    <td>kd_gudang_dari</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>Kode gudang asal</td>
+                </tr>
+                <tr>
+                    <td>id_gudang_ke</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>ID gudang tujuan</td>
+                </tr>
+                <tr>
+                    <td>kd_gudang_ke</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>Kode gudang tujuan</td>
+                </tr>
+                <tr>
+                    <td>qty_stock_awal</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty sebelum transaksi</td>
+                </tr>
+                <tr>
+                    <td>qty_stock_akhir</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty setelah transaksi</td>
+                </tr>
+                <tr>
+                    <td>no_ipp</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode trans incoming</td>
+                </tr>
+                <tr>
+                    <td>jumlah_mat</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty yang masuk</td>
+                </tr>
+                <tr>
+                    <td>ket</td>
+                    <td class="col-type">TEXT</td>
+                    <td></td>
+                    <td>Keterangan (Coil, PO, Kurs)</td>
+                </tr>
+                <tr>
+                    <td>no_coil</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>Nomor coil</td>
+                </tr>
+                <tr>
+                    <td>harga_beli</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Harga beli per unit</td>
+                </tr>
+                <tr>
+                    <td>total_harga</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Total harga transaksi</td>
+                </tr>
+                <tr>
+                    <td>saldo_awal</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Saldo (Rp) sebelum</td>
+                </tr>
+                <tr>
+                    <td>saldo_akhir</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Saldo (Rp) sesudah</td>
+                </tr>
+                <tr>
+                    <td>harga_baru</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Costbook setelah transaksi</td>
+                </tr>
+                <tr>
+                    <td>harga_lama</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Costbook sebelum transaksi</td>
+                </tr>
+                <tr>
+                    <td>update_by</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User</td>
+                </tr>
+                <tr>
+                    <td>update_date</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-wh">
+        <div class="module-title">5.4 warehouse_stock_per_day</div>
+        <p style="margin-bottom:8px; color:#666;">Snapshot posisi stok harian per material per gudang. 1 record per
+            material per gudang per hari.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Auto increment</td>
+                </tr>
+                <tr>
+                    <td>id_material</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode material</td>
+                </tr>
+                <tr>
+                    <td>nm_material</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama material</td>
+                </tr>
+                <tr>
+                    <td>id_gudang</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>ID gudang</td>
+                </tr>
+                <tr>
+                    <td>kd_gudang</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>Kode gudang</td>
+                </tr>
+                <tr>
+                    <td>qty_stock</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty stok per hari</td>
+                </tr>
+                <tr>
+                    <td>qty_booking</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty booking per hari</td>
+                </tr>
+                <tr>
+                    <td>qty_free</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty free per hari</td>
+                </tr>
+                <tr>
+                    <td>harga_beli</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Costbook per hari</td>
+                </tr>
+                <tr>
+                    <td>total_nilai</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Total nilai per hari</td>
+                </tr>
+                <tr>
+                    <td>hist_date</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal snapshot</td>
+                </tr>
+                <tr>
+                    <td>hist_by</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-wh">
+        <div class="module-title">5.5 warehouse_coil_per_day</div>
+        <p style="margin-bottom:8px; color:#666;">Snapshot individual coil per hari. Status IN/OUT.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Auto increment</td>
+                </tr>
+                <tr>
+                    <td>id_material</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode material</td>
+                </tr>
+                <tr>
+                    <td>nm_material</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama material</td>
+                </tr>
+                <tr>
+                    <td>id_gudang</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>ID gudang</td>
+                </tr>
+                <tr>
+                    <td>kd_gudang</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>Kode gudang</td>
+                </tr>
+                <tr>
+                    <td>no_coil</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>Nomor coil</td>
+                </tr>
+                <tr>
+                    <td>kode_internal</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>Kode internal</td>
+                </tr>
+                <tr>
+                    <td>gross_weight</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Berat kotor</td>
+                </tr>
+                <tr>
+                    <td>net_weight</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Berat bersih</td>
+                </tr>
+                <tr>
+                    <td>length</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Panjang</td>
+                </tr>
+                <tr>
+                    <td>status</td>
+                    <td class="col-type">VARCHAR(10)</td>
+                    <td></td>
+                    <td>IN / OUT</td>
+                </tr>
+                <tr>
+                    <td>hist_date</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal snapshot</td>
+                </tr>
+                <tr>
+                    <td>hist_by</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-wh">
+        <div class="module-title">5.6 warehouse_stock_transaction_summary</div>
+        <p style="margin-bottom:8px; color:#666;">Ringkasan incoming per material per gudang (level aggregat).</p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Auto increment</td>
+                </tr>
+                <tr>
+                    <td class="col-fk">no_ipp</td>
+                    <td class="col-type">VARCHAR(30)</td>
+                    <td><span class="badge badge-fk">FK</span></td>
+                    <td>→ tr_incoming_header.kode_trans</td>
+                </tr>
+                <tr>
+                    <td>id_material</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode material</td>
+                </tr>
+                <tr>
+                    <td>nm_material</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama material</td>
+                </tr>
+                <tr>
+                    <td>id_gudang</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>ID gudang</td>
+                </tr>
+                <tr>
+                    <td>kd_gudang</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>Kode gudang</td>
+                </tr>
+                <tr>
+                    <td>tanggal</td>
+                    <td class="col-type">DATE</td>
+                    <td></td>
+                    <td>Tanggal incoming</td>
+                </tr>
+                <tr>
+                    <td>jumlah_coil</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>Jumlah coil masuk</td>
+                </tr>
+                <tr>
+                    <td>qty_awal</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty sebelum incoming</td>
+                </tr>
+                <tr>
+                    <td>qty_transaksi</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty yang masuk</td>
+                </tr>
+                <tr>
+                    <td>qty_akhir</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty setelah incoming</td>
+                </tr>
+                <tr>
+                    <td>costbook</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Costbook akhir</td>
+                </tr>
+                <tr>
+                    <td>total_harga</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Total nilai incoming</td>
+                </tr>
+                <tr>
+                    <td>saldo_awal</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Saldo Rp sebelum</td>
+                </tr>
+                <tr>
+                    <td>saldo_akhir</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Saldo Rp sesudah</td>
+                </tr>
+                <tr>
+                    <td>harga_lama</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Costbook sebelum</td>
+                </tr>
+                <tr>
+                    <td>created_by</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal dibuat</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-wh">
+        <div class="module-title">5.7 warehouse_stock_transaction_detail</div>
+        <p style="margin-bottom:8px; color:#666;">Detail individual coil per incoming summary.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Auto increment</td>
+                </tr>
+                <tr>
+                    <td class="col-fk">no_ipp</td>
+                    <td class="col-type">VARCHAR(30)</td>
+                    <td><span class="badge badge-fk">FK</span></td>
+                    <td>→ tr_incoming_header.kode_trans</td>
+                </tr>
+                <tr>
+                    <td>id_material</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode material</td>
+                </tr>
+                <tr>
+                    <td>nm_material</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama material</td>
+                </tr>
+                <tr>
+                    <td>id_gudang</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>ID gudang</td>
+                </tr>
+                <tr>
+                    <td>kd_gudang</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>Kode gudang</td>
+                </tr>
+                <tr>
+                    <td>no_coil</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>Nomor coil</td>
+                </tr>
+                <tr>
+                    <td>kode_internal</td>
+                    <td class="col-type">VARCHAR(100)</td>
+                    <td></td>
+                    <td>Kode internal</td>
+                </tr>
+                <tr>
+                    <td>gross_weight</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Berat kotor</td>
+                </tr>
+                <tr>
+                    <td>net_weight</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Berat bersih</td>
+                </tr>
+                <tr>
+                    <td>length</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Panjang</td>
+                </tr>
+                <tr>
+                    <td>price_per_coil</td>
+                    <td class="col-type">DECIMAL(18,2)</td>
+                    <td></td>
+                    <td>Harga per coil</td>
+                </tr>
+                <tr>
+                    <td>cost_book</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Costbook</td>
+                </tr>
+                <tr>
+                    <td>status_qc</td>
+                    <td class="col-type">VARCHAR(10)</td>
+                    <td></td>
+                    <td>OK / NG</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal dibuat</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="module-wh">
+        <div class="module-title">5.8 kartu_stok</div>
+        <p style="margin-bottom:8px; color:#666;">Pencatatan kronologis pergerakan stok (seperti buku besar
+            stok/ledger).</p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="25%">Kolom</th>
+                    <th width="20%">Tipe Data</th>
+                    <th width="8%">Key</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-pk">id</td>
+                    <td class="col-type">INT(11)</td>
+                    <td><span class="badge badge-pk">PK</span></td>
+                    <td>Auto increment</td>
+                </tr>
+                <tr>
+                    <td>no_transaksi</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode trans incoming</td>
+                </tr>
+                <tr>
+                    <td>id_gudang</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>ID gudang</td>
+                </tr>
+                <tr>
+                    <td>transaksi</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Jenis: Incoming Material</td>
+                </tr>
+                <tr>
+                    <td>tgl_transaksi</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal transaksi</td>
+                </tr>
+                <tr>
+                    <td>code_lv4</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode material (legacy)</td>
+                </tr>
+                <tr>
+                    <td>code_material</td>
+                    <td class="col-type">VARCHAR(50)</td>
+                    <td></td>
+                    <td>Kode material</td>
+                </tr>
+                <tr>
+                    <td>nm_material</td>
+                    <td class="col-type">VARCHAR(255)</td>
+                    <td></td>
+                    <td>Nama material</td>
+                </tr>
+                <tr>
+                    <td>qty</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty sebelum transaksi</td>
+                </tr>
+                <tr>
+                    <td>qty_book</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty booking sebelum</td>
+                </tr>
+                <tr>
+                    <td>qty_free</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty free sebelum</td>
+                </tr>
+                <tr>
+                    <td>qty_transaksi</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty yang masuk</td>
+                </tr>
+                <tr>
+                    <td>qty_akhir</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty setelah transaksi</td>
+                </tr>
+                <tr>
+                    <td>qty_book_akhir</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty booking setelah</td>
+                </tr>
+                <tr>
+                    <td>qty_free_akhir</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Qty free setelah</td>
+                </tr>
+                <tr>
+                    <td>harga_stok</td>
+                    <td class="col-type">DECIMAL(18,4)</td>
+                    <td></td>
+                    <td>Costbook saat transaksi</td>
+                </tr>
+                <tr>
+                    <td>status_transaksi</td>
+                    <td class="col-type">VARCHAR(20)</td>
+                    <td></td>
+                    <td>in / out</td>
+                </tr>
+                <tr>
+                    <td>created_by</td>
+                    <td class="col-type">INT(11)</td>
+                    <td></td>
+                    <td>User</td>
+                </tr>
+                <tr>
+                    <td>created_on</td>
+                    <td class="col-type">DATETIME</td>
+                    <td></td>
+                    <td>Tanggal</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- RINGKASAN RELASI -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="page-break"></div>
+    <h2>6. Ringkasan Relasi Antar Tabel</h2>
+
+    <table class="rel-table">
         <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
+            <tr>
+                <th width="25%">Dari (Parent)</th>
+                <th width="25%">Ke (Child)</th>
+                <th width="8%">Tipe</th>
+                <th>Keterangan</th>
+            </tr>
         </thead>
         <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">INT(11)</td><td><span class="badge badge-pk">PK</span></td><td>Auto increment</td></tr>
-            <tr><td>code_lv1</td><td class="col-type">VARCHAR(50)</td><td></td><td>Level 1 hierarki material</td></tr>
-            <tr><td>code_lv2</td><td class="col-type">VARCHAR(50)</td><td></td><td>Level 2 hierarki material</td></tr>
-            <tr><td>code_lv3</td><td class="col-type">VARCHAR(50)</td><td></td><td>Level 3 hierarki material</td></tr>
-            <tr><td>code_lv4</td><td class="col-type">VARCHAR(50)</td><td><span class="badge badge-idx">IDX</span></td><td>Kode material (id_material)</td></tr>
-            <tr><td>code_incoming</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode trans terakhir incoming</td></tr>
-            <tr><td>nm_material</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama material</td></tr>
-            <tr><td>trade_name</td><td class="col-type">VARCHAR(255)</td><td></td><td>Trade name</td></tr>
-            <tr><td>id_gudang</td><td class="col-type">INT(11)</td><td><span class="badge badge-idx">IDX</span></td><td>ID gudang</td></tr>
-            <tr><td>kd_gudang</td><td class="col-type">VARCHAR(20)</td><td></td><td>Kode gudang</td></tr>
-            <tr><td>id_unit</td><td class="col-type">INT(11)</td><td></td><td>Satuan</td></tr>
-            <tr><td>id_unit_packing</td><td class="col-type">INT(11)</td><td></td><td>Satuan packing</td></tr>
-            <tr><td>begining</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Saldo awal</td></tr>
-            <tr><td>incoming</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Total incoming</td></tr>
-            <tr><td>outgoing</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Total outgoing</td></tr>
-            <tr><td>qty_stock</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Saldo stok saat ini</td></tr>
-            <tr><td>qty_booking</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty di-booking (reserved)</td></tr>
-            <tr><td>qty_free</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty tersedia (free)</td></tr>
-            <tr><td>use_qty_free</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty free yang sudah dipakai</td></tr>
-            <tr><td>harga_beli</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Costbook (moving average)</td></tr>
-            <tr><td>total_nilai</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Total nilai = qty × harga_beli</td></tr>
-            <tr><td>update_by</td><td class="col-type">INT(11)</td><td></td><td>User terakhir update</td></tr>
-            <tr><td>update_date</td><td class="col-type">DATETIME</td><td></td><td>Tanggal terakhir update</td></tr>
+            <tr>
+                <td>tr_ros_header</td>
+                <td>tr_ros_material</td>
+                <td class="rel-type">1 : N</td>
+                <td>1 ROS punya banyak material</td>
+            </tr>
+            <tr>
+                <td>tr_ros_header</td>
+                <td>tr_ros_others</td>
+                <td class="rel-type">1 : N</td>
+                <td>1 ROS punya banyak biaya lain</td>
+            </tr>
+            <tr>
+                <td>tr_ros_header</td>
+                <td>tr_ros_upload_temp</td>
+                <td class="rel-type">1 : N</td>
+                <td>Temp data upload packing list</td>
+            </tr>
+            <tr>
+                <td>tr_ros_material</td>
+                <td>tr_ros_material_coil</td>
+                <td class="rel-type">1 : N</td>
+                <td>1 material punya banyak coil</td>
+            </tr>
+            <tr>
+                <td>tr_ros_header</td>
+                <td>tr_incoming_header</td>
+                <td class="rel-type">1 : 1</td>
+                <td>1 ROS → 1 incoming (saat finalize)</td>
+            </tr>
+            <tr>
+                <td><strong>tr_ros_header</strong></td>
+                <td><strong>gl_interface</strong></td>
+                <td class="rel-type"><strong>1 : 1</strong></td>
+                <td><strong>1 ROS close → 1 jurnal GL (jenis_transaksi='ros')</strong></td>
+            </tr>
+            <tr>
+                <td>tr_incoming_header</td>
+                <td>tr_incoming_detail</td>
+                <td class="rel-type">1 : N</td>
+                <td>1 incoming punya banyak detail coil</td>
+            </tr>
+            <tr>
+                <td>tr_ros_material_coil</td>
+                <td>tr_incoming_detail</td>
+                <td class="rel-type">1 : 1</td>
+                <td>1 coil ROS = 1 detail incoming</td>
+            </tr>
+            <tr>
+                <td>tr_incoming_header</td>
+                <td>gl_interface</td>
+                <td class="rel-type">1 : 1</td>
+                <td>1 incoming = 1 jurnal GL</td>
+            </tr>
+            <tr>
+                <td>gl_interface</td>
+                <td>gl_interface_detail</td>
+                <td class="rel-type">1 : N</td>
+                <td>1 jurnal punya banyak baris D/K</td>
+            </tr>
+            <tr>
+                <td>tr_incoming_header</td>
+                <td>warehouse_stock_transaction_summary</td>
+                <td class="rel-type">1 : N</td>
+                <td>Summary per material per gudang</td>
+            </tr>
+            <tr>
+                <td>tr_incoming_header</td>
+                <td>warehouse_stock_transaction_detail</td>
+                <td class="rel-type">1 : N</td>
+                <td>Detail per coil per incoming</td>
+            </tr>
+            <tr>
+                <td>tr_incoming_detail</td>
+                <td>warehouse_stock</td>
+                <td class="rel-type">N : 1</td>
+                <td>Banyak coil update 1 row stok</td>
+            </tr>
+            <tr>
+                <td>tr_incoming_detail</td>
+                <td>warehouse_stock_coil</td>
+                <td class="rel-type">1 : 1</td>
+                <td>1 coil incoming = 1 record stok coil</td>
+            </tr>
+            <tr>
+                <td>tr_incoming_detail</td>
+                <td>warehouse_history</td>
+                <td class="rel-type">1 : 1</td>
+                <td>1 coil incoming = 1 history entry</td>
+            </tr>
+            <tr>
+                <td>tr_incoming_detail</td>
+                <td>warehouse_stock_per_day</td>
+                <td class="rel-type">N : 1</td>
+                <td>Banyak coil update 1 snapshot hari</td>
+            </tr>
+            <tr>
+                <td>tr_incoming_detail</td>
+                <td>warehouse_coil_per_day</td>
+                <td class="rel-type">1 : 1</td>
+                <td>1 coil = 1 snapshot coil hari</td>
+            </tr>
+            <tr>
+                <td>tr_incoming_detail</td>
+                <td>kartu_stok</td>
+                <td class="rel-type">N : 1</td>
+                <td>Pencatatan di kartu stok</td>
+            </tr>
         </tbody>
     </table>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- RUMUS KALKULASI -->
+    <!-- ═══════════════════════════════════════════ -->
+    <h2>7. Rumus Kalkulasi</h2>
+
+    <h3>Cost Book Material (di New ROS)</h3>
     <div class="formula">
-        Moving Average: costbook = (saldo_lama + nilai_baru) / (qty_lama + qty_masuk)
+        total_value_rp = total_value_usd × kurs_pib<br>
+        bm_rp = total_value_rp × bm_persen / 100<br>
+        forwarding_cost = 200 × kg_unit<br>
+        total_nilai_inventory = total_value_rp + bm_rp + prorate_ls + forwarding_cost + prorate_insurance +
+        prorate_others<br>
+        <strong>cost_book = total_nilai_inventory / kg_unit</strong>
     </div>
-</div>
 
-<div class="module-wh">
-    <div class="module-title">5.2 warehouse_stock_coil</div>
-    <p style="margin-bottom:8px; color:#666;">Tracking individual coil di gudang. 1 record = 1 coil fisik di 1 gudang.</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">INT(11)</td><td><span class="badge badge-pk">PK</span></td><td>Auto increment</td></tr>
-            <tr><td>id_material</td><td class="col-type">VARCHAR(50)</td><td><span class="badge badge-idx">IDX</span></td><td>Kode material</td></tr>
-            <tr><td>no_coil</td><td class="col-type">VARCHAR(100)</td><td><span class="badge badge-idx">IDX</span></td><td>Nomor coil (unique per gudang)</td></tr>
-            <tr><td>kode_internal</td><td class="col-type">VARCHAR(100)</td><td></td><td>Kode internal</td></tr>
-            <tr><td>nm_material</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama material</td></tr>
-            <tr><td>trade_name</td><td class="col-type">VARCHAR(255)</td><td></td><td>Trade name</td></tr>
-            <tr><td>gross_weight</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Berat kotor</td></tr>
-            <tr><td>net_weight</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Berat bersih</td></tr>
-            <tr><td>length</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Panjang</td></tr>
-            <tr><td>id_gudang</td><td class="col-type">INT(11)</td><td><span class="badge badge-idx">IDX</span></td><td>ID gudang</td></tr>
-            <tr><td>kd_gudang</td><td class="col-type">VARCHAR(20)</td><td></td><td>Kode gudang</td></tr>
-            <tr><td>no_ipp</td><td class="col-type">VARCHAR(30)</td><td></td><td>Kode trans incoming</td></tr>
-            <tr><td>no_ros</td><td class="col-type">VARCHAR(30)</td><td></td><td>ID ROS asal</td></tr>
-        </tbody>
-    </table>
-</div>
+    <h3>Moving Average (di Warehouse Stock)</h3>
+    <div class="formula">
+        saldo_lama = qty_stock_lama × harga_beli_lama<br>
+        nilai_baru = qty_masuk × cost_book<br>
+        qty_akhir = qty_stock_lama + qty_masuk<br>
+        total_nilai = saldo_lama + nilai_baru<br>
+        <strong>costbook_baru = total_nilai / qty_akhir</strong>
+    </div>
 
-<div class="module-wh">
-    <div class="module-title">5.3 warehouse_history</div>
-    <p style="margin-bottom:8px; color:#666;">Log riwayat setiap pergerakan stok (incoming, transfer, outgoing). 1 record per event per coil.</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">INT(11)</td><td><span class="badge badge-pk">PK</span></td><td>Auto increment</td></tr>
-            <tr><td>id_material</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode material</td></tr>
-            <tr><td>nm_material</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama material</td></tr>
-            <tr><td>id_gudang</td><td class="col-type">INT(11)</td><td></td><td>ID gudang</td></tr>
-            <tr><td>kd_gudang</td><td class="col-type">VARCHAR(20)</td><td></td><td>Kode gudang</td></tr>
-            <tr><td>id_gudang_dari</td><td class="col-type">INT(11)</td><td></td><td>ID gudang asal</td></tr>
-            <tr><td>kd_gudang_dari</td><td class="col-type">VARCHAR(20)</td><td></td><td>Kode gudang asal</td></tr>
-            <tr><td>id_gudang_ke</td><td class="col-type">INT(11)</td><td></td><td>ID gudang tujuan</td></tr>
-            <tr><td>kd_gudang_ke</td><td class="col-type">VARCHAR(20)</td><td></td><td>Kode gudang tujuan</td></tr>
-            <tr><td>qty_stock_awal</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty sebelum transaksi</td></tr>
-            <tr><td>qty_stock_akhir</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty setelah transaksi</td></tr>
-            <tr><td>no_ipp</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode trans incoming</td></tr>
-            <tr><td>jumlah_mat</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty yang masuk</td></tr>
-            <tr><td>ket</td><td class="col-type">TEXT</td><td></td><td>Keterangan (Coil, PO, Kurs)</td></tr>
-            <tr><td>no_coil</td><td class="col-type">VARCHAR(100)</td><td></td><td>Nomor coil</td></tr>
-            <tr><td>harga_beli</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Harga beli per unit</td></tr>
-            <tr><td>total_harga</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Total harga transaksi</td></tr>
-            <tr><td>saldo_awal</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Saldo (Rp) sebelum</td></tr>
-            <tr><td>saldo_akhir</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Saldo (Rp) sesudah</td></tr>
-            <tr><td>harga_baru</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Costbook setelah transaksi</td></tr>
-            <tr><td>harga_lama</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Costbook sebelum transaksi</td></tr>
-            <tr><td>update_by</td><td class="col-type">INT(11)</td><td></td><td>User</td></tr>
-            <tr><td>update_date</td><td class="col-type">DATETIME</td><td></td><td>Tanggal</td></tr>
-        </tbody>
-    </table>
-</div>
+    <h3>Price Per Coil</h3>
+    <div class="formula">
+        price_per_coil = berat_bersih_coil × cost_book_material
+    </div>
 
-<div class="module-wh">
-    <div class="module-title">5.4 warehouse_stock_per_day</div>
-    <p style="margin-bottom:8px; color:#666;">Snapshot posisi stok harian per material per gudang. 1 record per material per gudang per hari.</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">INT(11)</td><td><span class="badge badge-pk">PK</span></td><td>Auto increment</td></tr>
-            <tr><td>id_material</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode material</td></tr>
-            <tr><td>nm_material</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama material</td></tr>
-            <tr><td>id_gudang</td><td class="col-type">INT(11)</td><td></td><td>ID gudang</td></tr>
-            <tr><td>kd_gudang</td><td class="col-type">VARCHAR(20)</td><td></td><td>Kode gudang</td></tr>
-            <tr><td>qty_stock</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty stok per hari</td></tr>
-            <tr><td>qty_booking</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty booking per hari</td></tr>
-            <tr><td>qty_free</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty free per hari</td></tr>
-            <tr><td>harga_beli</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Costbook per hari</td></tr>
-            <tr><td>total_nilai</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Total nilai per hari</td></tr>
-            <tr><td>hist_date</td><td class="col-type">DATETIME</td><td></td><td>Tanggal snapshot</td></tr>
-            <tr><td>hist_by</td><td class="col-type">INT(11)</td><td></td><td>User</td></tr>
-        </tbody>
-    </table>
-</div>
+    <h3>Jurnal GL</h3>
+    <div class="formula">
+        <strong>Jurnal A (Close ROS):</strong><br>
+        DEBET: Persediaan In-Transit (1105-01-03) = total_nilai_inventory semua material<br>
+        KREDIT: DP + BM + LS + Forwarding + Insurance + Others + Selisih Kurs + Pembulatan<br><br>
+        <strong>Jurnal B (Finalize Incoming):</strong><br>
+        DEBET: Σ price_per_coil per gudang (COA 1105-01-01 Produksi atau 1105-01-02 Slitting)<br>
+        KREDIT: Σ price_per_coil total (COA 1105-01-03 In-Transit) — membalik Jurnal A<br><br>
+        <strong>Total DEBET = Total KREDIT (balanced per jurnal)</strong>
+    </div>
 
-<div class="module-wh">
-    <div class="module-title">5.5 warehouse_coil_per_day</div>
-    <p style="margin-bottom:8px; color:#666;">Snapshot individual coil per hari. Status IN/OUT.</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">INT(11)</td><td><span class="badge badge-pk">PK</span></td><td>Auto increment</td></tr>
-            <tr><td>id_material</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode material</td></tr>
-            <tr><td>nm_material</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama material</td></tr>
-            <tr><td>id_gudang</td><td class="col-type">INT(11)</td><td></td><td>ID gudang</td></tr>
-            <tr><td>kd_gudang</td><td class="col-type">VARCHAR(20)</td><td></td><td>Kode gudang</td></tr>
-            <tr><td>no_coil</td><td class="col-type">VARCHAR(100)</td><td></td><td>Nomor coil</td></tr>
-            <tr><td>kode_internal</td><td class="col-type">VARCHAR(100)</td><td></td><td>Kode internal</td></tr>
-            <tr><td>gross_weight</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Berat kotor</td></tr>
-            <tr><td>net_weight</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Berat bersih</td></tr>
-            <tr><td>length</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Panjang</td></tr>
-            <tr><td>status</td><td class="col-type">VARCHAR(10)</td><td></td><td>IN / OUT</td></tr>
-            <tr><td>hist_date</td><td class="col-type">DATETIME</td><td></td><td>Tanggal snapshot</td></tr>
-            <tr><td>hist_by</td><td class="col-type">INT(11)</td><td></td><td>User</td></tr>
-        </tbody>
-    </table>
-</div>
-
-<div class="module-wh">
-    <div class="module-title">5.6 warehouse_incoming_summary</div>
-    <p style="margin-bottom:8px; color:#666;">Ringkasan incoming per material per gudang (level aggregat).</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">INT(11)</td><td><span class="badge badge-pk">PK</span></td><td>Auto increment</td></tr>
-            <tr><td class="col-fk">no_ipp</td><td class="col-type">VARCHAR(30)</td><td><span class="badge badge-fk">FK</span></td><td>→ tr_incoming_header.kode_trans</td></tr>
-            <tr><td>id_material</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode material</td></tr>
-            <tr><td>nm_material</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama material</td></tr>
-            <tr><td>id_gudang</td><td class="col-type">INT(11)</td><td></td><td>ID gudang</td></tr>
-            <tr><td>kd_gudang</td><td class="col-type">VARCHAR(20)</td><td></td><td>Kode gudang</td></tr>
-            <tr><td>tanggal</td><td class="col-type">DATE</td><td></td><td>Tanggal incoming</td></tr>
-            <tr><td>jumlah_coil</td><td class="col-type">INT(11)</td><td></td><td>Jumlah coil masuk</td></tr>
-            <tr><td>qty_awal</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty sebelum incoming</td></tr>
-            <tr><td>qty_transaksi</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty yang masuk</td></tr>
-            <tr><td>qty_akhir</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty setelah incoming</td></tr>
-            <tr><td>costbook</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Costbook akhir</td></tr>
-            <tr><td>total_harga</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Total nilai incoming</td></tr>
-            <tr><td>saldo_awal</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Saldo Rp sebelum</td></tr>
-            <tr><td>saldo_akhir</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Saldo Rp sesudah</td></tr>
-            <tr><td>harga_lama</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Costbook sebelum</td></tr>
-            <tr><td>created_by</td><td class="col-type">INT(11)</td><td></td><td>User</td></tr>
-            <tr><td>created_at</td><td class="col-type">DATETIME</td><td></td><td>Tanggal dibuat</td></tr>
-        </tbody>
-    </table>
-</div>
-
-<div class="module-wh">
-    <div class="module-title">5.7 warehouse_incoming_summary_detail</div>
-    <p style="margin-bottom:8px; color:#666;">Detail individual coil per incoming summary.</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">INT(11)</td><td><span class="badge badge-pk">PK</span></td><td>Auto increment</td></tr>
-            <tr><td class="col-fk">no_ipp</td><td class="col-type">VARCHAR(30)</td><td><span class="badge badge-fk">FK</span></td><td>→ tr_incoming_header.kode_trans</td></tr>
-            <tr><td>id_material</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode material</td></tr>
-            <tr><td>nm_material</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama material</td></tr>
-            <tr><td>id_gudang</td><td class="col-type">INT(11)</td><td></td><td>ID gudang</td></tr>
-            <tr><td>kd_gudang</td><td class="col-type">VARCHAR(20)</td><td></td><td>Kode gudang</td></tr>
-            <tr><td>no_coil</td><td class="col-type">VARCHAR(100)</td><td></td><td>Nomor coil</td></tr>
-            <tr><td>kode_internal</td><td class="col-type">VARCHAR(100)</td><td></td><td>Kode internal</td></tr>
-            <tr><td>gross_weight</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Berat kotor</td></tr>
-            <tr><td>net_weight</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Berat bersih</td></tr>
-            <tr><td>length</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Panjang</td></tr>
-            <tr><td>price_per_coil</td><td class="col-type">DECIMAL(18,2)</td><td></td><td>Harga per coil</td></tr>
-            <tr><td>cost_book</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Costbook</td></tr>
-            <tr><td>status_qc</td><td class="col-type">VARCHAR(10)</td><td></td><td>OK / NG</td></tr>
-            <tr><td>created_at</td><td class="col-type">DATETIME</td><td></td><td>Tanggal dibuat</td></tr>
-        </tbody>
-    </table>
-</div>
-
-<div class="module-wh">
-    <div class="module-title">5.8 kartu_stok</div>
-    <p style="margin-bottom:8px; color:#666;">Pencatatan kronologis pergerakan stok (seperti buku besar stok/ledger).</p>
-    <table>
-        <thead>
-            <tr><th width="25%">Kolom</th><th width="20%">Tipe Data</th><th width="8%">Key</th><th>Keterangan</th></tr>
-        </thead>
-        <tbody>
-            <tr><td class="col-pk">id</td><td class="col-type">INT(11)</td><td><span class="badge badge-pk">PK</span></td><td>Auto increment</td></tr>
-            <tr><td>no_transaksi</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode trans incoming</td></tr>
-            <tr><td>id_gudang</td><td class="col-type">INT(11)</td><td></td><td>ID gudang</td></tr>
-            <tr><td>transaksi</td><td class="col-type">VARCHAR(50)</td><td></td><td>Jenis: Incoming Material</td></tr>
-            <tr><td>tgl_transaksi</td><td class="col-type">DATETIME</td><td></td><td>Tanggal transaksi</td></tr>
-            <tr><td>code_lv4</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode material (legacy)</td></tr>
-            <tr><td>code_material</td><td class="col-type">VARCHAR(50)</td><td></td><td>Kode material</td></tr>
-            <tr><td>nm_material</td><td class="col-type">VARCHAR(255)</td><td></td><td>Nama material</td></tr>
-            <tr><td>qty</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty sebelum transaksi</td></tr>
-            <tr><td>qty_book</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty booking sebelum</td></tr>
-            <tr><td>qty_free</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty free sebelum</td></tr>
-            <tr><td>qty_transaksi</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty yang masuk</td></tr>
-            <tr><td>qty_akhir</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty setelah transaksi</td></tr>
-            <tr><td>qty_book_akhir</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty booking setelah</td></tr>
-            <tr><td>qty_free_akhir</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Qty free setelah</td></tr>
-            <tr><td>harga_stok</td><td class="col-type">DECIMAL(18,4)</td><td></td><td>Costbook saat transaksi</td></tr>
-            <tr><td>status_transaksi</td><td class="col-type">VARCHAR(20)</td><td></td><td>in / out</td></tr>
-            <tr><td>created_by</td><td class="col-type">INT(11)</td><td></td><td>User</td></tr>
-            <tr><td>created_on</td><td class="col-type">DATETIME</td><td></td><td>Tanggal</td></tr>
-        </tbody>
-    </table>
-</div>
-
-<!-- ═══════════════════════════════════════════ -->
-<!-- RINGKASAN RELASI -->
-<!-- ═══════════════════════════════════════════ -->
-<div class="page-break"></div>
-<h2>6. Ringkasan Relasi Antar Tabel</h2>
-
-<table class="rel-table">
-    <thead>
-        <tr><th width="25%">Dari (Parent)</th><th width="25%">Ke (Child)</th><th width="8%">Tipe</th><th>Keterangan</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>tr_ros_header</td><td>tr_ros_material</td><td class="rel-type">1 : N</td><td>1 ROS punya banyak material</td></tr>
-        <tr><td>tr_ros_header</td><td>tr_ros_others</td><td class="rel-type">1 : N</td><td>1 ROS punya banyak biaya lain</td></tr>
-        <tr><td>tr_ros_header</td><td>tr_ros_upload_temp</td><td class="rel-type">1 : N</td><td>Temp data upload packing list</td></tr>
-        <tr><td>tr_ros_material</td><td>tr_ros_material_coil</td><td class="rel-type">1 : N</td><td>1 material punya banyak coil</td></tr>
-        <tr><td>tr_ros_header</td><td>tr_incoming_header</td><td class="rel-type">1 : 1</td><td>1 ROS → 1 incoming (saat finalize)</td></tr>
-        <tr><td><strong>tr_ros_header</strong></td><td><strong>gl_interface</strong></td><td class="rel-type"><strong>1 : 1</strong></td><td><strong>1 ROS close → 1 jurnal GL (jenis_transaksi='ros')</strong></td></tr>
-        <tr><td>tr_incoming_header</td><td>tr_incoming_detail</td><td class="rel-type">1 : N</td><td>1 incoming punya banyak detail coil</td></tr>
-        <tr><td>tr_ros_material_coil</td><td>tr_incoming_detail</td><td class="rel-type">1 : 1</td><td>1 coil ROS = 1 detail incoming</td></tr>
-        <tr><td>tr_incoming_header</td><td>gl_interface</td><td class="rel-type">1 : 1</td><td>1 incoming = 1 jurnal GL</td></tr>
-        <tr><td>gl_interface</td><td>gl_interface_detail</td><td class="rel-type">1 : N</td><td>1 jurnal punya banyak baris D/K</td></tr>
-        <tr><td>tr_incoming_header</td><td>warehouse_incoming_summary</td><td class="rel-type">1 : N</td><td>Summary per material per gudang</td></tr>
-        <tr><td>tr_incoming_header</td><td>warehouse_incoming_summary_detail</td><td class="rel-type">1 : N</td><td>Detail per coil per incoming</td></tr>
-        <tr><td>tr_incoming_detail</td><td>warehouse_stock</td><td class="rel-type">N : 1</td><td>Banyak coil update 1 row stok</td></tr>
-        <tr><td>tr_incoming_detail</td><td>warehouse_stock_coil</td><td class="rel-type">1 : 1</td><td>1 coil incoming = 1 record stok coil</td></tr>
-        <tr><td>tr_incoming_detail</td><td>warehouse_history</td><td class="rel-type">1 : 1</td><td>1 coil incoming = 1 history entry</td></tr>
-        <tr><td>tr_incoming_detail</td><td>warehouse_stock_per_day</td><td class="rel-type">N : 1</td><td>Banyak coil update 1 snapshot hari</td></tr>
-        <tr><td>tr_incoming_detail</td><td>warehouse_coil_per_day</td><td class="rel-type">1 : 1</td><td>1 coil = 1 snapshot coil hari</td></tr>
-        <tr><td>tr_incoming_detail</td><td>kartu_stok</td><td class="rel-type">N : 1</td><td>Pencatatan di kartu stok</td></tr>
-    </tbody>
-</table>
-
-<!-- ═══════════════════════════════════════════ -->
-<!-- RUMUS KALKULASI -->
-<!-- ═══════════════════════════════════════════ -->
-<h2>7. Rumus Kalkulasi</h2>
-
-<h3>Cost Book Material (di New ROS)</h3>
-<div class="formula">
-    total_value_rp = total_value_usd × kurs_pib<br>
-    bm_rp = total_value_rp × bm_persen / 100<br>
-    forwarding_cost = 200 × kg_unit<br>
-    total_nilai_inventory = total_value_rp + bm_rp + prorate_ls + forwarding_cost + prorate_insurance + prorate_others<br>
-    <strong>cost_book = total_nilai_inventory / kg_unit</strong>
-</div>
-
-<h3>Moving Average (di Warehouse Stock)</h3>
-<div class="formula">
-    saldo_lama = qty_stock_lama × harga_beli_lama<br>
-    nilai_baru = qty_masuk × cost_book<br>
-    qty_akhir = qty_stock_lama + qty_masuk<br>
-    total_nilai = saldo_lama + nilai_baru<br>
-    <strong>costbook_baru = total_nilai / qty_akhir</strong>
-</div>
-
-<h3>Price Per Coil</h3>
-<div class="formula">
-    price_per_coil = berat_bersih_coil × cost_book_material
-</div>
-
-<h3>Jurnal GL</h3>
-<div class="formula">
-    <strong>Jurnal A (Close ROS):</strong><br>
-    DEBET: Persediaan In-Transit (1105-01-03) = total_nilai_inventory semua material<br>
-    KREDIT: DP + BM + LS + Forwarding + Insurance + Others + Selisih Kurs + Pembulatan<br><br>
-    <strong>Jurnal B (Finalize Incoming):</strong><br>
-    DEBET: Σ price_per_coil per gudang (COA 1105-01-01 Produksi atau 1105-01-02 Slitting)<br>
-    KREDIT: Σ price_per_coil total (COA 1105-01-03 In-Transit) — membalik Jurnal A<br><br>
-    <strong>Total DEBET = Total KREDIT (balanced per jurnal)</strong>
-</div>
-
-<br>
-<div style="text-align:center; color:#95a5a6; font-size:9px; margin-top:30px; border-top:1px solid #e0e0e0; padding-top:10px;">
-    Dokumen ERD — Generated 4 Juni 2026 | Total 17 Tabel
-</div>
+    <br>
+    <div
+        style="text-align:center; color:#95a5a6; font-size:9px; margin-top:30px; border-top:1px solid #e0e0e0; padding-top:10px;">
+        Dokumen ERD — Generated 4 Juni 2026 | Total 17 Tabel
+    </div>
 
 </body>
+
 </html>

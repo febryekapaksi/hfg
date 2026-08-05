@@ -250,24 +250,29 @@
             <thead>
                 <tr>
                     <th width="5%" class="text-center">No</th>
-                    <th width="18%">Kode Internal</th>
-                    <th width="15%">No Coil</th>
+                    <th width="16%">Kode Internal</th>
+                    <th width="13%">No Coil</th>
                     <th width="27%">Material</th>
-                    <th width="15%" class="text-center">Sumber Gudang</th>
+                    <th width="15%" class="text-right">Net Weight (Kg)</th>
+                    <th width="14%" class="text-center">Sumber Gudang</th>
                 </tr>
             </thead>
             <tbody>
+                <?php $total_net_weight = 0; ?>
                 <?php foreach ($coil_details as $idx => $coil): ?>
+                    <?php $net_weight = isset($coil['net_weight']) ? (float) $coil['net_weight'] : 0; ?>
+                    <?php $total_net_weight += $net_weight; ?>
                     <tr>
                         <td class="text-center" style="color: #718096;"><?php echo $idx + 1; ?></td>
                         <td style="font-weight: 500;"><?php echo htmlspecialchars($coil['kode_internal']); ?></td>
                         <td><?php echo htmlspecialchars($coil['no_coil']); ?></td>
                         <td><?php echo htmlspecialchars($coil['nm_material']); ?></td>
+                        <td class="text-right"><?php echo number_format($net_weight, 3, ',', '.'); ?></td>
                         <td class="text-center">
                             <?php
                             if ($coil['id_gudang_sumber'] == 1) {
                                 echo 'Gudang Coil';
-                            } elseif ($coil['id_gudang_sumber'] == 3) {
+                            } elseif ($coil['id_gudang_sumber'] == 4) {
                                 echo 'WIP';
                             } else {
                                 echo '-';
@@ -277,6 +282,13 @@
                     </tr>
                 <?php endforeach; ?>
             </tbody>
+            <tfoot>
+                <tr style="font-weight: bold; background-color: #edf2f7;">
+                    <td colspan="4" class="text-right" style="border: 1px solid #cbd5e0; padding: 7px 10px;">TOTAL</td>
+                    <td class="text-right" style="border: 1px solid #cbd5e0; padding: 7px 10px;"><?php echo number_format($total_net_weight, 3, ',', '.'); ?></td>
+                    <td style="border: 1px solid #cbd5e0; padding: 7px 10px;"></td>
+                </tr>
+            </tfoot>
         </table>
     <?php else: ?>
         <div style="padding: 10px; border: 1px dashed #cbd5e0; color:#718096; font-style: italic; margin-top: 15px;">

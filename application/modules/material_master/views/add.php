@@ -151,7 +151,7 @@ $status2 = (!empty($listData[0]->status) && $listData[0]->status == '0') ? 'chec
 		<label>Width <span class='text-danger'>*</span></label>
 	</div>
 	<div class="col-md-4">
-		<input type="text" class="form-control maskM" id="width" name="width" value="<?= $width ?>" placeholder="Width" onkeyup="generateNama()">
+		<input type="text" class="form-control maskWidth" id="width" name="width" value="<?= $width ?>" placeholder="Width" onkeyup="generateNama()">
 	</div>
 	<div class="col-md-2">
 		<label>Coating <span class='text-danger'>*</span></label>
@@ -188,7 +188,7 @@ $status2 = (!empty($listData[0]->status) && $listData[0]->status == '0') ? 'chec
 		<label>Hardness <span class='text-danger'>*</span></label>
 	</div>
 	<div class="col-md-4">
-		<input type="text" class="form-control" id="hardness" name="hardness" value="<?= $hardness ?>" placeholder="Hardness">
+		<input type="text" class="form-control maskHardness" id="hardness" name="hardness" value="<?= $hardness ?>" placeholder="Hardness">
 	</div>
 	<div class="col-md-2">
 		<label>Tensile <span class='text-danger'>*</span></label>
@@ -422,6 +422,22 @@ $status2 = (!empty($listData[0]->status) && $listData[0]->status == '0') ? 'chec
 		});
 		$('.maskM').autoNumeric();
 		$('#thickness').autoNumeric('init', {
+			aSep: ',',
+			aDec: '.',
+			mDec: 3,
+			mInt: 4,
+			vMin: '0.000',
+			vMax: '9999.999'
+		});
+		$('#width').autoNumeric('init', {
+			aSep: ',',
+			aDec: '.',
+			mDec: 3,
+			mInt: 4,
+			vMin: '0.000',
+			vMax: '9999.999'
+		});
+		$('#hardness').autoNumeric('init', {
 			aSep: ',',
 			aDec: '.',
 			mDec: 3,

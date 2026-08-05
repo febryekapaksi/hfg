@@ -1283,8 +1283,8 @@ class Incoming extends Admin_Controller
             $summary_map[$key]['total_harga']   += (float)$d['price_per_coil'];
 
             // Insert detail snapshot coil
-            $this->db->insert('warehouse_incoming_summary_detail', [
-                'no_ipp'        => $kode_incoming,
+            $this->db->insert('warehouse_stock_transaction_detail', [
+                'kode_trans'    => $kode_incoming,
                 'id_material'   => $d['id_material'],
                 'nm_material'   => $d['nm_material'],
                 'id_gudang'     => $d['id_gudang_ke'],
@@ -1303,7 +1303,7 @@ class Incoming extends Admin_Controller
 
         // Insert summary per material
         foreach ($summary_map as $s) {
-            $this->db->insert('warehouse_incoming_summary', $s);
+            $this->db->insert('warehouse_stock_transaction_summary', $s);
         }
 
         // Insert header incoming baru

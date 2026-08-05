@@ -37,6 +37,34 @@ class Spk_material_model extends BF_Model
         return $prefix . str_pad($next_counter, 4, '0', STR_PAD_LEFT);
     }
 
+    /**
+     * Generate nomor SPK dengan row-level lock (FOR UPDATE) untuk mencegah race condition.
+     * Harus dipanggil di dalam transaction (trans_begin sudah dipanggil sebelumnya).
+     *
+     * @return string Nomor SPK baru
+     */
+    public function generate_spk_no_locked()
+    {
+        $prefix = 'SPK-' . date('Ym') . '-';
+
+        // SELECT ... FOR UPDATE akan lock row sehingga concurrent request harus menunggu
+        $sql = "SELECT spk_no FROM tr_spk_material_header 
+                WHERE spk_no LIKE ? 
+                ORDER BY spk_no DESC 
+                LIMIT 1 
+                FOR UPDATE";
+
+        $last = $this->db->query($sql, [$prefix . '%'])->row();
+
+        $next_counter = 1;
+        if ($last) {
+            $parts = explode('-', $last->spk_no);
+            $next_counter = (int) end($parts) + 1;
+        }
+
+        return $prefix . str_pad($next_counter, 4, '0', STR_PAD_LEFT);
+    }
+
     // ---------------------------------------------------------------
     // SPK HEADER & DETAIL CRUD
     // ---------------------------------------------------------------
@@ -138,16 +166,19 @@ class Spk_material_model extends BF_Model
      */
     public function get_produk_fg_list($search = null)
     {
-        $this->db->select('code_lv4, nama');
-        $this->db->from('product_lvl_4');
-        $this->db->where('status', 1);
-        $this->db->where('deleted_date IS NULL', null, false);
+        $this->db->select('p.code_lv4, p.nama');
+        $this->db->from('product_lvl_4 p');
+        $this->db->join('ms_bom_header bh', 'bh.id_produk = p.code_lv4');
+        $this->db->where('bh.is_delete', 0);
+        $this->db->where('p.status', 1);
+        $this->db->where('p.deleted_date IS NULL', null, false);
         if (!empty($search)) {
             $this->db->group_start();
-            $this->db->like('nama', $search);
-            $this->db->or_like('code_lv4', $search);
+            $this->db->like('p.nama', $search);
+            $this->db->or_like('p.code_lv4', $search);
             $this->db->group_end();
         }
+        $this->db->group_by('p.code_lv4, p.nama');
         $this->db->limit(50);
         return $this->db->get()->result_array();
     }

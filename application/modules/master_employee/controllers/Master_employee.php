@@ -61,6 +61,7 @@ class Master_employee extends Admin_Controller
 			$gender				= $data['gender'];
 			$agama				= $data['agama'];
 			$department			= $data['department'];
+			$sub_department		= isset($data['sub_department']) ? $data['sub_department'] : NULL;
 			$no_ponsel			= $data['no_ponsel'];
 			$email				= $data['email'];
 			$pendidikan			= $data['pendidikan'];
@@ -102,6 +103,7 @@ class Master_employee extends Admin_Controller
 				'tmp_lahir' => $tmp_lahir,
 				'tgl_lahir' => $tgl_lahir,
 				'department' => $department,
+				'sub_department' => $sub_department,
 				'gender' => $gender,
 				'agama' => $agama,
 				'pendidikan' => $pendidikan,

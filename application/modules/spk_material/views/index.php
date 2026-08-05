@@ -88,7 +88,8 @@ $ENABLE_VIEW   = has_permission('Spk_Material.View');
                     className: 'text-center'
                 },
                 {
-                    data: 1
+                    data: 1,
+                    className: 'text-nowrap'
                 },
                 {
                     data: 2
