@@ -511,8 +511,8 @@ class Stock_from_warehouse_model extends BF_Model
         foreach ($rows as $row) {
             // Badge gudang asal
             $gudang_label = isset($row['kd_gudang']) ? $row['kd_gudang'] : '-';
-            if ($gudang_label == 'PRO') {
-                $gudang_html = '<span class="badge bg-primary">PRO</span>';
+            if ($gudang_label == 'PRT') {
+                $gudang_html = '<span class="badge bg-primary">PRT</span>';
             } elseif ($gudang_label == 'WIP') {
                 $gudang_html = '<span class="badge bg-warning text-dark">WIP</span>';
             } else {
