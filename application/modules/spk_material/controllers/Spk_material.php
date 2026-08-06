@@ -7,6 +7,10 @@ class Spk_material extends Admin_Controller
     protected $managePermission = 'Spk_Material.Manage';
     protected $addPermission    = 'Spk_Material.Add';
 
+    protected $id_user;
+    protected $username;
+    protected $datetime;
+
     public function __construct()
     {
         parent::__construct();
@@ -277,12 +281,19 @@ class Spk_material extends Admin_Controller
     {
         $this->auth->restrict($this->viewPermission);
 
-        $requestData = $_REQUEST;
-        $search      = isset($requestData['search']['value']) ? $requestData['search']['value'] : '';
-        $start       = (int) (isset($requestData['start']) ? $requestData['start'] : 0);
-        $length      = (int) (isset($requestData['length']) ? $requestData['length'] : 10);
-        $order_col   = isset($requestData['order'][0]['column']) ? $requestData['order'][0]['column'] : 1;
-        $order_dir   = isset($requestData['order'][0]['dir']) ? $requestData['order'][0]['dir'] : 'desc';
+        // Pakai CI input class untuk CSRF/XSS filter
+        $search_param = $this->input->get_post('search', TRUE);
+        $search    = (is_array($search_param) && isset($search_param['value'])) ? $search_param['value'] : '';
+        $start     = (int) $this->input->get_post('start', TRUE);
+        $length    = (int) $this->input->get_post('length', TRUE);
+        $draw      = (int) $this->input->get_post('draw', TRUE);
+
+        // Order column & direction — fallback manual untuk nested array
+        $order_col = isset($_REQUEST['order'][0]['column']) ? (int) $_REQUEST['order'][0]['column'] : 1;
+        $order_dir = isset($_REQUEST['order'][0]['dir']) ? $_REQUEST['order'][0]['dir'] : 'desc';
+
+        // Whitelist order_dir — prevent SQL injection
+        $order_dir = in_array(strtolower($order_dir), ['asc', 'desc']) ? strtolower($order_dir) : 'desc';
 
         $col_map = [1 => 'h.spk_no', 2 => 'h.tgl_spk', 3 => 'h.shift_names', 4 => 'h.status', 5 => 'detail_count'];
         $order_by = isset($col_map[$order_col]) ? $col_map[$order_col] : 'h.created_at';
@@ -316,28 +327,31 @@ class Spk_material extends Admin_Controller
                 'Cancelled'          => 'bg-danger'
             ];
             $badge_class = isset($status_badges[$row['status']]) ? $status_badges[$row['status']] : 'bg-secondary';
-            $status_html = "<span class='badge rounded-pill {$badge_class}'>{$row['status']}</span>";
+            $status_html = "<span class='badge rounded-pill {$badge_class}'>" . htmlspecialchars($row['status']) . "</span>";
 
-            // Action buttons — only View and Print
-            $btn_view = '<a href="'.site_url('spk_material/view/'.$row['spk_no']).'" class="btn btn-sm btn-info" title="View"><i class="fa fa-eye"></i></a>';
-            $btn_pdf = ' <a href="'.site_url('spk_material/print_pdf/'.$row['spk_no']).'" target="_blank" class="btn btn-sm btn-secondary" title="Print PDF"><i class="fa fa-file-pdf"></i></a>';
+            // Action buttons — escape spk_no untuk URL dan display
+            $safe_spk_no = urlencode($row['spk_no']);
+            $display_spk_no = htmlspecialchars($row['spk_no']);
+
+            $btn_view = '<a href="'.site_url('spk_material/view/'.$safe_spk_no).'" class="btn btn-sm btn-info" title="View"><i class="fa fa-eye"></i></a>';
+            $btn_pdf = ' <a href="'.site_url('spk_material/print_pdf/'.$safe_spk_no).'" target="_blank" class="btn btn-sm btn-secondary" title="Print PDF"><i class="fa fa-file-pdf"></i></a>';
 
             $aksi = $btn_view . $btn_pdf;
 
             $data[] = [
                 "<div class='text-center'>{$no}</div>",
-                $row['spk_no'],
+                $display_spk_no,
                 date('d/m/Y', strtotime($row['tgl_spk'])),
                 htmlspecialchars($row['shift_names']),
                 "<div class='text-center'>{$status_html}</div>",
-                "<div class='text-center'>{$row['detail_count']}</div>",
+                "<div class='text-center'>" . (int) $row['detail_count'] . "</div>",
                 "<div class='text-center'>{$aksi}</div>",
             ];
             $no++;
         }
 
         echo json_encode([
-            'draw'            => intval(isset($requestData['draw']) ? $requestData['draw'] : 1),
+            'draw'            => $draw,
             'recordsTotal'    => $totalData,
             'recordsFiltered' => $totalData,
             'data'            => $data,

@@ -345,7 +345,7 @@ class Request_list extends Admin_Controller
             return $this->_json(array('status' => 0, 'message' => 'ID Material tidak valid.'));
         }
 
-        $spk_no = isset($_GET['spk_no']) ? $_GET['spk_no'] : '';
+        $spk_no = $this->input->get('spk_no', TRUE);
 
         if (empty($spk_no)) {
             return $this->_json(array('status' => 0, 'message' => 'SPK No tidak valid.'));
