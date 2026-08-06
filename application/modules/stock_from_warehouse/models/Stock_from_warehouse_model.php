@@ -470,6 +470,8 @@ class Stock_from_warehouse_model extends BF_Model
 
         if (!empty($kd_gudang)) {
             $where_clauses .= " AND h.kd_gudang = '" . $this->db->escape_str($kd_gudang) . "'";
+        } else {
+            $where_clauses .= " AND h.kd_gudang IN ('PRT', 'WIP', 'HLD')";
         }
 
         if (!empty($search)) {
@@ -515,6 +517,8 @@ class Stock_from_warehouse_model extends BF_Model
                 $gudang_html = '<span class="badge bg-primary">PRT</span>';
             } elseif ($gudang_label == 'WIP') {
                 $gudang_html = '<span class="badge bg-warning text-dark">WIP</span>';
+            } elseif ($gudang_label == 'HLD') {
+                $gudang_html = '<span class="badge bg-danger">HLD</span>';
             } else {
                 $gudang_html = '<span class="badge bg-secondary">' . htmlspecialchars($gudang_label) . '</span>';
             }
@@ -557,6 +561,8 @@ class Stock_from_warehouse_model extends BF_Model
 
         if (!empty($kd_gudang)) {
             $where_clauses .= " AND h.kd_gudang = '" . $this->db->escape_str($kd_gudang) . "'";
+        } else {
+            $where_clauses .= " AND h.kd_gudang IN ('PRT', 'WIP', 'HLD')";
         }
 
         $rows = $this->db->query("

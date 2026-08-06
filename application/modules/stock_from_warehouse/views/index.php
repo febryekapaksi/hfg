@@ -137,6 +137,7 @@
                             <option value="">-- Semua Sumber --</option>
                             <option value="PRT">Production 2 (PRT)</option>
                             <option value="WIP">WIP</option>
+                            <option value="HLD">On Hold (HLD)</option>
                         </select>
                     </div>
 
