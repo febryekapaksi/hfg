@@ -251,10 +251,27 @@
                                     </td>
                                     <!-- Kg / Pcs -->
                                     <td>
-                                        <input type="number" step="0.0001" min="0"
-                                            name="products[<?= htmlspecialchars($row->code_lv4) ?>][kg_pcs]"
-                                            class="form-control form-control-sm input-yellow val-kg-pcs"
-                                            value="<?= (float) $row->kg_pcs ?>">
+                                        <?php
+                                        $weight_val = isset($row->weight) && (float)$row->weight > 0 ? (float)$row->weight : (float)$row->kg_pcs;
+                                        $has_weight = $weight_val > 0;
+                                        ?>
+                                        <div class="position-relative d-flex align-items-center">
+                                            <input type="number" step="0.0001" readonly
+                                                name="products[<?= htmlspecialchars($row->code_lv4) ?>][kg_pcs]"
+                                                class="form-control form-control-sm input-disabled val-kg-pcs <?= !$has_weight ? 'border-danger text-danger pe-4' : '' ?>"
+                                                value="<?= $weight_val ?>"
+                                                <?= !$has_weight ? 'title="Weight kosong. Silakan isi weight di Master Product."' : '' ?>>
+
+                                            <?php if (!$has_weight): ?>
+                                                <span class="text-danger position-absolute end-0 me-2"
+                                                    style="cursor: pointer; font-size: 12px; z-index: 5;"
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-placement="top"
+                                                    title="Silakan isi weight di Master Product!">
+                                                    <i class="fas fa-solid fa-exclamation"></i>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                     <!-- Gaji Direct -->
                                     <td>

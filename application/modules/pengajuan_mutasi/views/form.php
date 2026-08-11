@@ -313,14 +313,13 @@ $details = $m['details'] ?? [];
             showMaterialPicker(idGudang);
         });
 
-        // Auto-set destination warehouse (opposite of source)
+        // Auto-set destination warehouse (PRO <-> SLI)
         $('#id_gudang_from').on('change', function() {
             const selectedVal = $(this).val();
-            const allOptions = $('#id_gudang_to option').not(':first');
             let oppositeVal = '';
 
-            // Find the other warehouse (opposite)
-            allOptions.each(function() {
+            // Cari option di id_gudang_to yang nilainya TIDAK SAMA dengan yang dipilih di id_gudang_from
+            $('#id_gudang_to option').not(':first').each(function() {
                 if ($(this).val() !== selectedVal && $(this).val() !== '') {
                     oppositeVal = $(this).val();
                 }
@@ -334,7 +333,7 @@ $details = $m['details'] ?? [];
                 $('#id_gudang_to_hidden').val('');
             }
 
-            // Clear material/coil selection when warehouse changes
+            // Reset list material/coil jika warehouse asal diubah
             detailRows = [];
             renderTable();
         });
@@ -465,7 +464,9 @@ $details = $m['details'] ?? [];
         tbody.empty();
 
         if (detailRows.length === 0) {
-            tbody.html('<tr><td colspan="6" class="text-center text-muted py-3">No material data selected yet.</td></tr>');
+            // Colspan disesuaikan: 6 jika edit/add, 5 jika view
+            const colCount = IS_VIEW ? 5 : 6;
+            tbody.html(`<tr><td colspan="${colCount}" class="text-center text-muted py-3">No material data selected yet.</td></tr>`);
             recalcTotals();
             return;
         }
@@ -473,61 +474,65 @@ $details = $m['details'] ?? [];
         detailRows.forEach(function(row) {
             const coilsCount = row.coils.length;
             const actionBtnHtml = IS_VIEW ? '' : `
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeMaterialGroup(${row.rowId})" title="Remove Material Group">
-                <i class="fa-solid fa-trash"></i>
-            </button>
-        `;
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeMaterialGroup(${row.rowId})" title="Remove Material Group">
+            <i class="fa-solid fa-trash"></i>
+        </button>
+    `;
 
             const addCoilBtnHtml = IS_VIEW ? '' : `
-            <div class="mt-2">
-                <button type="button" class="btn btn-sm btn-primary" style="font-size: 11px; padding: 2px 8px;" onclick="openCoilModal(${row.rowId})">
-                    <i class="fa-solid fa-plus-circle"></i> Select / Manage Coils
-                </button>
-            </div>
-        `;
+        <div class="mt-2">
+            <button type="button" class="btn btn-sm btn-primary" style="font-size: 11px; padding: 2px 8px;" onclick="openCoilModal(${row.rowId})">
+                <i class="fa-solid fa-plus-circle"></i> Select / Manage Coils
+            </button>
+        </div>
+    `;
 
             if (coilsCount === 0) {
+                // Colspan disesuaikan jika tidak ada coil
+                const emptyColspan = IS_VIEW ? 4 : 4;
                 let emptyRow = `
-                <tr class="table-warning-bg" id="group-${row.rowId}">
-                    <td>
-                        <div class="fw-bold text-dark">${escHtml(row.material.nm_material)}</div>
-                        ${row.material.trade_name ? '<small class="text-muted d-block">' + escHtml(row.material.trade_name) + '</small>' : ''}
-                        ${addCoilBtnHtml}
-                    </td>
-                    <td colspan="4" class="text-center text-danger fw-semibold">No coils selected yet</td>
-                    <td class="text-center">${actionBtnHtml}</td>
-                </tr>
-            `;
+            <tr class="table-warning-bg" id="group-${row.rowId}">
+                <td>
+                    <div class="fw-bold text-dark">${escHtml(row.material.nm_material)}</div>
+                    ${row.material.trade_name ? '<small class="text-muted d-block">' + escHtml(row.material.trade_name) + '</small>' : ''}
+                    ${addCoilBtnHtml}
+                </td>
+                <td colspan="${emptyColspan}" class="text-center text-danger fw-semibold">No coils selected yet</td>
+                ${!IS_VIEW ? `<td class="text-center">${actionBtnHtml}</td>` : ''}
+            </tr>
+        `;
                 tbody.append(emptyRow);
             } else {
                 row.coils.forEach(function(coil, index) {
                     const netW = parseFloat(coil.net_weight || 0);
-                    const lenW = parseFloat(coil.length || 0); // Ambil data length coil
+                    const lenW = parseFloat(coil.length || 0);
 
                     let rowHtml = '<tr>';
 
                     if (index === 0) {
                         rowHtml += `
-                        <td rowspan="${coilsCount}">
-                            <div class="fw-bold text-dark">${escHtml(row.material.nm_material)}</div>
-                            ${row.material.trade_name ? '<small class="text-muted d-block">' + escHtml(row.material.trade_name) + '</small>' : ''}
-                            ${addCoilBtnHtml}
-                        </td>
-                    `;
+                    <td rowspan="${coilsCount}">
+                        <div class="fw-bold text-dark">${escHtml(row.material.nm_material)}</div>
+                        ${row.material.trade_name ? '<small class="text-muted d-block">' + escHtml(row.material.trade_name) + '</small>' : ''}
+                        ${addCoilBtnHtml}
+                    </td>
+                `;
                     }
 
                     rowHtml += `
-                    <td><span class="badge bg-light text-dark border">${escHtml(coil.kode_internal || '-')}</span></td>
-                    <td>${escHtml(coil.no_coil)}</td>
-                    <td>${formatNum(netW, 2)}</td>
-                    <td>${formatNum(lenW, 2)}</td> `;
+                <td><span class="badge bg-light text-dark border">${escHtml(coil.kode_internal || '-')}</span></td>
+                <td>${escHtml(coil.no_coil)}</td>
+                <td>${formatNum(netW, 2)}</td>
+                <td>${formatNum(lenW, 2)}</td>`;
 
-                    if (index === 0) {
+                    // --- PERBAIKAN DI SINI ---
+                    // Pastikan tag <td> hanya dirender jika BUKAN mode view
+                    if (index === 0 && !IS_VIEW) {
                         rowHtml += `
-                        <td rowspan="${coilsCount}" class="text-center">
-                            ${actionBtnHtml}
-                        </td>
-                    `;
+                    <td rowspan="${coilsCount}" class="text-center">
+                        ${actionBtnHtml}
+                    </td>
+                `;
                     }
 
                     rowHtml += '</tr>';
@@ -699,6 +704,7 @@ $details = $m['details'] ?? [];
         const id_gudang_to = $('#id_gudang_to_hidden').val();
         const description = $('#description').val().trim();
 
+        // --- 1. VALIDASI INPUT FORM ---
         if (!no_berita_acara) {
             Swal.fire('Attention', 'Minutes of Meeting No. is required.', 'warning');
             return;
@@ -739,57 +745,72 @@ $details = $m['details'] ?? [];
             }
         }
 
-        const detailsPayload = detailRows.map(r => ({
-            id_warehouse_stock: r.material.id_warehouse_stock,
-            id_material: r.material.id_material,
-            nm_material: r.material.nm_material,
-            trade_name: r.material.trade_name,
-            code_lv4: r.material.code_lv4,
-            id_unit: r.material.id_unit,
-            harga_beli: r.material.harga_beli,
-            coils: r.coils,
-        }));
+        // --- 2. KONFIRMASI SEBELUM SIMPAN ---
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'Are you sure you want to save this mutation request?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, save it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // --- 3. EKSEKUSI PENYIMPANAN (JIKA USER KLIK YES) ---
+                const detailsPayload = detailRows.map(r => ({
+                    id_warehouse_stock: r.material.id_warehouse_stock,
+                    id_material: r.material.id_material,
+                    nm_material: r.material.nm_material,
+                    trade_name: r.material.trade_name,
+                    code_lv4: r.material.code_lv4,
+                    id_unit: r.material.id_unit,
+                    harga_beli: r.material.harga_beli,
+                    coils: r.coils,
+                }));
 
-        $('#details_json').val(JSON.stringify(detailsPayload));
+                $('#details_json').val(JSON.stringify(detailsPayload));
 
-        const formData = new FormData(document.getElementById('formMutasi'));
-        formData.set('no_berita_acara', no_berita_acara);
-        formData.set('id_gudang_from', id_gudang_from);
-        formData.set('id_gudang_to', id_gudang_to);
-        formData.set('description', $('#description').val());
-        formData.set('details_json', JSON.stringify(detailsPayload));
+                const formData = new FormData(document.getElementById('formMutasi'));
+                formData.set('no_berita_acara', no_berita_acara);
+                formData.set('id_gudang_from', id_gudang_from);
+                formData.set('id_gudang_to', id_gudang_to);
+                formData.set('description', $('#description').val());
+                formData.set('details_json', JSON.stringify(detailsPayload));
 
-        const url = MODE === 'edit' ? BASE_URL + '/update/' + RECORD_ID : BASE_URL + '/save';
+                const url = MODE === 'edit' ? BASE_URL + '/update/' + RECORD_ID : BASE_URL + '/save';
 
-        $('#btnSave').prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Saving...');
+                $('#btnSave').prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Saving...');
 
-        $.ajax({
-            url: url,
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            dataType: 'json',
-            success: function(res) {
-                $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-save"></i> Save');
-                if (res.status == 1) {
-                    Swal.fire({
-                        title: 'Success',
-                        text: res.message,
-                        icon: 'success',
-                        showConfirmButton: false,
-                        timer: 1500,
-                        timerProgressBar: true
-                    }).then(() => {
-                        window.location.href = '<?= site_url('pengajuan_mutasi') ?>';
-                    });
-                } else {
-                    Swal.fire('Failed', res.message, 'error');
-                }
-            },
-            error: function() {
-                $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-save"></i> Save');
-                Swal.fire('Error', 'A server error occurred.', 'error');
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json',
+                    success: function(res) {
+                        $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-save"></i> Save');
+                        if (res.status == 1) {
+                            Swal.fire({
+                                title: 'Success',
+                                text: res.message,
+                                icon: 'success',
+                                showConfirmButton: false,
+                                timer: 1500,
+                                timerProgressBar: true
+                            }).then(() => {
+                                window.location.href = '<?= site_url('pengajuan_mutasi') ?>';
+                            });
+                        } else {
+                            Swal.fire('Failed', res.message, 'error');
+                        }
+                    },
+                    error: function() {
+                        $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-save"></i> Save');
+                        Swal.fire('Error', 'A server error occurred.', 'error');
+                    }
+                });
             }
         });
     }

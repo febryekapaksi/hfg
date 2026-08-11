@@ -228,8 +228,27 @@
                                     Rp <?= number_format($row->man_hour_rate, 0, ',', '.') ?>
                                 </td>
                                 <!-- Kg / Pcs -->
-                                <td class="cell-numeric">
-                                    <?= number_format($row->kg_pcs, 4, ',', '.') ?>
+                                <td class="cell-numeric cell-disabled-gray">
+                                    <?php
+                                    $val_kg = (float)($row->kg_pcs ?? 0);
+                                    $has_val = $val_kg > 0;
+                                    ?>
+
+                                    <div class="d-flex align-items-center justify-content-end gap-1">
+                                        <span class="<?= !$has_val ? 'text-danger fw-bold' : '' ?>">
+                                            <?= number_format($val_kg, 4, ',', '.') ?>
+                                        </span>
+
+                                        <?php if (!$has_val): ?>
+                                            <span class="text-danger"
+                                                style="cursor: pointer; font-size: 12px;"
+                                                data-bs-toggle="tooltip"
+                                                data-bs-placement="top"
+                                                title="Weight 0. Silakan isi weight di Master Product!">
+                                                <i class="fas fa-solid fa-exclamation"></i>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                                 <!-- Gaji Direct -->
                                 <td class="cell-numeric cell-disabled-gray">

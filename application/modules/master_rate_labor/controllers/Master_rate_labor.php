@@ -36,8 +36,9 @@ class Master_rate_labor extends Admin_Controller
     /** AJAX POST: Save Labor Rate */
     public function save_rate()
     {
-        $id   = $this->input->post('id');
-        $rate = $this->input->post('rate');
+        $id     = $this->input->post('id');
+        $rate   = $this->input->post('rate');
+        $remark = $this->input->post('remark');
 
         if (empty($id) || !isset($rate)) {
             echo json_encode(['status' => 0, 'pesan' => 'Parameter tidak lengkap']);
@@ -45,7 +46,7 @@ class Master_rate_labor extends Admin_Controller
         }
 
         $user_id = $this->auth->nama() ?: 'admin';
-        $result  = $this->Master_rate_labor_model->save_rate_labor($id, $rate, $user_id);
+        $result  = $this->Master_rate_labor_model->save_rate_labor($id, $rate, $remark, $user_id);
 
         if ($result) {
             echo json_encode(['status' => 1, 'pesan' => 'Tarif labor berhasil diperbarui!']);

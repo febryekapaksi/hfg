@@ -30,10 +30,11 @@ class Master_rate_labor_model extends CI_Model
     }
 
     /** Save / Update labor rate */
-    public function save_rate_labor($id, $rate, $user_id)
+    public function save_rate_labor($id, $rate, $remark, $user_id)
     {
         return $this->db->update('ms_rate_labor', [
             'rate'         => (float) $rate,
+            'remark'       => $remark,
             'updated_by'   => $user_id,
             'updated_date' => date('Y-m-d H:i:s')
         ], ['id' => $id]);
@@ -56,6 +57,7 @@ class Master_rate_labor_model extends CI_Model
                 p.code_lv4,
                 p.nama AS nm_produk,
                 p.trade_name,
+                COALESCE(p.weight, 0) AS weight,
                 COALESCE(r.bahan_pendukung_khusus, 0) AS bahan_pendukung_khusus,
                 COALESCE(r.consumable, 0) AS consumable,
                 COALESCE(r.foh, 0) AS foh,
@@ -63,7 +65,7 @@ class Master_rate_labor_model extends CI_Model
                 COALESCE(r.mp, 0) AS mp,
                 COALESCE(r.total_man_hour, 0) AS total_man_hour,
                 COALESCE(NULLIF(r.man_hour_rate, 0), {$default_direct_rate}) AS man_hour_rate,
-                COALESCE(r.kg_pcs, 0) AS kg_pcs,
+                COALESCE(NULLIF(p.weight, 0), COALESCE(r.kg_pcs, 0)) AS kg_pcs,
                 COALESCE(r.gaji_direct, 0) AS gaji_direct,
                 COALESCE(NULLIF(r.rate_indirect, 0), {$default_indirect_rate}) AS rate_indirect,
                 COALESCE(r.gaji_indirect, 0) AS gaji_indirect,
@@ -98,7 +100,10 @@ class Master_rate_labor_model extends CI_Model
             $foh        = isset($p['foh']) ? (float) $p['foh'] : 0.0;
             $cycle_time = isset($p['cycle_time']) ? (float) $p['cycle_time'] : 0.0;
             $mp         = isset($p['mp']) ? (float) $p['mp'] : 0.0;
-            $kg_pcs     = isset($p['kg_pcs']) ? (float) $p['kg_pcs'] : 0.0;
+
+            // Fetch weight from product_lvl_4 if available
+            $product_row = $this->db->select('weight')->get_where('product_lvl_4', ['code_lv4' => $code_lv4])->row();
+            $kg_pcs      = ($product_row && (float)$product_row->weight > 0) ? (float)$product_row->weight : (isset($p['kg_pcs']) ? (float)$p['kg_pcs'] : 0.0);
 
             // Recalculate formulas on backend for data safety
             $total_man_hour = ($cycle_time * $mp) / 60.0;

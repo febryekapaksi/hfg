@@ -30,3 +30,8 @@
         <?php endif; ?>
     </div>
 </div>
+
+<div class="mb-3">
+    <label class="form-label fw-bold text-dark">Remark</label>
+    <textarea id="remark-val" class="form-control" rows="2" placeholder="Masukkan remark / keterangan"><?= htmlspecialchars($rate->remark ?? '') ?></textarea>
+</div>

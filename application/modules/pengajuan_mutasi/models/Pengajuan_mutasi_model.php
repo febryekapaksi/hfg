@@ -56,6 +56,7 @@ class Pengajuan_mutasi_model extends BF_Model
     {
         return $this->db->select('id, kd_gudang, nm_gudang')
             ->from('warehouse')
+            ->where_in('kd_gudang', ['PRO', 'SLI'])
             ->get()->result_array();
     }
 

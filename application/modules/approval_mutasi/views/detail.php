@@ -123,7 +123,7 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
                         <th>Material</th>
                         <th>Kode Internal (Coil)</th>
                         <th>No. Coil</th>
-                        <th>No. IPP</th>
+                        <th>Gross Weight (kg)</th>
                         <th width="130">Net Weight (kg)</th>
                         <th width="130">Length (m)</th>
                     </tr>
@@ -155,7 +155,7 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
                                         <?php endif; ?>
                                         <td><span class="badge bg-light text-dark border"><?= $coil['kode_internal'] ?? '-' ?></span></td>
                                         <td><strong><?= $coil['no_coil'] ?></strong></td>
-                                        <td><?= $coil['no_ipp'] ?? '-' ?></td>
+                                        <td><?= number_format((float)$coil['gross_weight'], 2, ',', '.') ?></td>
                                         <td><?= number_format((float)$coil['net_weight'], 2, ',', '.') ?></td>
                                         <td><?= number_format((float)$coil['length'], 2, ',', '.') ?></td>
                                     </tr>
@@ -170,20 +170,23 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
                 </tbody>
                 <tfoot>
                     <tr class="table-light fw-bold">
-                        <td colspan="4" class="text-end">Total Keseluruhan</td>
+                        <td colspan="3" class="text-end">Total Keseluruhan</td>
                         <td>
                             <?php
+                            $totalgross = 0;
                             $totalNet = 0;
                             $totalLen = 0;
                             foreach ($details as $d) {
                                 foreach ($d['coils'] ?? [] as $c) {
+                                    $totalgross += (float)$c['gross_weight'];
                                     $totalNet += (float)$c['net_weight'];
                                     $totalLen += (float)$c['length'];
                                 }
                             }
-                            echo number_format($totalNet, 2, ',', '.');
+                            echo number_format($totalgross, 2, ',', '.');
                             ?>
                         </td>
+                        <td><?= number_format($totalNet, 2, ',', '.') ?></td>
                         <td><?= number_format($totalLen, 2, ',', '.') ?></td>
                     </tr>
                 </tfoot>
