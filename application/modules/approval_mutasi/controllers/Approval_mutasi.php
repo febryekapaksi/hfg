@@ -103,26 +103,27 @@ class Approval_mutasi extends Admin_Controller
             return $this->_json(['status' => 0, 'message' => 'Invalid data or status has changed.']);
         }
 
-        $result = $this->approval_mutasi_model->approve_mutation($id, $this->username, $this->datetime);
+        // Gunakan satu transaksi: stock + jurnal harus sukses semua atau rollback semua
+        $this->db->trans_begin();
 
-        if ($result) {
-            // Generate jurnal mutasi
-            $jurnal_error = null;
-            try {
-                $this->approval_mutasi_model->_generate_jurnal_mutasi($mutation);
-            } catch (Exception $e) {
-                $jurnal_error = $e->getMessage();
-                log_message('error', 'GL error approval_mutasi ' . $mutation['mutation_number'] . ': ' . $jurnal_error);
+        try {
+            $result = $this->approval_mutasi_model->approve_mutation($id, $this->username, $this->datetime);
+
+            if (!$result) {
+                $this->db->trans_rollback();
+                return $this->_json(['status' => 0, 'message' => 'Failed to approve mutation.']);
             }
 
-            if ($jurnal_error) {
-                return $this->_json(['status' => 1, 'message' => 'Mutation approved. Stock transferred, but GL Interface failed: ' . $jurnal_error]);
-            }
+            // Generate jurnal — jika template tidak ditemukan akan throw Exception
+            $this->approval_mutasi_model->_generate_jurnal_mutasi($mutation);
 
+            $this->db->trans_commit();
             return $this->_json(['status' => 1, 'message' => 'Mutation approved successfully. Stock has been transferred.']);
+        } catch (Exception $e) {
+            $this->db->trans_rollback();
+            log_message('error', 'Approval mutasi ROLLBACK ' . $mutation['mutation_number'] . ': ' . $e->getMessage());
+            return $this->_json(['status' => 0, 'message' => 'Approval gagal: ' . $e->getMessage()]);
         }
-
-        return $this->_json(['status' => 0, 'message' => 'Failed to approve mutation.']);
     }
 
     // ---------------------------------------------------------------

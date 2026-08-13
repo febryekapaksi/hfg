@@ -187,25 +187,29 @@ class Pengajuan_mutasi extends Admin_Controller
 
         $mutation_number = $this->pengajuan_mutasi_model->generate_mutation_number();
 
-        $header = [
-            'mutation_number'    => $mutation_number,
-            'mutation_date'      => date('Y-m-d'),
-            'no_berita_acara'    => $post['no_berita_acara'],
-            'file_name_original' => $file_name_original,
-            'file_name_hash'     => $file_name_hash,
-            'id_gudang_from'     => $post['id_gudang_from'],
-            'kd_gudang_from'     => $gudang_from['kd_gudang'],
-            'nm_gudang_from'     => $gudang_from['nm_gudang'],
-            'id_gudang_to'       => $post['id_gudang_to'],
-            'kd_gudang_to'       => $gudang_to['kd_gudang'],
-            'nm_gudang_to'       => $gudang_to['nm_gudang'],
-            'description'        => $post['description'],
-            'status'             => 0,
-            'create_by'          => $this->username,
-            'create_date'        => $this->datetime,
-        ];
-
+        // Hitung total_nilai_transaksi & total_net_weight_transaksi dari detail coils
         $details = $this->_parse_details($details_raw);
+        $calc    = $this->_calculate_totals($details, $post['id_gudang_from']);
+
+        $header = [
+            'mutation_number'            => $mutation_number,
+            'mutation_date'              => date('Y-m-d'),
+            'no_berita_acara'            => $post['no_berita_acara'],
+            'file_name_original'         => $file_name_original,
+            'file_name_hash'             => $file_name_hash,
+            'id_gudang_from'             => $post['id_gudang_from'],
+            'kd_gudang_from'             => $gudang_from['kd_gudang'],
+            'nm_gudang_from'             => $gudang_from['nm_gudang'],
+            'id_gudang_to'               => $post['id_gudang_to'],
+            'kd_gudang_to'               => $gudang_to['kd_gudang'],
+            'nm_gudang_to'               => $gudang_to['nm_gudang'],
+            'description'                => $post['description'],
+            'total_nilai_transaksi'      => $calc['total_nilai'],
+            'total_net_weight_transaksi' => $calc['total_net_weight'],
+            'status'                     => 0,
+            'create_by'                  => $this->username,
+            'create_date'                => $this->datetime,
+        ];
         $result  = $this->pengajuan_mutasi_model->save_mutation($header, $details);
 
         if ($result) {
@@ -277,22 +281,27 @@ class Pengajuan_mutasi extends Admin_Controller
             }
         }
 
+        // Hitung total_nilai_transaksi & total_net_weight_transaksi dari detail coils
+        $details = $this->_parse_details($details_raw);
+        $calc    = $this->_calculate_totals($details, $post['id_gudang_from']);
+
         $header = [
-            'no_berita_acara'    => $post['no_berita_acara'],
-            'file_name_original' => $file_name_original,
-            'file_name_hash'     => $file_name_hash,
-            'id_gudang_from'     => $post['id_gudang_from'],
-            'kd_gudang_from'     => $gudang_from['kd_gudang'],
-            'nm_gudang_from'     => $gudang_from['nm_gudang'],
-            'id_gudang_to'       => $post['id_gudang_to'],
-            'kd_gudang_to'       => $gudang_to['kd_gudang'],
-            'nm_gudang_to'       => $gudang_to['nm_gudang'],
-            'description'        => $post['description'],
-            'update_by'          => $this->username,
-            'update_date'        => $this->datetime,
+            'no_berita_acara'            => $post['no_berita_acara'],
+            'file_name_original'         => $file_name_original,
+            'file_name_hash'             => $file_name_hash,
+            'id_gudang_from'             => $post['id_gudang_from'],
+            'kd_gudang_from'             => $gudang_from['kd_gudang'],
+            'nm_gudang_from'             => $gudang_from['nm_gudang'],
+            'id_gudang_to'               => $post['id_gudang_to'],
+            'kd_gudang_to'               => $gudang_to['kd_gudang'],
+            'nm_gudang_to'               => $gudang_to['nm_gudang'],
+            'description'                => $post['description'],
+            'total_nilai_transaksi'      => $calc['total_nilai'],
+            'total_net_weight_transaksi' => $calc['total_net_weight'],
+            'update_by'                  => $this->username,
+            'update_date'                => $this->datetime,
         ];
 
-        $details = $this->_parse_details($details_raw);
         $result  = $this->pengajuan_mutasi_model->update_mutation($id, $header, $details);
 
         if ($result) {
@@ -479,6 +488,40 @@ class Pengajuan_mutasi extends Admin_Controller
         }
 
         return $details;
+    }
+
+    /**
+     * Hitung total_nilai_transaksi dan total_net_weight_transaksi
+     * dari detail coils berdasarkan harga_beli (costbook) di warehouse_stock gudang asal.
+     */
+    private function _calculate_totals($details, $id_gudang_from)
+    {
+        $total_nilai      = 0;
+        $total_net_weight = 0;
+
+        foreach ($details as $detail) {
+            // Ambil harga_beli (costbook) dari warehouse_stock gudang asal
+            $stock = $this->db->select('harga_beli')
+                ->from('warehouse_stock')
+                ->where('code_lv4', $detail['code_lv4'])
+                ->where('id_gudang', $id_gudang_from)
+                ->get()->row();
+
+            $costbook = $stock ? (float) $stock->harga_beli : (float) ($detail['harga_beli'] ?? 0);
+
+            if (!empty($detail['coils'])) {
+                foreach ($detail['coils'] as $coil) {
+                    $nw = (float) $coil['net_weight'];
+                    $total_net_weight += $nw;
+                    $total_nilai      += $costbook * $nw;
+                }
+            }
+        }
+
+        return [
+            'total_nilai'      => (int) round($total_nilai),
+            'total_net_weight' => round($total_net_weight, 2),
+        ];
     }
 
     private function _json($data)

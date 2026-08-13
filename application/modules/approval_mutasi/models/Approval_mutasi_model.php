@@ -71,8 +71,6 @@ class Approval_mutasi_model extends BF_Model
 
     public function approve_mutation($id, $approved_by, $approved_date)
     {
-        $this->db->trans_start();
-
         // Update status header
         $this->db->where('id', $id);
         $this->db->where('status', 1);
@@ -85,7 +83,6 @@ class Approval_mutasi_model extends BF_Model
         ]);
 
         if ($this->db->affected_rows() == 0) {
-            $this->db->trans_rollback();
             return false;
         }
 
@@ -511,8 +508,7 @@ class Approval_mutasi_model extends BF_Model
             $this->db->insert('warehouse_stock_transaction_summary', $s);
         }
 
-        $this->db->trans_complete();
-        return $this->db->trans_status() !== FALSE;
+        return true;
     }
 
     // ---------------------------------------------------------------
@@ -610,17 +606,15 @@ class Approval_mutasi_model extends BF_Model
     }
 
     // ---------------------------------------------------------------
-    // GENERATE JURNAL MUTASI → GL INTERFACE
+    // GENERATE JURNAL MUTASI → GL INTERFACE (via Template)
     // ---------------------------------------------------------------
 
     public function _generate_jurnal_mutasi($mutation)
     {
-        $tgl_inv    = date('Y-m-d');
-        $created_on = date('Y-m-d H:i:s');
-        $user_id    = $this->auth->user_id();
+        // Hitung total nilai mutasi berdasarkan costbook final setelah perpindahan stock
+        $total_nilai      = 0;
+        $total_net_weight = 0;
 
-        // Hitung total nilai mutasi dari coil
-        $total_nilai = 0;
         foreach ($mutation['details'] as $detail) {
             foreach ($detail['coils'] as $coil) {
                 $live_coil = $this->db->query("
@@ -628,145 +622,69 @@ class Approval_mutasi_model extends BF_Model
                 ", [$coil['id_warehouse_stock_coil']])->row();
 
                 if ($live_coil) {
-                    $total_nilai += (float)$live_coil->harga_beli * (float)$live_coil->net_weight;
+                    $nw = (float) $live_coil->net_weight;
+                    $total_nilai += (float) $live_coil->harga_beli * $nw;
+                    $total_net_weight += $nw;
                 } else {
-                    $total_nilai += (float)($coil['harga_beli'] ?? 0) * (float)($coil['net_weight'] ?? 0);
+                    $nw = (float) ($coil['net_weight'] ?? 0);
+                    $total_nilai += (float) ($coil['harga_beli'] ?? 0) * $nw;
+                    $total_net_weight += $nw;
                 }
             }
         }
 
         if ($total_nilai <= 0) return;
 
-        $id_gudang_from = $mutation['id_gudang_from'];
-        $id_gudang_to   = $mutation['id_gudang_to'];
+        // Update total_nilai_transaksi & total_net_weight_transaksi di header
+        $this->db->update('material_mutations', [
+            'total_nilai_transaksi'      => (int) round($total_nilai),
+            'total_net_weight_transaksi' => round($total_net_weight, 2),
+        ], ['id' => $mutation['id']]);
 
-        $coa_produksi = '1105-01-01';
-        $coa_slitting = '1105-01-02';
+        // Tentukan kode jurnal berdasarkan gudang sumber
+        // PRO (Produksi) → JV010, SLI (Slitting) → JV011
+        $kd_gudang_from = $mutation['kd_gudang_from'];
 
-        if ($id_gudang_from == 1) {
-            $coa_debet  = $coa_slitting;
-            $coa_kredit = $coa_produksi;
+        if ($kd_gudang_from === 'PRO') {
+            $kode_jurnal_fallback = 'JV010';
+            $action_mapping       = 'approve_mutasi_pro';
         } else {
-            $coa_debet  = $coa_produksi;
-            $coa_kredit = $coa_slitting;
+            $kode_jurnal_fallback = 'JV011';
+            $action_mapping       = 'approve_mutasi_sli';
         }
 
-        $coa_list  = ['debet' => $coa_debet, 'kredit' => $coa_kredit];
-        $coa_check = $this->_validate_and_get_coa_names($coa_list);
-        if (!$coa_check['valid']) {
-            throw new Exception('COA not found in Master: ' . implode(', ', $coa_check['not_found']));
-        }
-        $coa_names = $coa_check['names'];
+        // Cek mapping dari tabel ms_jurnal_mapping
+        $mapping = $this->db->get_where('ms_jurnal_mapping', [
+            'menu'   => 'Mutasi',
+            'action' => $action_mapping
+        ])->row();
 
-        $keterangan = "Mutation: {$mutation['mutation_number']} | {$mutation['nm_gudang_from']} ke {$mutation['nm_gudang_to']}";
-        $nomor_jv   = $this->_generate_nomor_jv();
+        $kode_jurnal = $mapping ? $mapping->kode_master_jurnal : $kode_jurnal_fallback;
 
-        $this->db->insert('gl_interface', [
-            'nomor'           => $nomor_jv,
-            'tgl'             => $tgl_inv,
-            'bulan'           => date('m'),
-            'tahun'           => date('Y'),
-            'kdcab'           => '101',
-            'jenis'           => 'JV',
-            'keterangan'      => $keterangan,
-            'jenis_transaksi' => 'mutation',
-            'status'          => 'pending',
-            'user_id'         => $user_id,
-            'memo'            => json_encode([
-                'mutation_number' => $mutation['mutation_number'],
-                'gudang_from'     => $mutation['nm_gudang_from'],
-                'gudang_to'       => $mutation['nm_gudang_to'],
-            ]),
-        ]);
-        $id_gl = $this->db->insert_id();
-
-        // DEBET — gudang tujuan bertambah
-        $this->db->insert('gl_interface_detail', [
-            'id_gl_interface' => $id_gl,
-            'no_batch'        => $nomor_jv,
-            'tipe'            => 'JV',
-            'tanggal'         => $tgl_inv,
-            'no_perkiraan'    => $coa_debet,
-            'id_material'     => null,
-            'nm_material'     => null,
-            'id_gudang'       => $id_gudang_to,
-            'no_coil'         => null,
-            'keterangan'      => $coa_names['debet'] . " | " . $mutation['nm_gudang_to'] . " BERTAMBAH",
-            'no_reff'         => $mutation['mutation_number'],
-            'no_request'      => $mutation['mutation_number'],
-            'debet'           => (int) round($total_nilai),
-            'kredit'          => 0,
-            'created_at'      => $created_on,
-        ]);
-
-        // KREDIT — gudang asal berkurang
-        $this->db->insert('gl_interface_detail', [
-            'id_gl_interface' => $id_gl,
-            'no_batch'        => $nomor_jv,
-            'tipe'            => 'JV',
-            'tanggal'         => $tgl_inv,
-            'no_perkiraan'    => $coa_kredit,
-            'id_material'     => null,
-            'nm_material'     => null,
-            'id_gudang'       => $id_gudang_from,
-            'no_coil'         => null,
-            'keterangan'      => $coa_names['kredit'] . " | " . $mutation['nm_gudang_from'] . " BERKURANG",
-            'no_reff'         => $mutation['mutation_number'],
-            'no_request'      => $mutation['mutation_number'],
-            'debet'           => 0,
-            'kredit'          => (int) round($total_nilai),
-            'created_at'      => $created_on,
-        ]);
-    }
-
-    // ---------------------------------------------------------------
-    // VALIDATE COA NAMES FROM DBACC
-    // ---------------------------------------------------------------
-
-    private function _validate_and_get_coa_names(array $coa_list)
-    {
-        $db_acc    = $this->load->database(DBACC, TRUE);
-        $not_found = [];
-        $names     = [];
-
-        foreach ($coa_list as $key => $no_perkiraan) {
-            $row = $db_acc->get_where('coa_master', ['no_perkiraan' => $no_perkiraan])->row();
-            if (!$row) {
-                $not_found[] = $no_perkiraan;
-            } else {
-                $names[$key] = $row->nama;
-            }
-        }
-
-        return [
-            'valid'     => empty($not_found),
-            'names'     => $names,
-            'not_found' => $not_found,
+        // Siapkan data_source untuk template jurnal
+        $data_source = [
+            'tanggal'                    => date('Y-m-d'),
+            'total_nilai_transaksi'      => (int) round($total_nilai),
+            'total_net_weight_transaksi' => round($total_net_weight, 2),
+            'mutation_number'            => $mutation['mutation_number'],
+            'no_doc'                     => $mutation['mutation_number'],
+            'no_request'                 => $mutation['mutation_number'],
+            'nm_gudang_from'             => $mutation['nm_gudang_from'],
+            'nm_gudang_to'               => $mutation['nm_gudang_to'],
+            'id_gudang_from'             => $mutation['id_gudang_from'],
+            'id_gudang_to'               => $mutation['id_gudang_to'],
+            'kd_gudang_from'             => $mutation['kd_gudang_from'],
+            'kd_gudang_to'               => $mutation['kd_gudang_to'],
+            'description'                => $mutation['description'] ?? '',
         ];
-    }
 
-    // ---------------------------------------------------------------
-    // GENERATE NOMOR JV
-    // ---------------------------------------------------------------
+        // Generate jurnal via template (persis seperti close_ros)
+        $this->load->model('gl_interface/Gl_interface_model');
+        $result = $this->Gl_interface_model->generate_jurnal_dari_template($kode_jurnal, $data_source);
 
-    private function _generate_nomor_jv()
-    {
-        $cabang = $this->db->query(
-            "SELECT nomorJC FROM " . DBACC . ".pastibisa_tb_cabang WHERE nocab = '101' LIMIT 1 FOR UPDATE"
-        )->row();
-
-        if (empty($cabang)) {
-            throw new Exception('Branch data not found for generating JV number!');
+        if (!$result) {
+            throw new Exception("Template jurnal '$kode_jurnal' gagal diproses atau tidak ditemukan.");
         }
-
-        $nomor_urut = (int) $cabang->nomorJC + 1;
-        $nomor_jv   = '101-AJV' . date('ym') . $nomor_urut;
-
-        $this->db->query(
-            "UPDATE " . DBACC . ".pastibisa_tb_cabang SET nomorJC = nomorJC + 1 WHERE nocab = '101'"
-        );
-
-        return $nomor_jv;
     }
 
     // ---------------------------------------------------------------
