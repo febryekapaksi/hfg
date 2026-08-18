@@ -129,6 +129,9 @@
      });
    </script>
 
+   <!-- Floating Widget Definisi -->
+   <?php include APPPATH . '../themes/admin/views/widget_definisi.php'; ?>
+
    </body>
 
    </html>
