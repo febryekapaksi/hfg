@@ -259,7 +259,7 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                                                 </div>
 
                                                 <!-- Table WIP -->
-                                                <h6 class="text-warning text-dark border-bottom pb-1 mb-2 mt-4">Tabel WIP</h6>
+                                                <h6 class="text-warning text-dark border-bottom pb-1 mb-2 mt-4">Warehouse WIP</h6>
                                                 <div class="table-responsive mb-4">
                                                     <table class="table table-bordered table-sm coil-table">
                                                         <thead>
@@ -279,7 +279,7 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                                                 </div>
 
                                                 <!-- Table Produksi -->
-                                                <h6 class="text-info text-dark border-bottom pb-1 mb-2">Tabel Produksi</h6>
+                                                <h6 class="text-info text-dark border-bottom pb-1 mb-2">Warehouse Production 1</h6>
                                                 <div class="table-responsive">
                                                     <table class="table table-bordered table-sm coil-table">
                                                         <thead>
@@ -625,8 +625,8 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                     html += '<div class="card-header bg-light fw-bold py-2"><i class="fa fa-cubes me-1"></i> ' + escHtml(nmMaterial) + '</div>';
                     html += '<div class="card-body p-2">';
 
-                    // Tabel WIP
-                    html += '<h6 class="text-warning text-dark border-bottom pb-1 mb-2 fw-bold" style="font-size:13px;"><i class="fa fa-warehouse me-1"></i> Tabel WIP</h6>';
+                    // Warehouse WIP
+                    html += '<h6 class="text-warning text-dark border-bottom pb-1 mb-2 fw-bold" style="font-size:13px;"><i class="fa fa-warehouse me-1"></i> Warehouse WIP</h6>';
                     if (wipCoils.length > 0) {
                         html += '<div class="table-responsive mb-3"><table class="table table-bordered table-sm mb-0" style="font-size:13px;">';
                         html += '<thead><tr><th width="5%" class="text-center">#</th><th>No Coil</th><th>Kode Internal</th></tr></thead><tbody>';
@@ -664,8 +664,8 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                         html += '<div class="text-muted small mb-3">Tidak ada coil WIP ketersediaan.</div>';
                     }
 
-                    // Tabel Produksi
-                    html += '<h6 class="text-info text-dark border-bottom pb-1 mb-2 fw-bold" style="font-size:13px;"><i class="fa fa-industry me-1"></i> Tabel Produksi</h6>';
+                    // Warehouse Production 1
+                    html += '<h6 class="text-info text-dark border-bottom pb-1 mb-2 fw-bold" style="font-size:13px;"><i class="fa fa-industry me-1"></i> Warehouse Production 1</h6>';
                     if (proCoils.length > 0) {
                         html += '<div class="table-responsive"><table class="table table-bordered table-sm mb-0" style="font-size:13px;">';
                         html += '<thead><tr><th width="5%" class="text-center">#</th><th>No Coil</th><th>Kode Internal</th></tr></thead><tbody>';

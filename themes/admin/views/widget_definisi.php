@@ -38,8 +38,7 @@
   /* Popup Panel */
   #definisi-panel {
     position: fixed;
-    bottom: 100px;
-    right: 30px;
+    /* posisi left/top di-set dinamis via JS (positionPanel()) */
     width: 380px;
     max-height: 500px;
     background: #fff;
@@ -59,8 +58,9 @@
   @keyframes fadeInUp {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(6px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -175,8 +175,6 @@
   @media (max-width: 480px) {
     #definisi-panel {
       width: calc(100vw - 32px);
-      right: 16px;
-      bottom: 90px;
       max-height: 60vh;
     }
 
@@ -225,18 +223,95 @@
     let definisiData = [];
     let searchTimeout = null;
 
+    const GAP = 14; // jarak antara fab dan panel
+    const EDGE = 12; // jarak minimal panel ke tepi layar
+
+    // ============================
+    // SMART POSITIONING (Assistive Touch style)
+    // ============================
+    function positionPanel() {
+      const fabRect = fab.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      const panelWidth = panel.offsetWidth;
+      const panelHeight = panel.offsetHeight;
+
+      const fabCenterX = fabRect.left + fabRect.width / 2;
+      const fabCenterY = fabRect.top + fabRect.height / 2;
+
+      // --- HORIZONTAL ---
+      // Kalau fab ada di separuh kiri layar -> panel muncul di KANAN fab
+      // Kalau fab ada di separuh kanan layar -> panel muncul di KIRI fab
+      const spaceRight = vw - fabRect.right;
+      const spaceLeft = fabRect.left;
+
+      let left;
+      const preferRight = fabCenterX < vw / 2;
+
+      if (preferRight && spaceRight >= panelWidth + GAP) {
+        left = fabRect.right + GAP;
+      } else if (!preferRight && spaceLeft >= panelWidth + GAP) {
+        left = fabRect.left - panelWidth - GAP;
+      } else {
+        // Ruang di sisi yang diinginkan tidak cukup -> pakai sisi dengan ruang terbesar
+        left = spaceRight > spaceLeft ?
+          fabRect.right + GAP :
+          fabRect.left - panelWidth - GAP;
+      }
+
+      // Clamp horizontal supaya tidak keluar layar
+      left = Math.max(EDGE, Math.min(left, vw - panelWidth - EDGE));
+
+      // --- VERTICAL ---
+      // Kalau fab ada di separuh atas layar -> panel jatuh ke BAWAH (top sejajar fab.top)
+      // Kalau fab ada di separuh bawah layar -> panel naik ke ATAS (bottom sejajar fab.bottom)
+      const preferBelow = fabCenterY < vh / 2;
+
+      let top;
+      if (preferBelow) {
+        top = fabRect.top;
+      } else {
+        top = fabRect.bottom - panelHeight;
+      }
+
+      // Clamp vertical supaya tidak keluar layar
+      top = Math.max(EDGE, Math.min(top, vh - panelHeight - EDGE));
+
+      panel.style.left = left + 'px';
+      panel.style.top = top + 'px';
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+    }
+
+    // Reposisi saat resize layar (kalau panel sedang terbuka)
+    window.addEventListener('resize', function() {
+      if (isOpen) positionPanel();
+    });
+
     // Toggle panel
     fab.addEventListener('click', function(e) {
       if (fab.classList.contains('dragging')) return;
       isOpen = !isOpen;
       if (isOpen) {
-        panel.classList.add('show');
-        loadDefinisi();
-        setTimeout(() => searchInput.focus(), 100);
+        openPanel();
       } else {
         panel.classList.remove('show');
       }
     });
+
+    function openPanel() {
+      // Sembunyikan dulu selagi diukur, biar gak keliatan "loncat"
+      panel.style.visibility = 'hidden';
+      panel.classList.add('show');
+      loadDefinisi();
+
+      requestAnimationFrame(function() {
+        positionPanel();
+        panel.style.visibility = 'visible';
+        searchInput.focus();
+      });
+    }
 
     // Close button
     closeBtn.addEventListener('click', function() {
@@ -292,6 +367,10 @@
         },
         error: function() {
           listContainer.innerHTML = '<div class="definisi-empty">Gagal memuat data</div>';
+        },
+        complete: function() {
+          // Tinggi panel bisa berubah setelah data masuk -> reposisi ulang
+          if (isOpen) requestAnimationFrame(positionPanel);
         }
       });
     }
@@ -341,9 +420,13 @@
     let hasMoved = false;
 
     fab.addEventListener('mousedown', dragStart);
-    fab.addEventListener('touchstart', dragStart, { passive: false });
+    fab.addEventListener('touchstart', dragStart, {
+      passive: false
+    });
     document.addEventListener('mousemove', drag);
-    document.addEventListener('touchmove', drag, { passive: false });
+    document.addEventListener('touchmove', drag, {
+      passive: false
+    });
     document.addEventListener('mouseup', dragEnd);
     document.addEventListener('touchend', dragEnd);
 
@@ -397,6 +480,9 @@
         fab.style.right = 'auto';
         fab.style.bottom = 'auto';
 
+        // Kalau panel sedang terbuka, ikut reposisi mengikuti fab
+        if (isOpen) positionPanel();
+
         e.preventDefault();
       }
     }
@@ -404,6 +490,8 @@
     function dragEnd(e) {
       isDragging = false;
       if (hasMoved) {
+        // Reposisi final panel setelah drag selesai
+        if (isOpen) positionPanel();
         // Prevent click event after drag
         setTimeout(function() {
           fab.classList.remove('dragging');
