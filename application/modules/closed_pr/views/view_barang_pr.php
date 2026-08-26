@@ -1,12 +1,15 @@
-<table style="width: 150px;">
-    <tr>
-        <td><span style="font-weight: bold;">No. PR</span></td>
-        <td class="text-left"><b>:</b></td>
-        <td class="text-center"><b><?= $no_pr ?></b></td>
-    </tr>
-</table>
-<div class="col-12">
-    <table class="table table-bordered" border="0">
+<div class="mb-3">
+    <table class="table table-sm table-borderless" style="width: auto;">
+        <tr>
+            <td class="fw-bold">No. PR</td>
+            <td class="text-center fw-bold">:</td>
+            <td class="fw-bold"><?= $no_pr ?></td>
+        </tr>
+    </table>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
         <thead>
             <tr>
                 <th class="text-center">No</th>
@@ -30,9 +33,9 @@
 
                 echo '<tr>';
                 echo '<td class="text-center">' . $no . '</td>';
-                echo '<td class="text-center">' . $item->nm_barang . '</td>';
-                echo '<td class="text-right">' . number_format($qty, 2) . '</td>';
-                echo '<td class="text-right">' . number_format($qty_packing, 2) . '</td>';
+                echo '<td>' . $item->nm_barang . '</td>';
+                echo '<td class="text-end">' . number_format($qty, 2) . '</td>';
+                echo '<td class="text-end">' . number_format($qty_packing, 2) . '</td>';
                 echo '<td class="text-center">' . ucfirst($item->unit) . '</td>';
                 echo '<td class="text-center">' . ucfirst($item->unit_packing) . '</td>';
                 echo '</tr>';

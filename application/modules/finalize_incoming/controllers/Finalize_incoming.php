@@ -95,7 +95,7 @@ class Finalize_incoming extends Admin_Controller
 
             // Tombol Print QR
             $btn_print = $coil_ids_str
-                ? '<a href="' . base_url('incoming/print_qr/' . $coil_ids_str) . '" target="_blank" 
+                ? '<a href="' . base_url('incoming/print_qr/' . $row['id']) . '" target="_blank" 
                   class="btn btn-sm btn-info" style="width:100px" title="Print QR">
                   <i class="fa fa-print"></i> Print QR
                </a>'
@@ -208,7 +208,7 @@ class Finalize_incoming extends Admin_Controller
 
             // Tombol Print QR (Hanya muncul jika ada coil-nya)
             $btn_print = $coil_ids_str
-                ? '<a href="' . base_url('incoming/print_qr/' . $coil_ids_str) . '" target="_blank" 
+                ? '<a href="' . base_url('incoming/print_qr/' . $row['id_ros']) . '" target="_blank" 
                   class="btn btn-sm btn-dark" style="width:120px" title="Print QR">
                   <i class="fa fa-qrcode"></i> Print QR
                </a>'
@@ -259,7 +259,7 @@ class Finalize_incoming extends Admin_Controller
         }
 
         $header = $this->db->query("
-            SELECT h.id, h.no_po, h.incoming_date, s.nama AS nm_supplier
+            SELECT h.id, h.no_po, h.no_surat, h.incoming_date, s.nama AS nm_supplier
             FROM tr_ros_header h
             LEFT JOIN new_supplier s ON s.kode_supplier = h.id_supplier
             WHERE h.id = ? LIMIT 1
@@ -270,22 +270,62 @@ class Finalize_incoming extends Admin_Controller
             return;
         }
 
-        $coils = $this->db->query("
+        // Query coils dengan info pack
+        $rows = $this->db->query("
             SELECT c.no_coil, c.berat_kotor, c.berat_bersih, c.panjang,
-                c.status_qc, c.kd_gudang_ke,
+                c.status_qc, c.kd_gudang_ke, c.is_baby_coil, c.qty_roll, c.id_ros_pack,
                 m.nm_erp AS nm_material, m.nm_alias, m.id_barang AS id_material,
-                d.qty AS qty_po
+                d.qty AS qty_po,
+                p.pack_code, p.pack_no
             FROM tr_ros_material_coil c
             JOIN tr_ros_material m  ON m.id = c.id_ros_material
             LEFT JOIN dt_trans_po d ON d.id = m.id_po_detail
+            LEFT JOIN tr_ros_pack p ON p.id = c.id_ros_pack
             WHERE m.id_ros = ?
-            ORDER BY m.id_barang, c.no_coil ASC
+            ORDER BY p.pack_no ASC, m.id_barang ASC, c.no_coil ASC
         ", [$no_ros])->result_array();
+
+        // Group by pack
+        $packs = [];
+        foreach ($rows as $row) {
+            $pack_id = $row['id_ros_pack'] ?: 0;
+
+            if (!isset($packs[$pack_id])) {
+                $packs[$pack_id] = [
+                    'pack_code'    => $row['pack_code'] ?: '-',
+                    'pack_no'      => $row['pack_no'] ?: 0,
+                    'kd_gudang_ke' => $row['kd_gudang_ke'],
+                    'total_nw'     => 0,
+                    'total_gw'     => 0,
+                    'coil_count'   => 0,
+                    'materials'    => [],
+                    'coils'        => [],
+                ];
+            }
+
+            // Skip mother coil from display count
+            $is_mother_with_baby = ((int) $row['is_baby_coil'] === 0 && (int) $row['qty_roll'] > 1);
+            if (!$is_mother_with_baby) {
+                $packs[$pack_id]['total_nw'] += (float) $row['berat_bersih'];
+                $packs[$pack_id]['total_gw'] += (float) $row['berat_kotor'];
+                $packs[$pack_id]['coil_count']++;
+                $packs[$pack_id]['coils'][] = $row;
+            }
+
+            // Collect unique materials
+            $mat_key = $row['id_material'];
+            if (!isset($packs[$pack_id]['materials'][$mat_key])) {
+                $packs[$pack_id]['materials'][$mat_key] = [
+                    'nm_alias'    => $row['nm_alias'],
+                    'nm_material' => $row['nm_material'],
+                ];
+            }
+        }
 
         echo json_encode([
             'status' => 1,
             'header' => $header,
-            'coils'  => $coils,
+            'packs'  => array_values($packs),
         ]);
     }
 
@@ -370,6 +410,10 @@ class Finalize_incoming extends Admin_Controller
                 c.kd_gudang_ke,
                 c.status_qc,
                 c.price_per_coil,
+                c.is_baby_coil,
+                c.qty_roll,
+                c.parent_coil_id,
+                c.id_ros_pack,
                 m.id                    AS id_ros_material,
                 m.id_barang             AS id_material,
                 m.nm_erp                AS nm_material,
@@ -379,10 +423,12 @@ class Finalize_incoming extends Admin_Controller
                 m.id_po_detail,
                 h.no_po,
                 h.id_supplier,
-                h.kurs_pib
+                h.kurs_pib,
+                p.pack_code
             FROM tr_ros_material_coil c
             JOIN tr_ros_material m ON m.id = c.id_ros_material
             JOIN tr_ros_header h   ON h.id = m.id_ros
+            LEFT JOIN tr_ros_pack p ON p.id = c.id_ros_pack
             WHERE m.id_ros = ?
             ORDER BY m.id_barang, c.no_coil ASC
         ", [$no_ros])->result_array();
@@ -424,14 +470,26 @@ class Finalize_incoming extends Admin_Controller
         $total_berat        = 0;
         $total_nilai_inc    = 0;
         $details_to_insert  = [];
+        $pack_codes_inserted = []; // Track pack_code yang sudah di-insert ke warehouse_pack
 
         foreach ($coils as $c) {
             if ((float) $c['berat_bersih'] <= 0) continue;
+
+            // Skip mother coil yang punya baby (bukan unit fisik)
+            $is_mother_with_baby = ((int) $c['is_baby_coil'] === 0 && (int) $c['qty_roll'] > 1);
+            if ($is_mother_with_baby) continue;
 
             $berat_bersih    = (float) $c['berat_bersih'];
             $cost_book       = (float) $c['cost_book'];
             $price_per_coil  = (float) $c['price_per_coil'];
             $nilai_inventory = (float) $c['price_per_coil'];
+
+            // Resolve parent no_coil untuk baby coil
+            $parent_no_coil = null;
+            if ((int) $c['is_baby_coil'] === 1 && !empty($c['parent_coil_id'])) {
+                $parent_row = $this->db->get_where('tr_ros_material_coil', ['id' => (int) $c['parent_coil_id']])->row();
+                $parent_no_coil = $parent_row ? $parent_row->no_coil : null;
+            }
 
             $details_to_insert[] = [
                 'kode_trans'           => $kode_incoming,
@@ -441,6 +499,7 @@ class Finalize_incoming extends Admin_Controller
                 'nm_material'          => $c['nm_material'],
                 'trade_name'           => $c['trade_name'],
                 'no_coil'              => $c['no_coil'],
+                'parent_no_coil'       => $parent_no_coil,
                 'kode_internal'        => $c['kode_internal'],
                 'berat_kotor'          => $c['berat_kotor'],
                 'berat_bersih'         => $berat_bersih,
@@ -452,11 +511,32 @@ class Finalize_incoming extends Admin_Controller
                 'price_per_coil'       => $price_per_coil,
                 'cost_book'            => $cost_book,
                 'nilai_inventory'      => $nilai_inventory,
+                'is_baby_coil'         => (int) $c['is_baby_coil'],
+                'qty_roll'             => (int) $c['qty_roll'],
+                'parent_coil_id'       => $c['parent_coil_id'],
+                'pack_code'            => $c['pack_code'],
+                'id_ros_pack'          => $c['id_ros_pack'],
             ];
 
-            // Semua coil masuk stok terlepas status QC
+            // Semua coil fisik masuk stok
             $total_berat     += $berat_bersih;
             $total_nilai_inc += $price_per_coil;
+
+            // Insert warehouse_pack (sekali per pack_code unik)
+            $pack_code = $c['pack_code'];
+            if (!empty($pack_code) && !isset($pack_codes_inserted[$pack_code])) {
+                $this->db->insert('warehouse_pack', [
+                    'pack_code'  => $pack_code,
+                    'ref_number' => $kode_incoming,
+                    'no_po'      => $ros_header->no_po,
+                    'id_gudang'  => (int) $c['id_gudang_ke'],
+                    'kd_gudang'  => $c['kd_gudang_ke'],
+                    'status'     => 1,
+                    'created_by' => $this->auth->user_id(),
+                    'created_on' => date('Y-m-d H:i:s'),
+                ]);
+                $pack_codes_inserted[$pack_code] = $this->db->insert_id();
+            }
 
             // Update warehouse stock
             $this->_update_stock_and_history(
@@ -469,7 +549,13 @@ class Finalize_incoming extends Admin_Controller
                 $c['no_coil'],
                 (int) $c['id_gudang_ke'],
                 $c['kd_gudang_ke'],
-                $no_ros
+                $no_ros,
+                [
+                    'id_pack'        => isset($pack_codes_inserted[$c['pack_code']]) ? $pack_codes_inserted[$c['pack_code']] : null,
+                    'qty_roll'       => (int) $c['qty_roll'],
+                    'is_baby_coil'   => (int) $c['is_baby_coil'],
+                    'parent_coil_id' => $c['parent_coil_id'],
+                ]
             );
 
             // Update qty_in di dt_trans_po
@@ -506,7 +592,7 @@ class Finalize_incoming extends Admin_Controller
             ", [$kode_incoming, $d['id_material'], $d['id_gudang_ke']])->row();
 
                 $summary_map[$key] = [
-                    'no_ipp'        => $kode_incoming,
+                    'kode_trans'    => $kode_incoming,
                     'id_material'   => $d['id_material'],
                     'nm_material'   => $d['nm_material'],
                     'id_gudang'     => $d['id_gudang_ke'],
@@ -532,20 +618,21 @@ class Finalize_incoming extends Admin_Controller
 
             // Insert detail snapshot coil
             $this->db->insert('warehouse_stock_transaction_detail', [
-                'kode_trans'    => $kode_incoming,
-                'id_material'   => $d['id_material'],
-                'nm_material'   => $d['nm_material'],
-                'id_gudang'     => $d['id_gudang_ke'],
-                'kd_gudang'     => $d['kd_gudang_ke'],
-                'no_coil'       => $d['no_coil'],
-                'kode_internal' => $d['kode_internal'],
-                'gross_weight'  => $d['berat_kotor'],
-                'net_weight'    => $d['berat_bersih'],
-                'length'        => $d['panjang'],
+                'kode_trans'     => $kode_incoming,
+                'id_material'    => $d['id_material'],
+                'nm_material'    => $d['nm_material'],
+                'id_gudang'      => $d['id_gudang_ke'],
+                'kd_gudang'      => $d['kd_gudang_ke'],
+                'no_coil'        => $d['no_coil'],
+                'parent_no_coil' => $d['parent_no_coil'] ?? null,
+                'kode_internal'  => $d['kode_internal'],
+                'gross_weight'   => $d['berat_kotor'],
+                'net_weight'     => $d['berat_bersih'],
+                'length'         => $d['panjang'],
                 'price_per_coil' => $d['price_per_coil'],
-                'cost_book'     => $d['cost_book'],
-                'status_qc'     => 'IN',
-                'created_at'    => date('Y-m-d H:i:s'),
+                'cost_book'      => $d['cost_book'],
+                'status_qc'      => 'IN',
+                'created_at'     => date('Y-m-d H:i:s'),
             ]);
         }
 
@@ -657,7 +744,8 @@ class Finalize_incoming extends Admin_Controller
         $no_coil,
         $id_gudang = 1,
         $kd_gudang = 'PRO',
-        $no_ros = ''
+        $no_ros = '',
+        $extra = []
     ) {
         // ── 1. Ambil data coil dari ROS ───────────────────────────────────────
         $ros_coil = $this->db->query("
@@ -844,20 +932,28 @@ class Finalize_incoming extends Admin_Controller
 
         if (empty($existing_coil)) {
             $this->db->insert('warehouse_stock_coil', [
-                'id_material'   => $id_material,
-                'no_coil'       => $no_coil,
-                'kode_internal' => $kode_internal,
-                'nm_material'   => $nm_material,
-                'trade_name'    => $trade_name,
-                'gross_weight'  => $berat_kotor,
-                'net_weight'    => $berat_bersih,
-                'length'        => $panjang,
-                'id_gudang'     => $id_gudang,
-                'kd_gudang'     => $kd_gudang,
-                'no_ipp'        => $kode_trans,
-                'no_ros'        => $no_ros,
-                'status_proses' => 'in_warehouse',
-                'parent_coil_id' => null,
+                'id_material'    => $id_material,
+                'id_pack'        => isset($extra['id_pack']) ? (int) $extra['id_pack'] : null,
+                'no_coil'        => $no_coil,
+                'kode_internal'  => $kode_internal,
+                'nm_material'    => $nm_material,
+                'trade_name'     => $trade_name,
+                'gross_weight'   => $berat_kotor,
+                'net_weight'     => $berat_bersih,
+                'length'         => $panjang,
+                'qty_roll'       => isset($extra['qty_roll']) ? (int) $extra['qty_roll'] : 1,
+                'id_gudang'      => $id_gudang,
+                'kd_gudang'      => $kd_gudang,
+                'no_ipp'         => $kode_trans,
+                'no_po'          => $no_po,
+                'no_ros'         => $no_ros,
+                'harga_beli'     => $costbook,
+                'total_nilai'    => $berat_bersih * $costbook,
+                'status_proses'  => 'in_warehouse',
+                'parent_coil_id' => isset($extra['parent_coil_id']) ? $extra['parent_coil_id'] : null,
+                'is_baby_coil'   => isset($extra['is_baby_coil']) ? (int) $extra['is_baby_coil'] : 0,
+                'created_by'     => $this->auth->user_id(),
+                'created_on'     => date('Y-m-d H:i:s'),
             ]);
         } else {
             log_message('warning', "Duplicate coil skipped: {$no_coil} for material {$id_material} at gudang {$id_gudang}");

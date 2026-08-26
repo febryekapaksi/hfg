@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Print QR Label - New ROS</title>
+    <title>Print QR Label - Pack</title>
     <style>
         @media print {
             .no-print {
@@ -27,9 +27,9 @@
         }
 
         .label-container {
-            width: 350px;
+            width: 380px;
             border: 2px solid #000;
-            padding: 10px;
+            padding: 12px;
             margin-bottom: 20px;
             display: inline-block;
             vertical-align: top;
@@ -42,30 +42,47 @@
             border-bottom: 1px solid #000;
             margin-bottom: 10px;
             padding-bottom: 5px;
+            font-size: 14px;
         }
 
         .qr-code {
             float: right;
             margin-left: 10px;
             position: relative;
-            display: inline-block;
         }
 
         .thickness-badge {
             position: absolute;
-            bottom: -7px;
+            bottom: -5px;
             right: 0;
             background-color: #fff;
             padding: 1px 6px;
             font-size: 7px;
             font-weight: bold;
             text-align: center;
+            border: 1px solid #ccc;
         }
 
         .info-table td {
             vertical-align: top;
             font-size: 11px;
             padding: 2px 4px;
+        }
+
+        .info-table td.label-td {
+            font-weight: bold;
+            white-space: nowrap;
+            width: 110px;
+        }
+
+        .material-list {
+            margin: 0;
+            padding-left: 12px;
+            font-size: 10px;
+        }
+
+        .material-list li {
+            margin-bottom: 1px;
         }
 
         .clear {
@@ -77,25 +94,18 @@
 <body onload="window.print();">
     <div class="no-print" style="background: #fdfd96; padding: 10px; margin-bottom: 20px;">
         <button onclick="window.print()">Print Now</button>
-        <p><i>Make sure the label printer is ready. Click Print to print all selected labels.</i></p>
+        <p><i>Make sure the label printer is ready. Click Print to print all pack labels.</i></p>
     </div>
 
     <?php foreach ($results as $row): ?>
         <div class="label-container">
-            <div class="header-label">COIL LABEL</div>
+            <div class="header-label">PACK LABEL</div>
 
             <div class="qr-code">
                 <?php
                 require_once APPPATH . 'third_party/phpqrcode/qrlib.php';
 
-                $kode_internal = $row['kode_internal'];
-                if (!empty($row['incoming_date'])) {
-                    $tgl_in = date('d-m-Y', strtotime($row['incoming_date']));
-                } else {
-                    $tgl_in = '-';
-                }
-                $gudang = !empty($row['nm_gudang_tujuan']) ? $row['nm_gudang_tujuan'] : '-';
-                $qr_content = $kode_internal . '/' . $tgl_in . '/' . $gudang;
+                $qr_content = $row['pack_code'];
 
                 ob_start();
                 QRcode::png($qr_content, null, QR_ECLEVEL_M, 4, 1);
@@ -106,51 +116,50 @@
                 ?>
                 <img src="data:image/png;base64,<?= $base64 ?>" style="width: 120px; height: 120px; display: block;">
 
-                <?php if (!empty($row['thickness'])): ?>
+                <?php if (!empty($row['thicknesses'])): ?>
                     <div class="thickness-badge">
-                        <?= $row['thickness'] ?>
+                        <?= implode(' + ', array_map('htmlspecialchars', $row['thicknesses'])) ?>
                     </div>
                 <?php endif; ?>
             </div>
 
             <table class="info-table">
                 <tr>
-                    <td><b>ROS No.</b></td>
-                    <td>: <?= $row['no_ros'] ?></td>
+                    <td class="label-td">Pack No.</td>
+                    <td>: <?= htmlspecialchars($row['pack_code']) ?></td>
                 </tr>
                 <tr>
-                    <td><b>Name</b></td>
+                    <td class="label-td">ROS No.</td>
+                    <td>: <?= htmlspecialchars($row['no_ros']) ?></td>
+                </tr>
+                <tr>
+                    <td class="label-td">Material</td>
                     <td>:
-                        <?php
-                        $nama_asli = $row['nm_alias'];
-
-                        $search = ['NON BORON ', 'BORON ', 'AZ70-'];
-                        $nama_bersih = str_replace($search, '', $nama_asli);
-                        $nama_bersih = rtrim($nama_bersih, '-');
-
-                        echo strtoupper($nama_bersih);
-                        ?>
+                        <?php if (count($row['materials']) === 1): ?>
+                            <?= htmlspecialchars($row['materials'][0]) ?>
+                        <?php else: ?>
+                            <ul class="material-list">
+                                <?php foreach ($row['materials'] as $mat): ?>
+                                    <li><?= htmlspecialchars($mat) ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
                     </td>
                 </tr>
                 <tr>
-                    <td><b>Internal Code</b></td>
-                    <td>: <?= $row['kode_internal'] ?></td>
+                    <td class="label-td">Total Net Weight</td>
+                    <td>: <?= number_format($row['total_nw'], 2) ?> Kg</td>
                 </tr>
                 <tr>
-                    <td><b>Net Weight</b></td>
-                    <td>: <?= number_format($row['berat_bersih'], 2) ?> Kg</td>
+                    <td class="label-td">Total Gross Weight</td>
+                    <td>: <?= number_format($row['total_gw'], 2) ?> Kg</td>
                 </tr>
                 <tr>
-                    <td><b>Gross Weight</b></td>
-                    <td>: <?= number_format($row['berat_kotor'], 2) ?> Kg</td>
-                </tr>
-                <tr>
-                    <td><b>Destination Warehouse</b></td>
+                    <td class="label-td">Dest. Warehouse</td>
                     <td>
-                        : <?= !empty($row['nm_gudang_tujuan']) ? $row['nm_gudang_tujuan'] . ' (' . $row['kd_gudang_ke'] . ')' : '-' ?>
-
-                        <?php if ($row['id_gudang_ke'] == 1): ?>
-                            <span style="display: inline-block; width: 12px; height: 12px; background-color: black; border-radius: 50%; margin-left: 1px; vertical-align: middle;"></span>
+                        : <?= !empty($row['nm_gudang_tujuan']) ? htmlspecialchars($row['nm_gudang_tujuan']) . ' (' . htmlspecialchars($row['kd_gudang_ke']) . ')' : '-' ?>
+                        <?php if ($row['kd_gudang_ke'] === 'PRO'): ?>
+                            <span style="display:inline-block; width:12px; height:12px; background-color:#000; border-radius:50%; margin-left:4px; vertical-align:middle;"></span>
                         <?php endif; ?>
                     </td>
                 </tr>

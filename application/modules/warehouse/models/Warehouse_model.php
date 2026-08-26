@@ -213,7 +213,7 @@ class Warehouse_model extends BF_Model
             $btn_coil  = "<div class='text-center'>
                 <a href='#'
                 onclick=\"showDetailCoil('{$row['id_material']}','{$row['nm_material']}','{$row['id_gudang']}'); return false;\">
-                    {$jml_coil} coil
+                    {$jml_coil} roll
                 </a>
             </div>";
 
@@ -546,6 +546,126 @@ class Warehouse_model extends BF_Model
                 "<div class='text-end'>"    . number_format((float) $row['gross_weight'], 3, ',', '.') . "</div>",
                 "<div class='text-end'>"    . number_format((float) $row['length'],       3, ',', '.') . "</div>",
                 "<div class='text-center'>" . $status_badge . "</div>",
+            ];
+            $no++;
+        }
+
+        echo json_encode([
+            'draw'            => intval($requestData['draw'] ?? 1),
+            'recordsTotal'    => $totalData,
+            'recordsFiltered' => $totalData,
+            'data'            => $data,
+        ]);
+    }
+
+    // ── HISTORY PER PACK PER DAY — DataTable server-side ──────────────────
+
+    public function get_json_warehouse_pack_perday($kd_gudang = '')
+    {
+        $requestData = $_REQUEST;
+        $search      = $requestData['search']['value'] ?? '';
+        $start       = (int) ($requestData['start']  ?? 0);
+        $length      = (int) ($requestData['length'] ?? 25);
+
+        $date_snap = $_POST['date_snap'] ?? '';
+
+        if (empty($date_snap)) {
+            echo json_encode([
+                'draw'            => intval($requestData['draw'] ?? 1),
+                'recordsTotal'    => 0,
+                'recordsFiltered' => 0,
+                'data'            => [],
+            ]);
+            return;
+        }
+
+        $snap_datetime = $date_snap . ' 23:59:59';
+
+        // Ambil coils yang masih IN per tanggal (belum OUT)
+        $where_gudang = '';
+        if (!empty($kd_gudang)) {
+            $kd = $this->db->escape($kd_gudang);
+            $where_gudang = " AND cpd.kd_gudang = {$kd}";
+        }
+
+        $where_search = '';
+        if (!empty($search)) {
+            $s = $this->db->escape_like_str($search);
+            $where_search = " AND (wp.pack_code LIKE '%{$s}%' OR ni.nama LIKE '%{$s}%' OR ni.trade_name LIKE '%{$s}%')";
+        }
+
+        // Sub-query: coils masih IN per tanggal, join ke warehouse_stock_coil untuk id_pack
+        $base_sql = "
+            FROM warehouse_coil_per_day cpd
+            JOIN warehouse_stock_coil wsc ON wsc.no_coil = cpd.no_coil AND wsc.id_gudang = cpd.id_gudang
+            JOIN warehouse_pack wp ON wp.id = wsc.id_pack
+            LEFT JOIN new_inventory_4 ni ON ni.code_lv4 = cpd.id_material
+            WHERE cpd.hist_date <= '{$snap_datetime}'
+              AND cpd.status = 'IN'
+              AND NOT EXISTS (
+                  SELECT 1 FROM warehouse_coil_per_day cpd2
+                  WHERE cpd2.no_coil    = cpd.no_coil
+                    AND cpd2.id_gudang  = cpd.id_gudang
+                    AND cpd2.status     = 'OUT'
+                    AND cpd2.hist_date <= '{$snap_datetime}'
+              )
+              {$where_gudang}
+              {$where_search}
+        ";
+
+        // Count distinct packs
+        $total_q   = $this->db->query("SELECT COUNT(DISTINCT wp.id) AS cnt {$base_sql}")->row();
+        $totalData = $total_q ? (int) $total_q->cnt : 0;
+
+        // Query grouped by pack
+        $order_col = $requestData['order'][0]['column'] ?? 1;
+        $order_dir = $requestData['order'][0]['dir']    ?? 'asc';
+        $col_map   = [1 => 'wp.pack_code', 3 => 'roll_count', 4 => 'total_nw'];
+        $order_by  = $col_map[$order_col] ?? 'wp.pack_code';
+
+        $sql = "
+            SELECT
+                wp.id AS id_pack,
+                wp.pack_code,
+                wp.kd_gudang,
+                GROUP_CONCAT(DISTINCT CONCAT(IFNULL(ni.trade_name,''), '||', IFNULL(ni.nama,'')) SEPARATOR ';;') AS materials_concat,
+                COUNT(cpd.id) AS roll_count,
+                SUM(cpd.net_weight) AS total_nw,
+                AVG(cpd.net_weight) AS nw_per_roll,
+                SUM(cpd.gross_weight) AS total_gw,
+                AVG(cpd.gross_weight) AS gw_per_roll
+            {$base_sql}
+            GROUP BY wp.id
+            ORDER BY {$order_by} {$order_dir}
+            LIMIT {$start}, {$length}
+        ";
+
+        $rows = $this->db->query($sql)->result_array();
+        $data = [];
+        $no   = $start + 1;
+
+        foreach ($rows as $row) {
+            $mat_html = '';
+            if (!empty($row['materials_concat'])) {
+                $mats = array_unique(explode(';;', $row['materials_concat']));
+                foreach ($mats as $m) {
+                    $parts = explode('||', $m);
+                    $trade = $parts[0] ?? '';
+                    $nm    = $parts[1] ?? '';
+                    $mat_html .= '<div style="font-size:11px;"><span class="text-primary me-1">&#9679;</span><b>' . htmlspecialchars($trade) . '</b> <small class="text-muted">(' . htmlspecialchars($nm) . ')</small></div>';
+                }
+            }
+
+            $data[] = [
+                "<div class='text-center'>{$no}</div>",
+                "<div class='text-center'><span class='badge bg-primary'>" . htmlspecialchars($row['pack_code']) . "</span></div>",
+                $mat_html,
+                "<div class='text-center'>" . (int) $row['roll_count'] . "</div>",
+                "<div class='text-end'>" . number_format((float) $row['total_nw'], 2, ',', '.') . "</div>",
+                "<div class='text-end'>" . number_format((float) $row['nw_per_roll'], 2, ',', '.') . "</div>",
+                "<div class='text-end'>" . number_format((float) $row['total_gw'], 2, ',', '.') . "</div>",
+                "<div class='text-end'>" . number_format((float) $row['gw_per_roll'], 2, ',', '.') . "</div>",
+                "<div class='text-center'><span class='badge bg-success'>IN</span></div>",
             ];
             $no++;
         }
@@ -997,5 +1117,134 @@ class Warehouse_model extends BF_Model
         header('Cache-Control: max-age=0');
         $objWriter->save('php://output');
         exit;
+    }
+
+    // ── STOCK PER PACK — DataTable server-side ────────────────────────────
+
+    public function get_json_warehouse_pack($kd_gudang = '')
+    {
+        $requestData = $_REQUEST;
+        $search      = $requestData['search']['value'] ?? '';
+        $start       = (int) ($requestData['start']  ?? 0);
+        $length      = (int) ($requestData['length'] ?? 25);
+        $order_col   = $requestData['order'][0]['column'] ?? 1;
+        $order_dir   = $requestData['order'][0]['dir']    ?? 'asc';
+
+        $col_map = [
+            1 => 'wp.pack_code',
+            2 => 'materials',
+            3 => 'roll_count',
+            4 => 'total_nw',
+            5 => 'nw_per_roll',
+            6 => 'total_gw',
+            7 => 'gw_per_roll',
+        ];
+        $order_by = $col_map[$order_col] ?? 'wp.pack_code';
+
+        $where_gudang = '';
+        if (!empty($kd_gudang)) {
+            $kd = $this->db->escape($kd_gudang);
+            $where_gudang = " AND wp.kd_gudang = {$kd}";
+        }
+
+        $where_search = '';
+        if (!empty($search)) {
+            $s = $this->db->escape_like_str($search);
+            $where_search = " AND (wp.pack_code LIKE '%{$s}%' OR wsc.nm_material LIKE '%{$s}%' OR wsc.trade_name LIKE '%{$s}%')";
+        }
+
+        // Count total packs
+        $count_sql = "
+            SELECT COUNT(DISTINCT wp.id) AS cnt
+            FROM warehouse_pack wp
+            LEFT JOIN warehouse_stock_coil wsc ON wsc.id_pack = wp.id AND wsc.is_baby_coil = 1
+            WHERE wp.status = 1
+            {$where_gudang}
+            {$where_search}
+        ";
+        $total_q   = $this->db->query($count_sql)->row();
+        $totalData = $total_q ? (int) $total_q->cnt : 0;
+
+        // Also count normal coils (is_baby_coil = 0 AND qty_roll = 1 means it IS a physical coil)
+        // The pack view shows: baby coils + normal coils (not mother-with-baby)
+        $sql = "
+            SELECT
+                wp.id AS id_pack,
+                wp.pack_code,
+                wp.kd_gudang,
+                GROUP_CONCAT(DISTINCT CONCAT(wsc.trade_name, '||', wsc.nm_material) SEPARATOR ';;') AS materials_concat,
+                COUNT(wsc.id) AS roll_count,
+                SUM(wsc.net_weight) AS total_nw,
+                AVG(wsc.net_weight) AS nw_per_roll,
+                SUM(wsc.gross_weight) AS total_gw,
+                AVG(wsc.gross_weight) AS gw_per_roll
+            FROM warehouse_pack wp
+            LEFT JOIN warehouse_stock_coil wsc ON wsc.id_pack = wp.id
+                AND (wsc.is_baby_coil = 1 OR (wsc.is_baby_coil = 0 AND wsc.qty_roll <= 1))
+            WHERE wp.status = 1
+            {$where_gudang}
+            {$where_search}
+            GROUP BY wp.id
+            ORDER BY {$order_by} {$order_dir}
+            LIMIT {$start}, {$length}
+        ";
+
+        $rows = $this->db->query($sql)->result_array();
+        $data = [];
+        $no   = $start + 1;
+
+        foreach ($rows as $row) {
+            // Parse materials_concat → build material list HTML
+            $mat_html = '';
+            if (!empty($row['materials_concat'])) {
+                $mats = array_unique(explode(';;', $row['materials_concat']));
+                foreach ($mats as $m) {
+                    $parts = explode('||', $m);
+                    $trade = $parts[0] ?? '';
+                    $nm    = $parts[1] ?? '';
+                    $mat_html .= '<div style="font-size:11px;"><span class="text-primary me-1">&#9679;</span><b>' . htmlspecialchars($trade) . '</b> <small class="text-muted">(' . htmlspecialchars($nm) . ')</small></div>';
+                }
+            }
+
+            // QR button (content = pack_code)
+            $qr_html = "<button type='button' class='btn btn-sm btn-info btn-show-qr' data-qr='" . htmlspecialchars($row['pack_code']) . "'><i class='fa fa-qrcode'></i></button>";
+
+            // Detail button
+            $detail_html = "<button type='button' class='btn btn-sm btn-outline-primary btn-show-pack-detail' data-pack-id='" . $row['id_pack'] . "' data-pack-code='" . htmlspecialchars($row['pack_code']) . "'><i class='fa fa-eye'></i></button>";
+
+            $data[] = [
+                "<div class='text-center'>{$no}</div>",
+                "<div class='text-center'><span class='badge bg-primary'>" . htmlspecialchars($row['pack_code']) . "</span></div>",
+                $mat_html,
+                "<div class='text-center'>" . (int) $row['roll_count'] . "</div>",
+                "<div class='text-end'>" . number_format((float) $row['total_nw'], 2, ',', '.') . "</div>",
+                "<div class='text-end'>" . number_format((float) $row['nw_per_roll'], 2, ',', '.') . "</div>",
+                "<div class='text-end'>" . number_format((float) $row['total_gw'], 2, ',', '.') . "</div>",
+                "<div class='text-end'>" . number_format((float) $row['gw_per_roll'], 2, ',', '.') . "</div>",
+                "<div class='text-center d-flex justify-content-center gap-1'>{$qr_html} {$detail_html}</div>",
+            ];
+            $no++;
+        }
+
+        echo json_encode([
+            'draw'            => intval($requestData['draw'] ?? 1),
+            'recordsTotal'    => $totalData,
+            'recordsFiltered' => $totalData,
+            'data'            => $data,
+        ]);
+    }
+
+    // ── GET PACK DETAIL (untuk modal) ─────────────────────────────────────
+
+    public function get_pack_detail($id_pack)
+    {
+        return $this->db->query("
+            SELECT wsc.no_coil, wsc.nm_material, wsc.trade_name, wsc.kode_internal,
+                   wsc.net_weight, wsc.gross_weight, wsc.length, wsc.is_baby_coil, wsc.qty_roll
+            FROM warehouse_stock_coil wsc
+            WHERE wsc.id_pack = ?
+              AND (wsc.is_baby_coil = 1 OR (wsc.is_baby_coil = 0 AND wsc.qty_roll <= 1))
+            ORDER BY wsc.nm_material ASC, wsc.no_coil ASC
+        ", [$id_pack])->result_array();
     }
 }

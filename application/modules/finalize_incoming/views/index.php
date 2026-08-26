@@ -126,30 +126,23 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                     </div>
                 </div>
 
-                <!-- Tabel Detail Coil -->
+                <!-- Tabel Detail Pack -->
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm" id="modal-table-coil">
                         <thead>
                             <tr>
-                                <th class="text-center" rowspan="2" style="vertical-align:middle;" width="3%">No</th>
-                                <th class="text-center" rowspan="2" style="vertical-align:middle;" width="18%">Material</th>
-                                <th class="text-center" rowspan="2" style="vertical-align:middle;" width="6%">Unit</th>
-                                <th class="text-center" colspan="4" style="background-color:#69c79d !important;">ROS Data (Packing List)</th>
-                                <th class="text-center" colspan="2" style="background-color:#f3b44e !important;">QC Status</th>
-                                <th class="text-center" rowspan="2" style="vertical-align:middle; background-color:#c8e6c9 !important;" width="10%">Destination Warehouse</th>
-                            </tr>
-                            <tr>
-                                <th class="text-center" style="background-color:#69c79d !important;">Coil No.</th>
-                                <th class="text-center" style="background-color:#69c79d !important;">Gross Weight</th>
-                                <th class="text-center" style="background-color:#69c79d !important;">Net Weight</th>
-                                <th class="text-center" style="background-color:#69c79d !important;">Length</th>
-                                <th class="text-center" style="background-color:#f3b44e !important;" width="5%">OK</th>
-                                <th class="text-center" style="background-color:#f3b44e !important;" width="5%">Reject</th>
+                                <th class="text-center" style="vertical-align:middle;" width="3%">No</th>
+                                <th class="text-center" style="vertical-align:middle;" width="12%">Pack Code</th>
+                                <th class="text-center" style="vertical-align:middle;" width="22%">Materials</th>
+                                <th class="text-center" style="vertical-align:middle;" width="6%">Coils</th>
+                                <th class="text-center" style="vertical-align:middle; background-color:#69c79d !important;" width="10%">Total N.W.</th>
+                                <th class="text-center" style="vertical-align:middle; background-color:#69c79d !important;" width="10%">Total G.W.</th>
+                                <th class="text-center" style="vertical-align:middle; background-color:#c8e6c9 !important;" width="10%">Dest. Warehouse</th>
                             </tr>
                         </thead>
                         <tbody id="modal-body-coil">
                             <tr>
-                                <td colspan="10" class="text-center">
+                                <td colspan="7" class="text-center">
                                     <i class="fa fa-spinner fa-spin"></i> Loading data...
                                 </td>
                             </tr>
@@ -307,117 +300,75 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                     }
 
                     $('#modal-supplier').text(res.header.nm_supplier || '-');
-                    $('#modal-no-po').text(res.header.no_po || '-');
+                    $('#modal-no-po').text(res.header.no_surat || '-');
                     var tglDb = res.header.incoming_date || new Date().toISOString().split('T')[0];
                     fpModalTanggal.setDate(tglDb, true);
 
                     var html = '';
-                    var grouped = {};
-                    var coilIndex = 0;
-                    res.coils.forEach(function(c) {
-                        var key = c.id_material;
-                        if (!grouped[key]) grouped[key] = [];
-                        grouped[key].push(c);
-                    });
 
-                    var no = 1;
-                    var groupIdx = 0;
-                    Object.keys(grouped).forEach(function(key) {
-                        var rows = grouped[key];
-                        rows.forEach(function(row, idx) {
-                            html += '<tr class="modal-coil-row" data-material="' + (row.nm_material || '').toLowerCase() + '" data-nocoil="' + (row.no_coil || '').toLowerCase() + '" data-group="' + groupIdx + '">';
-                            if (idx === 0) {
-                                html +=
-                                    '<td class="text-center" rowspan="' + rows.length + '" style="vertical-align:middle;">' + no + '</td>' +
-                                    '<td rowspan="' + rows.length + '" style="vertical-align:middle;">' +
-                                    '<b>' + row.nm_alias + '</b><br>' +
-                                    '<small class="text-muted" style="font-style: italic;">' + (row.nm_material || '') + '</small>' +
-                                    '</td>' +
-                                    '<td class="text-center" rowspan="' + rows.length + '" style="vertical-align:middle;">Kg</td>';
-                            }
-                            html +=
-                                '<td class="text-center bg-light">' + row.no_coil + '</td>' +
-                                '<td class="text-end bg-light">' + parseFloat(row.berat_kotor || 0).toLocaleString('id-ID') + '</td>' +
-                                '<td class="text-end bg-light">' + parseFloat(row.berat_bersih || 0).toLocaleString('id-ID') + '</td>' +
-                                '<td class="text-end bg-light">' + parseFloat(row.panjang || 0).toLocaleString('id-ID') + '</td>' +
-                                '<td class="text-center">' +
-                                '<input type="radio" class="form-check-input modal-qc-radio" name="modal_qc[' + coilIndex + ']" value="OK" data-nocoil="' + row.no_coil + '" checked>' +
-                                '</td>' +
-                                '<td class="text-center">' +
-                                '<input type="radio" class="form-check-input modal-qc-radio" name="modal_qc[' + coilIndex + ']" value="REJECT" data-nocoil="' + row.no_coil + '">' +
-                                '</td>' +
-                                '<td class="text-center">' + (row.kd_gudang_ke || '-') + '</td>' +
+                    if (res.packs && res.packs.length > 0) {
+                        res.packs.forEach(function(pack, packIdx) {
+                            var packCode = pack.pack_code || ('Pack #' + pack.pack_no);
+
+                            // Build material list with dot prefix
+                            var matList = '';
+                            var matKeys = Object.keys(pack.materials || {});
+                            matKeys.forEach(function(key) {
+                                var m = pack.materials[key];
+                                matList += '<div style="font-size:11px;"><span class="text-primary me-1">&#9679;</span><b>' + (m.nm_alias || '') + '</b> <small class="text-muted">(' + (m.nm_material || '') + ')</small></div>';
+                            });
+
+                            html += '<tr class="modal-pack-row" data-pack-code="' + (pack.pack_code || '').toLowerCase() + '">' +
+                                '<td class="text-center">' + (packIdx + 1) + '</td>' +
+                                '<td class="text-center"><span class="badge bg-primary">' + packCode + '</span></td>' +
+                                '<td>' + matList + '</td>' +
+                                '<td class="text-center">' + (pack.coil_count || 0) + '</td>' +
+                                '<td class="text-end fw-bold">' + parseFloat(pack.total_nw || 0).toLocaleString('id-ID', {minimumFractionDigits: 2}) + '</td>' +
+                                '<td class="text-end fw-bold">' + parseFloat(pack.total_gw || 0).toLocaleString('id-ID', {minimumFractionDigits: 2}) + '</td>' +
+                                '<td class="text-center">' + (pack.kd_gudang_ke || '-') + '</td>' +
                                 '</tr>';
-                            coilIndex++;
                         });
-                        no++;
-                        groupIdx++;
-                    });
+                    } else {
+                        html = '<tr><td colspan="7" class="text-center text-warning">No pack data found.</td></tr>';
+                    }
 
                     $('#modal-body-coil').html(html);
                 },
                 error: function() {
                     $('#modal-body-coil').html(
-                        '<tr><td colspan="11" class="text-center text-danger">Failed to connect to server.</td></tr>'
+                        '<tr><td colspan="7" class="text-center text-danger">Failed to connect to server.</td></tr>'
                     );
                 }
             });
         });
 
-        /* ── Search modal coil ── */
+        /* ── Search modal pack ── */
         $(document).on('keyup', '#search-modal-coil', function() {
             var keyword = $(this).val().toLowerCase().trim();
-            var $rows = $('#modal-body-coil .modal-coil-row');
-
-            // Hapus highlight sebelumnya
-            $rows.find('.highlight-search').each(function() {
-                var parent = $(this).parent();
-                $(this).replaceWith($(this).text());
-                parent.get(0).normalize();
-            });
+            var $rows = $('#modal-body-coil .modal-pack-row');
 
             if (!keyword) {
                 $rows.show();
+                $('#no-result-modal-coil').remove();
                 return;
             }
 
-            // Cari group yang punya match
-            var matchedGroups = {};
+            var visibleCount = 0;
             $rows.each(function() {
-                var group = $(this).data('group');
-                var material = $(this).data('material') || '';
-                var nocoil = $(this).data('nocoil') || '';
-                if (material.indexOf(keyword) > -1 || nocoil.indexOf(keyword) > -1) {
-                    matchedGroups[group] = true;
-                }
-            });
-
-            // Show/hide + highlight teks yang match
-            var regex = new RegExp('(' + keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-            $rows.each(function() {
-                var group = $(this).data('group');
-                if (matchedGroups[group]) {
+                var packCode = $(this).data('pack-code') || '';
+                var rowText = $(this).text().toLowerCase();
+                if (packCode.indexOf(keyword) > -1 || rowText.indexOf(keyword) > -1) {
                     $(this).show();
-                    // Highlight teks di dalam td
-                    $(this).find('td').each(function() {
-                        var td = $(this);
-                        // Hanya proses td yang berisi teks langsung (bukan input/select)
-                        if (td.find('input,select,button').length) return;
-                        var text = td.text();
-                        if (text.toLowerCase().indexOf(keyword) > -1) {
-                            td.html(td.html().replace(regex, '<span class="highlight-search" style="background-color:#ffe066;border-radius:2px;padding:0 2px;">$1</span>'));
-                        }
-                    });
+                    visibleCount++;
                 } else {
                     $(this).hide();
                 }
             });
 
-            // Tampilkan keterangan jika tidak ada hasil
             $('#no-result-modal-coil').remove();
-            if (Object.keys(matchedGroups).length === 0) {
+            if (visibleCount === 0) {
                 $('#modal-body-coil').append(
-                    '<tr id="no-result-modal-coil"><td colspan="10" class="text-center text-muted py-3">' +
+                    '<tr id="no-result-modal-coil"><td colspan="7" class="text-center text-muted py-3">' +
                     '<i class="fa fa-search"></i> No results found for "<b>' + keyword + '</b>"</td></tr>'
                 );
             }
@@ -437,14 +388,8 @@ $ENABLE_DELETE  = has_permission('Finalize_Incoming.Delete');
                 return;
             }
 
-            // Kumpulkan data status QC
+            // QC data — semua coil default OK (QC per pack view)
             var qcData = [];
-            $('#modal-body-coil .modal-qc-radio:checked').each(function() {
-                qcData.push({
-                    no_coil: $(this).data('nocoil'),
-                    status_qc: $(this).val()
-                });
-            });
 
             bootstrap.Modal.getInstance(document.getElementById('modalFinalize')).hide();
 

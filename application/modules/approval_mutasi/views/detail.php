@@ -114,84 +114,100 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
             </div>
         <?php endif; ?>
 
-        <!-- Detail Material & Coil -->
-        <h6 class="mb-2">Material & Coil Details</h6>
+        <!-- Detail Pack -->
+        <h6 class="mb-2"><i class="fa-solid fa-boxes-stacked me-1"></i> Pack Details</h6>
         <div class="table-responsive">
-            <table class="table table-bordered align-middle" id="tblDetailApproval">
+            <table class="table table-bordered table-sm align-middle" id="tblDetailApproval">
                 <thead class="table-light">
                     <tr>
-                        <th>Material</th>
-                        <th>Kode Internal (Coil)</th>
-                        <th>No. Coil</th>
-                        <th>Gross Weight (kg)</th>
-                        <th width="130">Net Weight (kg)</th>
-                        <th width="130">Length (m)</th>
+                        <th width="3%">No</th>
+                        <th class="text-center" width="12%">Pack Code</th>
+                        <th>Materials</th>
+                        <th class="text-center" width="5%">Roll</th>
+                        <th class="text-end" width="10%">N.W. Total</th>
+                        <th class="text-end" width="10%">G.W. Total</th>
+                        <th class="text-center" width="6%">Detail</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (!empty($details)): ?>
-                        <?php foreach ($details as $detail): ?>
-                            <?php $coils = $detail['coils'] ?? []; ?>
-                            <?php if (empty($coils)): ?>
-                                <tr>
-                                    <td>
-                                        <div class="fw-bold"><?= $detail['nm_material'] ?></div>
-                                        <?php if (!empty($detail['trade_name'])): ?>
-                                            <small class="text-muted"><?= $detail['trade_name'] ?></small>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td colspan="5" class="text-center text-muted">No coils</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($coils as $idx => $coil): ?>
-                                    <tr>
-                                        <?php if ($idx === 0): ?>
-                                            <td rowspan="<?= count($coils) ?>">
-                                                <div class="fw-bold"><?= $detail['nm_material'] ?></div>
-                                                <?php if (!empty($detail['trade_name'])): ?>
-                                                    <small class="text-muted"><?= $detail['trade_name'] ?></small>
-                                                <?php endif; ?>
-                                            </td>
-                                        <?php endif; ?>
-                                        <td><span class="badge bg-light text-dark border"><?= $coil['kode_internal'] ?? '-' ?></span></td>
-                                        <td><strong><?= $coil['no_coil'] ?></strong></td>
-                                        <td><?= number_format((float)$coil['gross_weight'], 2, ',', '.') ?></td>
-                                        <td><?= number_format((float)$coil['net_weight'], 2, ',', '.') ?></td>
-                                        <td><?= number_format((float)$coil['length'], 2, ',', '.') ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                    <?php if (!empty($details)):
+                        // Group details by pack
+                        $pack_groups = [];
+                        foreach ($details as $detail) {
+                            $pk = $detail['pack_code'] ?: ($detail['id_warehouse_pack'] ?: 'unknown');
+                            if (!isset($pack_groups[$pk])) {
+                                $pack_groups[$pk] = [
+                                    'pack_code' => $detail['pack_code'] ?: $pk,
+                                    'id_warehouse_pack' => $detail['id_warehouse_pack'],
+                                    'materials' => [],
+                                    'roll_count' => 0,
+                                    'total_nw' => 0,
+                                    'total_gw' => 0,
+                                    'coils' => [],
+                                ];
+                            }
+                            $mat_name = $detail['trade_name'] ?: $detail['nm_material'];
+                            if (!in_array($mat_name, $pack_groups[$pk]['materials'])) {
+                                $pack_groups[$pk]['materials'][] = $mat_name;
+                            }
+                            foreach ($detail['coils'] ?? [] as $coil) {
+                                $pack_groups[$pk]['roll_count']++;
+                                $pack_groups[$pk]['total_nw'] += (float) $coil['net_weight'];
+                                $pack_groups[$pk]['total_gw'] += (float) $coil['gross_weight'];
+                                $pack_groups[$pk]['coils'][] = $coil;
+                            }
+                        }
+
+                        $no = 1;
+                        foreach ($pack_groups as $pg): ?>
+                            <tr>
+                                <td class="text-center"><?= $no++ ?></td>
+                                <td class="text-center"><span class="badge bg-primary"><?= htmlspecialchars($pg['pack_code']) ?></span></td>
+                                <td>
+                                    <?php foreach ($pg['materials'] as $mat): ?>
+                                        <div style="font-size:11px;"><span class="text-primary me-1">&#9679;</span><b><?= htmlspecialchars($mat) ?></b></div>
+                                    <?php endforeach; ?>
+                                </td>
+                                <td class="text-center"><?= $pg['roll_count'] ?></td>
+                                <td class="text-end"><?= number_format($pg['total_nw'], 2, ',', '.') ?></td>
+                                <td class="text-end"><?= number_format($pg['total_gw'], 2, ',', '.') ?></td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-info btn-detail-pack" data-coils='<?= htmlspecialchars(json_encode($pg['coils'])) ?>' data-pack="<?= htmlspecialchars($pg['pack_code']) ?>">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="6" class="text-center text-muted">No detail data</td>
+                            <td colspan="7" class="text-center text-muted">No detail data</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
                 <tfoot>
                     <tr class="table-light fw-bold">
-                        <td colspan="3" class="text-end">Total Keseluruhan</td>
-                        <td>
+                        <td colspan="3" class="text-end">Total</td>
+                        <td class="text-center">
                             <?php
-                            $totalgross = 0;
-                            $totalNet = 0;
-                            $totalLen = 0;
-                            foreach ($details as $d) {
-                                foreach ($d['coils'] ?? [] as $c) {
-                                    $totalgross += (float)$c['gross_weight'];
-                                    $totalNet += (float)$c['net_weight'];
-                                    $totalLen += (float)$c['length'];
-                                }
+                            $totalRoll = 0;
+                            $totalNW = 0;
+                            $totalGW = 0;
+                            foreach ($pack_groups ?? [] as $pg2) {
+                                $totalRoll += $pg2['roll_count'];
+                                $totalNW += $pg2['total_nw'];
+                                $totalGW += $pg2['total_gw'];
                             }
-                            echo number_format($totalgross, 2, ',', '.');
+                            echo $totalRoll;
                             ?>
                         </td>
-                        <td><?= number_format($totalNet, 2, ',', '.') ?></td>
-                        <td><?= number_format($totalLen, 2, ',', '.') ?></td>
+                        <td class="text-end"><?= number_format($totalNW, 2, ',', '.') ?></td>
+                        <td class="text-end"><?= number_format($totalGW, 2, ',', '.') ?></td>
+                        <td></td>
                     </tr>
                 </tfoot>
             </table>
         </div>
+
 
         <!-- Action Buttons -->
         <div class="mt-4 d-flex gap-2 justify-content-between">
@@ -214,6 +230,22 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
             <?php endif; ?>
         </div>
 
+    </div>
+</div>
+
+<!-- Modal Detail Coil per Pack -->
+<div class="modal fade" id="modalDetailPackApproval" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="fa fa-eye me-1"></i> Pack Detail — <span id="approvalPackCode"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="approvalPackBody" style="max-height: 70vh; overflow: auto;"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -336,4 +368,41 @@ $st = $status_map[$m['status']] ?? ['-', 'secondary'];
             }
         });
     }
+
+    // Detail pack modal — gunakan data-bs-toggle approach
+    $(document).on('click', '.btn-detail-pack', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        var coils = JSON.parse($(this).attr('data-coils'));
+        var packCode = $(this).data('pack');
+        $('#approvalPackCode').text(packCode);
+
+        if (!coils || coils.length === 0) {
+            $('#approvalPackBody').html('<div class="text-center text-muted py-4">No coil data.</div>');
+        } else {
+            var html = '<table class="table table-bordered table-sm table-striped" style="font-size:11px;"><thead class="table-light"><tr><th class="text-center">No</th><th>No. Coil</th><th>Internal Code</th><th class="text-end">N.W. (Kg)</th><th class="text-end">G.W. (Kg)</th><th class="text-end">Length (M)</th></tr></thead><tbody>';
+            var tNw = 0,
+                tGw = 0;
+            coils.forEach(function(c, i) {
+                tNw += parseFloat(c.net_weight || 0);
+                tGw += parseFloat(c.gross_weight || 0);
+                html += '<tr><td class="text-center">' + (i + 1) + '</td><td>' + (c.no_coil || '-') + '</td><td>' + (c.kode_internal || '-') + '</td><td class="text-end">' + parseFloat(c.net_weight || 0).toLocaleString('id-ID', {
+                    minimumFractionDigits: 2
+                }) + '</td><td class="text-end">' + parseFloat(c.gross_weight || 0).toLocaleString('id-ID', {
+                    minimumFractionDigits: 2
+                }) + '</td><td class="text-end">' + parseFloat(c.length || 0).toLocaleString('id-ID', {
+                    minimumFractionDigits: 2
+                }) + '</td></tr>';
+            });
+            html += '</tbody><tfoot class="table-secondary"><tr><td colspan="3" class="text-end fw-bold">Total</td><td class="text-end fw-bold">' + tNw.toLocaleString('id-ID', {
+                minimumFractionDigits: 2
+            }) + '</td><td class="text-end fw-bold">' + tGw.toLocaleString('id-ID', {
+                minimumFractionDigits: 2
+            }) + '</td><td></td></tr></tfoot></table>';
+            $('#approvalPackBody').html(html);
+        }
+
+        $('#modalDetailPackApproval').modal('show');
+    });
 </script>

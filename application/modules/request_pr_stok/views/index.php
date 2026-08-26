@@ -4,27 +4,24 @@ $ENABLE_MANAGE  = has_permission('PR_Stok.Manage');
 $ENABLE_VIEW    = has_permission('PR_Stok.View');
 $ENABLE_DELETE  = has_permission('PR_Stok.Delete');
 ?>
-<style type="text/css">
-	thead input {
-		width: 100%;
-	}
-</style>
-<div id='alert_edit' class="alert alert-success alert-dismissable" style="padding: 15px; display: none;"></div>
-<link rel="stylesheet" href="<?= base_url('assets/plugins/datatables/dataTables.bootstrap.css') ?>">
 
-<div class="box">
-	<div class="box-header">
+<div class="card shadow-sm border-0">
+	<div class="card-header d-flex align-items-center justify-content-between">
+		<h5 class="mb-0">Daftar Purchase Request</h5>
 		<?php if ($ENABLE_ADD) : ?>
-			<!-- <a class="btn btn-info btn-sm" style='float:right; margin-left:5px;' href="<?= base_url('stock_origa/download_excel'); ?>" target='_blank' title="Download"><i class="fa fa-excel">&nbsp;</i>Excel</a> -->
-			<a class="btn btn-success btn-md" style='float:right;' href="<?= base_url('request_pr_stok/add_new') ?>" title="Add">Add</a>
+			<a class="btn btn-success" href="<?= base_url('request_pr_stok/add_new') ?>" title="Add">
+				<i class="ti ti-plus me-1"></i> Add PR
+			</a>
 		<?php endif; ?>
-		<br>
-		<div class="form-group row" hidden>
-			<div class="col-md-1">
-				<b>Product Type</b>
-			</div>
+	</div>
+	<!-- /.card-header -->
+
+	<div class="card-body">
+		<!-- Filter (hidden, dipertahankan untuk fungsionalitas) -->
+		<div class="row mb-3" hidden>
 			<div class="col-md-3">
-				<select name='product' id='product' class='form-control input-sm chosen-select'>
+				<label class="form-label fw-bold">Product Type</label>
+				<select name='product' id='product' class='form-select select2'>
 					<option value='0'>All Product Type</option>
 					<?php
 					foreach (get_list_inventory_lv1('product') as $val => $valx) {
@@ -34,12 +31,10 @@ $ENABLE_DELETE  = has_permission('PR_Stok.Delete');
 				</select>
 			</div>
 		</div>
-		<div class="form-group row" hidden>
-			<div class="col-md-1">
-				<b>Costcenter</b>
-			</div>
+		<div class="row mb-3" hidden>
 			<div class="col-md-3">
-				<select name='costcenter' id='costcenter' class='form-control input-sm chosen-select'>
+				<label class="form-label fw-bold">Costcenter</label>
+				<select name='costcenter' id='costcenter' class='form-select select2'>
 					<option value='0'>All Costcenter</option>
 					<?php
 					foreach (get_costcenter() as $val => $valx) {
@@ -49,169 +44,182 @@ $ENABLE_DELETE  = has_permission('PR_Stok.Delete');
 				</select>
 			</div>
 		</div>
-	</div>
-	<!-- /.box-header -->
-	<div class="box-body">
-		<table id="example1" class="table table-bordered table-striped" width='100%'>
-			<thead>
-				<tr>
-					<th class="text-center">#</th>
-					<th class="text-center">No. PR</th>
-					<th class="text-center">Kategori PR</th>
-					<th class="text-center">Nama Barang</th>
-					<th class="text-center" style="min-width: 8% !important;">Qty (Pack)</th>
-					<th class="text-center">Dibutuhkan</th>
-					<th class="text-center">Status</th>
-					<th class="text-center">Request By</th>
-					<th class="text-center">Request Date</th>
-					<th class="text-center">Option</th>
-				</tr>
-			</thead>
-			<tbody>
-				<?php
-				$no = 1;
-				foreach ($result as $row) {
-					$get_detail_pr = $this->db->get_where('material_planning_base_on_produksi_detail', ['so_number' => $row->so_number])->result();
 
-					$nm_detail = '';
-					$qty_detail = '';
-					foreach ($get_detail_pr as $item) {
-						// $get_stok_data = $this->db->get_where('accessories', ['id' => $row->id_material])->row();
-						$this->db->select('a.stock_name, b.code');
-						$this->db->from('accessories a');
-						$this->db->join('ms_satuan b', 'b.id = a.id_unit_gudang', 'left');
-						$this->db->where('a.id', $item->id_material);
-						$get_stok_data = $this->db->get()->row();
+		<!-- Table -->
+		<div class="table-responsive">
+			<table id="example1" class="table table-bordered table-striped" width='100%'>
+				<thead>
+					<tr>
+						<th class="text-center">#</th>
+						<th class="text-center">No. PR</th>
+						<th class="text-center">Kategori PR</th>
+						<th class="text-center">Nama Barang</th>
+						<th class="text-center" style="min-width: 8% !important;">Qty (Pack)</th>
+						<th class="text-center">Dibutuhkan</th>
+						<th class="text-center">Status</th>
+						<th class="text-center">Request By</th>
+						<th class="text-center">Request Date</th>
+						<th class="text-center">Option</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php
+					$no = 1;
+					foreach ($result as $row) {
+						$get_detail_pr = $this->db->get_where('material_planning_base_on_produksi_detail', ['so_number' => $row->so_number])->result();
 
-						if (!empty($get_stok_data)) {
-							$nm_detail = $nm_detail . $get_stok_data->stock_name . '<br>';
-							$qty_detail = $qty_detail . number_format($item->propose_purchase, 2) . ' ' . ucfirst($get_stok_data->code) . '<br>';
+						$nm_detail = '';
+						$qty_detail = '';
+						foreach ($get_detail_pr as $item) {
+							$this->db->select('a.stock_name, b.code');
+							$this->db->from('accessories a');
+							$this->db->join('ms_satuan b', 'b.id = a.id_unit_gudang', 'left');
+							$this->db->where('a.id', $item->id_material);
+							$get_stok_data = $this->db->get()->row();
+
+							if (!empty($get_stok_data)) {
+								$nm_detail = $nm_detail . $get_stok_data->stock_name . '<br>';
+								$qty_detail = $qty_detail . number_format($item->propose_purchase, 2) . ' ' . ucfirst($get_stok_data->code) . '<br>';
+							}
 						}
-					}
 
-					$kategori_pr = [];
-					$this->db->select('c.nm_category as kategori');
-					$this->db->from('material_planning_base_on_produksi_detail a');
-					$this->db->join('accessories b', 'b.id = a.id_material', 'left');
-					$this->db->join('accessories_category c', 'c.id = b.id_category', 'left');
-					$this->db->where('a.so_number', $row->so_number);
-					$this->db->group_by('c.id');
-					$get_kategori_pr = $this->db->get()->result();
-					foreach ($get_kategori_pr as $item_kategori_pr) {
-						$kategori_pr[] = $item_kategori_pr->kategori;
-					}
+						$kategori_pr = [];
+						$this->db->select('c.nm_category as kategori');
+						$this->db->from('material_planning_base_on_produksi_detail a');
+						$this->db->join('accessories b', 'b.id = a.id_material', 'left');
+						$this->db->join('accessories_category c', 'c.id = b.id_category', 'left');
+						$this->db->where('a.so_number', $row->so_number);
+						$this->db->group_by('c.id');
+						$get_kategori_pr = $this->db->get()->result();
+						foreach ($get_kategori_pr as $item_kategori_pr) {
+							$kategori_pr[] = $item_kategori_pr->kategori;
+						}
 
-					if (!empty($kategori_pr)) {
-						$kategori_pr = implode(', ', $kategori_pr);
-					} else {
-						$kategori_pr = '';
-					}
+						if (!empty($kategori_pr)) {
+							$kategori_pr = implode(', ', $kategori_pr);
+						} else {
+							$kategori_pr = '';
+						}
 
-					echo '<tr>';
-					echo '<td class="text-center">' . $no . '</td>';
-					echo '<td>' . strtoupper($row->no_pr) . '</td>';
-					echo '<td>' . strtoupper($kategori_pr) . '</td>';
-					echo '<td>' . $nm_detail . '</td>';
-					echo '<td class="text-right">' . $qty_detail . '</td>';
-					echo '<td>' . date('d F Y', strtotime($row->tgl_dibutuhkan)) . '</td>';
+						echo '<tr>';
+						echo '<td class="text-center">' . $no . '</td>';
+						echo '<td>' . strtoupper($row->no_pr) . '</td>';
+						echo '<td>' . strtoupper($kategori_pr) . '</td>';
+						echo '<td>' . $nm_detail . '</td>';
+						echo '<td class="text-end">' . $qty_detail . '</td>';
+						echo '<td>' . date('d F Y', strtotime($row->tgl_dibutuhkan)) . '</td>';
 
-					$getCheck = $this->db->get_where('material_planning_base_on_produksi_detail', array('so_number' => $row->so_number, 'status_app' => 'N'))->result();
+						$getCheck = $this->db->get_where('material_planning_base_on_produksi_detail', array('so_number' => $row->so_number, 'status_app' => 'N'))->result();
 
-					$valid_edit = 1;
-					if (($row->sts_reject1 !== null || $row->sts_reject2 !== null || $row->sts_reject3 !== null) && $row->rejected == 1) {
-						if ($row->sts_reject1 == "1") :
-							$warna = "red";
-							$sts = "Rejected By Head";
-						elseif ($row->sts_reject2 == "1") :
-							$warna = "red";
-							$sts = "Rejected By Cost Control";
-						elseif ($row->sts_reject3 == "1") :
-							$warna = "red";
-							$sts = "Rejected By Management";
-						endif;
-
-						$warna = 'red';
-						$sts = 'Rejected';
-					} else {
-						if ($row->app_1 == null && $row->app_2 == null && $row->app_3 == null) :
-							$warna = "blue";
-							$sts = "Waiting Approval";
-						else :
-							if ($row->sts_app == "Y") :
-								$warna = "green";
-								$sts = "Approved";
-							else :
-								$warna = "blue";
-								$sts = "Waiting Approval";
+						$valid_edit = 1;
+						if (($row->sts_reject1 !== null || $row->sts_reject2 !== null || $row->sts_reject3 !== null) && $row->rejected == 1) {
+							if ($row->sts_reject1 == "1") :
+								$warna = "danger";
+								$sts = "Rejected By Head";
+							elseif ($row->sts_reject2 == "1") :
+								$warna = "danger";
+								$sts = "Rejected By Cost Control";
+							elseif ($row->sts_reject3 == "1") :
+								$warna = "danger";
+								$sts = "Rejected By Management";
 							endif;
-						endif;
+
+							$warna = 'danger';
+							$sts = 'Rejected';
+						} else {
+							if ($row->app_1 == null && $row->app_2 == null && $row->app_3 == null) :
+								$warna = "primary";
+								$sts = "Waiting Approval";
+							else :
+								if ($row->sts_app == "Y") :
+									$warna = "success";
+									$sts = "Approved";
+								else :
+									$warna = "primary";
+									$sts = "Waiting Approval";
+								endif;
+							endif;
+						}
+
+						if (COUNT($getCheck) <= 0) {
+							$sts = 'Approved';
+							$warna = 'success';
+							$valid_edit = 0;
+						}
+
+						echo '<td><span class="badge bg-' . $warna . '">' . $sts . '</span></td>';
+						echo '<td class="text-center">' . $row->request_by . '</td>';
+						echo '<td class="text-center">' . $row->request_date . '</td>';
+
+						$view = "<a href='" . site_url($this->uri->segment(1)) . '/detail_planning/' . $row->so_number . "' class='btn btn-sm btn-warning' title='Detail PR'><i class='ti ti-eye'></i></a>";
+						$edit = "";
+						$print = '<a href="' . site_url($this->uri->segment(1)) . '/PrintH2/' . $row->so_number . '" class="btn btn-sm btn-info" title="Print PR" target="_blank"><i class="ti ti-download"></i></a>';
+
+						$close = '';
+						if ($ENABLE_DELETE) {
+							$close = '<button type="button" class="btn btn-sm btn-danger close_pr_modal" data-so_number="' . $row->so_number . '" title="Close PR"><i class="ti ti-x"></i></button>';
+						}
+
+						echo '<td class="text-center">' . $view . ' ' . $edit . ' ' . $print . ' ' . $close . '</td>';
+						echo '</tr>';
+
+						$no++;
 					}
-
-					if (COUNT($getCheck) <= 0) {
-						$sts = 'Approved';
-						$warna = 'green';
-
-						$valid_edit = 0;
-					}
-
-					echo '<td><span class="badge" style="background-color: ' . $warna . '">' . $sts . '</span></td>';
-					echo '<td class="text-center">' . $row->request_by . '</td>';
-					echo '<td class="text-center">' . $row->request_date . '</td>';
-
-					$approve  = "";
-					$view  = "<a href='" . site_url($this->uri->segment(1)) . '/detail_planning/' . $row->so_number . "' class='btn btn-sm btn-warning' title='Detail PR' data-role='qtip'><i class='fa fa-eye'></i></a>";
-					$edit   = "";
-					// if ($ENABLE_MANAGE && $valid_edit > 0) {
-					// 	$edit   = "<a href='" . site_url($this->uri->segment(1)) . '/edit_planning/' . $row->so_number . "' class='btn btn-sm btn-info' title='Edit PR' data-role='qtip'><i class='fa fa-edit'></i></a>";
-					// }
-
-					$print = '<a href="' . site_url($this->uri->segment(1)) . '/PrintH2/' . $row->so_number . '" class="btn btn-sm btn-info" title="Print PR" target="_blank"><i class="fa fa-download"></i></a>';
-
-					$close = '';
-					if ($ENABLE_DELETE) {
-						$close = '<button type="button" class="btn btn-sm btn-danger close_pr_modal" data-so_number="' . $row->so_number . '" title="Close PR"><i class="fa fa-close"></i></button>';
-					}
-
-					echo '<td>' . $view . ' ' . $edit . ' ' . $approve . ' ' . $print . ' ' . $close . '</td>';
-
-					echo '</tr>';
-
-					$no++;
-				}
-				?>
-			</tbody>
-		</table>
+					?>
+				</tbody>
+			</table>
+		</div>
 	</div>
-	<!-- /.box-body -->
+	<!-- /.card-body -->
 </div>
 
-
-<div class="modal modal-default fade" id="dialog-popup" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+<!-- Modal Close PR -->
+<div class="modal fade" id="dialog-popup" tabindex="-1" aria-labelledby="modalClosePRLabel" aria-hidden="true">
 	<div class="modal-dialog modal-md">
 		<div class="modal-content">
 			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-				<h4 class="modal-title" id="myModalLabel">Closing PR</h4>
+				<h5 class="modal-title" id="modalClosePRLabel">Closing PR</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 			</div>
 			<form action="" method="post" id="frm-data">
 				<div class="modal-body" id="ModalView">
 					...
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-sm btn-secondary" onclick="$('#dialog-popup').modal('hide')">Cancel</button>
-					<button type="submit" class="btn btn-sm btn-danger">Close PR</button>
+					<button type="button" class="btn btn-dark" data-bs-dismiss="modal">
+						<i class="ti ti-x me-1"></i> Cancel
+					</button>
+					<button type="submit" class="btn btn-danger">
+						<i class="ti ti-lock me-1"></i> Close PR
+					</button>
 				</div>
 			</form>
 		</div>
 	</div>
 </div>
 
-<!-- DataTables -->
-<script src="<?= base_url('assets/plugins/datatables/jquery.dataTables.min.js') ?>"></script>
-<script src="<?= base_url('assets/plugins/datatables/dataTables.bootstrap.min.js') ?>"></script>
-
 <!-- page script -->
 <script type="text/javascript">
+	$(document).ready(function() {
+		$('.select2').select2();
+
+		var product = $("#product").val();
+		var costcenter = $("#costcenter").val();
+		DataTables(costcenter, product);
+
+		$(document).on('change', '#costcenter', function() {
+			var costcenter = $("#costcenter").val();
+			var product = $("#product").val();
+			DataTables(costcenter, product);
+		});
+
+		$(document).on('change', '#product', function() {
+			var costcenter = $("#costcenter").val();
+			var product = $("#product").val();
+			DataTables(costcenter, product);
+		});
+	});
+
 	$(document).on('click', '.close_pr_modal', function() {
 		var so_number = $(this).data('so_number');
 
@@ -224,14 +232,15 @@ $ENABLE_DELETE  = has_permission('PR_Stok.Delete');
 			cache: false,
 			success: function(result) {
 				$('#ModalView').html(result);
-				$('#dialog-popup').modal('show');
+				var modal = new bootstrap.Modal(document.getElementById('dialog-popup'));
+				modal.show();
 			},
 			error: function(result) {
 				swal({
 					title: 'Error !',
 					text: 'Please try again later !',
 					type: 'error'
-				})
+				});
 			}
 		});
 	});
@@ -325,8 +334,7 @@ $ENABLE_DELETE  = has_permission('PR_Stok.Delete');
 
 	$(document).on('click', '.detail', function() {
 		var so_number = $(this).data('so_number');
-		// alert(id);
-		$("#head_title").html("<b>Detail>");
+		$("#head_title").html("<b>Detail</b>");
 		$.ajax({
 			type: 'POST',
 			url: base_url + active_controller + 'detail',
@@ -334,18 +342,18 @@ $ENABLE_DELETE  = has_permission('PR_Stok.Delete');
 				'so_number': so_number,
 			},
 			success: function(data) {
-				$("#dialog-popup").modal();
-				$("#ModalView").html(data);
-
+				$('#ModalView').html(data);
+				var modal = new bootstrap.Modal(document.getElementById('dialog-popup'));
+				modal.show();
 			}
-		})
+		});
 	});
 
 	// DELETE DATA
 	$(document).on('click', '.booking', function(e) {
-		e.preventDefault()
+		e.preventDefault();
 		var so_number = $(this).data('so_number');
-		// alert(id);
+
 		swal({
 				title: "Anda Yakin?",
 				text: "Process Booking Material & PR !",
@@ -373,14 +381,13 @@ $ENABLE_DELETE  = has_permission('PR_Stok.Delete');
 								},
 								function() {
 									window.location.reload(true);
-								})
+								});
 						} else {
 							swal({
 								title: "Error",
 								text: result.pesan,
 								type: "error"
-							})
-
+							});
 						}
 					},
 					error: function() {
@@ -388,32 +395,11 @@ $ENABLE_DELETE  = has_permission('PR_Stok.Delete');
 							title: "Error",
 							text: "Data error. Gagal request Ajax",
 							type: "error"
-						})
+						});
 					}
-				})
+				});
 			});
-
-	})
-
-	$(document).ready(function() {
-		var product = $("#product").val();
-		var costcenter = $("#costcenter").val();
-		DataTables(costcenter, product);
-
-		$(document).on('change', '#costcenter', function() {
-			var costcenter = $("#costcenter").val();
-			var product = $("#product").val();
-			DataTables(costcenter, product);
-		});
-
-		$(document).on('change', '#product', function() {
-			var costcenter = $("#costcenter").val();
-			var product = $("#product").val();
-			DataTables(costcenter, product);
-		});
-
 	});
-
 
 	function DataTables(costcenter = null, product = null) {
 		var dataTable = $('#example1').DataTable();

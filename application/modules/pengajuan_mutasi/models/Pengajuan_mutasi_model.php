@@ -113,6 +113,79 @@ class Pengajuan_mutasi_model extends BF_Model
     }
 
     // ---------------------------------------------------------------
+    // PACKS
+    // ---------------------------------------------------------------
+
+    /**
+     * Get available packs in a warehouse (with materials & coils inside)
+     */
+    public function get_packs_by_gudang($id_gudang)
+    {
+        // Get all packs in this warehouse, with info apakah sedang di-mutasi
+        $packs = $this->db->query("
+            SELECT
+                wp.id AS id_warehouse_pack,
+                wp.pack_code,
+                wp.kd_gudang,
+                GROUP_CONCAT(DISTINCT CONCAT(IFNULL(wsc.trade_name,''), '||', IFNULL(wsc.nm_material,''), '||', IFNULL(wsc.id_material,'')) SEPARATOR ';;') AS materials_concat,
+                COUNT(wsc.id) AS roll_count,
+                SUM(wsc.net_weight) AS total_nw,
+                SUM(wsc.gross_weight) AS total_gw,
+                (
+                    SELECT COUNT(*) FROM material_mutation_details_coil mdc
+                    JOIN material_mutation_details md ON md.id = mdc.id_mutation_detail
+                    JOIN material_mutations mm ON mm.id = md.id_material_mutation
+                    WHERE mdc.id_warehouse_pack = wp.id
+                      AND mm.is_delete = 0
+                      AND mm.status IN (0, 1, 6)
+                ) AS in_mutation
+            FROM warehouse_pack wp
+            JOIN warehouse_stock_coil wsc ON wsc.id_pack = wp.id
+                AND (wsc.is_baby_coil = 1 OR (wsc.is_baby_coil = 0 AND wsc.qty_roll <= 1))
+            WHERE wp.id_gudang = ?
+              AND wp.status = 1
+            GROUP BY wp.id
+            ORDER BY wp.pack_code ASC
+        ", [$id_gudang])->result_array();
+
+        return $packs;
+    }
+
+    /**
+     * Get coils inside a specific pack
+     */
+    public function get_coils_by_pack($id_warehouse_pack)
+    {
+        return $this->db->query("
+            SELECT
+                wsc.id,
+                wsc.id_material,
+                wsc.nm_material,
+                wsc.trade_name,
+                wsc.no_coil,
+                wsc.no_ipp,
+                wsc.no_po,
+                wsc.no_ros,
+                wsc.kode_internal,
+                wsc.gross_weight,
+                wsc.net_weight,
+                wsc.length,
+                wsc.qty_roll,
+                wsc.is_baby_coil,
+                wsc.parent_coil_id,
+                wsc.harga_beli,
+                wsc.total_nilai,
+                wsc.id_pack,
+                wp.pack_code
+            FROM warehouse_stock_coil wsc
+            LEFT JOIN warehouse_pack wp ON wp.id = wsc.id_pack
+            WHERE wsc.id_pack = ?
+              AND (wsc.is_baby_coil = 1 OR (wsc.is_baby_coil = 0 AND wsc.qty_roll <= 1))
+            ORDER BY wsc.nm_material ASC, wsc.no_coil ASC
+        ", [$id_warehouse_pack])->result_array();
+    }
+
+    // ---------------------------------------------------------------
     // CRUD MUTASI
     // ---------------------------------------------------------------
 

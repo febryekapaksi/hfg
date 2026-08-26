@@ -411,6 +411,9 @@ class New_ros extends Admin_Controller
             }
             $this->db->delete('tr_ros_material', ['id_ros' => $id_ros]);
 
+            // Hapus pack lama
+            $this->db->delete('tr_ros_pack', ['id_ros' => $id_ros]);
+
             // Hapus others lama dan insert ulang
             $this->db->delete('tr_ros_others', ['id_ros' => $id_ros]);
         }
@@ -449,6 +452,7 @@ class New_ros extends Admin_Controller
         }
 
         // ── Materials ──
+        $all_pack_coils = []; // Collect pack_no → coil data untuk generate tr_ros_pack nanti
         if (isset($post['mat']) && is_array($post['mat'])) {
             foreach ($post['mat'] as $mat) {
                 $kg_unit         = (float) str_replace(',', '', $mat['kg_unit']);
@@ -516,7 +520,6 @@ class New_ros extends Admin_Controller
                 $id_ros_material = $this->db->insert_id();
 
                 // ── Coils ──
-                // ── Coils ──
                 if (isset($mat['coil']) && is_array($mat['coil'])) {
                     // Hitung jumlah coil valid dulu
                     $valid_coils = [];
@@ -528,24 +531,146 @@ class New_ros extends Admin_Controller
                         }
                     }
 
-                    $jumlah_coil   = count($valid_coils);
-                    $price_per_coil = ($jumlah_coil > 0) ? $total_nilai_inventory / $jumlah_coil : 0;
-
+                    // Pisahkan mother coils dan baby coils
+                    $mother_coils_save = [];
+                    $baby_coils_save   = [];
                     foreach ($valid_coils as $coil) {
+                        if (isset($coil['is_baby_coil']) && (int) $coil['is_baby_coil'] === 1) {
+                            $baby_coils_save[] = $coil;
+                        } else {
+                            $mother_coils_save[] = $coil;
+                        }
+                    }
+
+                    // Hitung jumlah coil fisik (baby + normal, skip mother yang punya baby)
+                    $physical_coil_count = 0;
+                    foreach ($mother_coils_save as $mc) {
+                        $mc_qty = isset($mc['qty_roll']) ? (int) $mc['qty_roll'] : 1;
+                        if ($mc_qty <= 1) {
+                            $physical_coil_count++; // normal coil (tanpa baby)
+                        }
+                    }
+                    $physical_coil_count += count($baby_coils_save);
+                    $price_per_coil_physical = ($physical_coil_count > 0) ? $total_nilai_inventory / $physical_coil_count : 0;
+
+                    // Mapping no_coil mother → inserted ID
+                    $mother_id_map_save = [];
+
+                    // Insert Mother Coils terlebih dahulu
+                    foreach ($mother_coils_save as $coil) {
+                        $coil_pack_no = isset($coil['pack_no']) && $coil['pack_no'] !== '' ? (int) $coil['pack_no'] : null;
+                        $coil_qty_roll = isset($coil['qty_roll']) ? (int) $coil['qty_roll'] : 1;
+
+                        // Mother dengan baby → price = 0, Normal coil → price = price_per_coil_physical
+                        $mother_price = ($coil_qty_roll > 1) ? 0 : $price_per_coil_physical;
+
                         $this->db->insert('tr_ros_material_coil', [
                             'id_ros_material' => $id_ros_material,
                             'no_coil'         => $coil['no_coil'],
                             'berat_kotor'     => (float) str_replace(',', '', $coil['berat_kotor']),
                             'berat_bersih'    => (float) str_replace(',', '', $coil['berat_bersih']),
                             'panjang'         => (float) str_replace(',', '', $coil['panjang']),
+                            'qty_roll'        => $coil_qty_roll,
                             'kode_internal'   => isset($coil['kode_internal']) ? $coil['kode_internal'] : '',
+                            'parent_coil_id'  => null,
+                            'is_baby_coil'    => 0,
                             'bpm'             => isset($coil['bpm']) ? (float) str_replace(',', '', $coil['bpm']) : 0,
-                            'price_per_coil'  => $price_per_coil,
+                            'price_per_coil'  => $mother_price,
                             'created_by'      => $this->auth->user_id(),
                             'created_on'      => date('Y-m-d H:i:s')
                         ]);
+
+                        $coil_id_inserted = $this->db->insert_id();
+                        $mother_id_map_save[$coil['no_coil']] = $coil_id_inserted;
+
+                        // Collect pack_no untuk proses nanti
+                        if ($coil_pack_no !== null) {
+                            if (!isset($all_pack_coils[$coil_pack_no])) {
+                                $all_pack_coils[$coil_pack_no] = [];
+                            }
+                            $all_pack_coils[$coil_pack_no][] = [
+                                'coil_id' => $coil_id_inserted,
+                                'id_ros_material' => $id_ros_material
+                            ];
+                        }
+                    }
+
+                    // Insert Baby Coils dengan parent_coil_id
+                    foreach ($baby_coils_save as $coil) {
+                        $coil_pack_no = isset($coil['pack_no']) && $coil['pack_no'] !== '' ? (int) $coil['pack_no'] : null;
+
+                        // Resolve parent_coil_id: cari mother coil dari no_coil baby
+                        // Baby no_coil format: PARENT-01, PARENT-02, jadi parent = semua sebelum -XX terakhir
+                        $parent_coil_id = null;
+                        $no_coil_str = $coil['no_coil'];
+                        $last_dash = strrpos($no_coil_str, '-');
+                        if ($last_dash !== false) {
+                            $parent_no_coil = substr($no_coil_str, 0, $last_dash);
+                            if (isset($mother_id_map_save[$parent_no_coil])) {
+                                $parent_coil_id = $mother_id_map_save[$parent_no_coil];
+                            }
+                        }
+
+                        $this->db->insert('tr_ros_material_coil', [
+                            'id_ros_material' => $id_ros_material,
+                            'no_coil'         => $coil['no_coil'],
+                            'berat_kotor'     => (float) str_replace(',', '', $coil['berat_kotor']),
+                            'berat_bersih'    => (float) str_replace(',', '', $coil['berat_bersih']),
+                            'panjang'         => (float) str_replace(',', '', $coil['panjang']),
+                            'qty_roll'        => 1,
+                            'kode_internal'   => isset($coil['kode_internal']) ? $coil['kode_internal'] : '',
+                            'parent_coil_id'  => $parent_coil_id,
+                            'is_baby_coil'    => 1,
+                            'bpm'             => isset($coil['bpm']) ? (float) str_replace(',', '', $coil['bpm']) : 0,
+                            'price_per_coil'  => $price_per_coil_physical,
+                            'created_by'      => $this->auth->user_id(),
+                            'created_on'      => date('Y-m-d H:i:s')
+                        ]);
+
+                        $coil_id_inserted = $this->db->insert_id();
+
+                        // Collect pack_no untuk proses nanti
+                        if ($coil_pack_no !== null) {
+                            if (!isset($all_pack_coils[$coil_pack_no])) {
+                                $all_pack_coils[$coil_pack_no] = [];
+                            }
+                            $all_pack_coils[$coil_pack_no][] = [
+                                'coil_id' => $coil_id_inserted,
+                                'id_ros_material' => $id_ros_material
+                            ];
+                        }
                     }
                 }
+            }
+        }
+
+        // ── Generate Pack records dari data coil ──
+        if (!empty($all_pack_coils)) {
+            $material_pack_assigned = [];
+            foreach ($all_pack_coils as $pack_no => $pack_coil_list) {
+                $pack_code = $this->New_ros_model->generate_pack_code();
+                $this->db->insert('tr_ros_pack', [
+                    'id_ros'     => $id_ros,
+                    'pack_no'    => $pack_no,
+                    'pack_code'  => $pack_code,
+                    'created_by' => $this->auth->user_id(),
+                    'created_on' => date('Y-m-d H:i:s')
+                ]);
+                $id_ros_pack = $this->db->insert_id();
+
+                // Update id_ros_pack di coils
+                foreach ($pack_coil_list as $pc) {
+                    $this->db->update('tr_ros_material_coil', ['id_ros_pack' => $id_ros_pack], ['id' => $pc['coil_id']]);
+                    // Track pack per material
+                    if (!isset($material_pack_assigned[$pc['id_ros_material']])) {
+                        $material_pack_assigned[$pc['id_ros_material']] = $id_ros_pack;
+                    }
+                }
+            }
+
+            // Update id_ros_pack di tr_ros_material
+            foreach ($material_pack_assigned as $mat_id => $pack_id) {
+                $this->db->update('tr_ros_material', ['id_ros_pack' => $pack_id], ['id' => $mat_id]);
             }
         }
 
@@ -574,6 +699,7 @@ class New_ros extends Admin_Controller
             $this->db->delete('tr_ros_material_coil', ['id_ros_material' => $m['id']]);
         }
         $this->db->delete('tr_ros_material', ['id_ros' => $id_ros]);
+        $this->db->delete('tr_ros_pack', ['id_ros' => $id_ros]);
         $this->db->delete('tr_ros_others', ['id_ros' => $id_ros]);
         $this->db->delete('tr_ros_header', ['id' => $id_ros]);
 
@@ -644,6 +770,8 @@ class New_ros extends Admin_Controller
         $sheet->getColumnDimension('E')->setWidth(12);  // G.W.
         $sheet->getColumnDimension('F')->setWidth(12);  // LENGTH
         $sheet->getColumnDimension('G')->setWidth(10);  // BPM
+        $sheet->getColumnDimension('H')->setWidth(12);  // Qty Roll
+        $sheet->getColumnDimension('I')->setWidth(10);  // Pack
 
         // ── Header Row ──
         $sheet->setCellValue('A1', 'COIL NO.');
@@ -653,7 +781,9 @@ class New_ros extends Admin_Controller
         $sheet->setCellValue('E1', "G.W.\n(KGS)");
         $sheet->setCellValue('F1', "LENGTH\n(M)");
         $sheet->setCellValue('G1', 'BPM');
-        $sheet->getStyle('A1:G1')->applyFromArray($headerStyle);
+        $sheet->setCellValue('H1', "Qty\nRoll");
+        $sheet->setCellValue('I1', 'Pack');
+        $sheet->getStyle('A1:I1')->applyFromArray($headerStyle);
         $sheet->getRowDimension(1)->setRowHeight(30);
 
         // ── Data Rows: 1 baris per coil, sudah disiapkan sesuai jumlah ──
@@ -687,8 +817,10 @@ class New_ros extends Admin_Controller
                 $sheet->setCellValue('E' . $row, '');            // G.W.
                 $sheet->setCellValue('F' . $row, '');            // LENGTH
                 $sheet->setCellValue('G' . $row, '');            // BPM
+                $sheet->setCellValue('H' . $row, '');            // Qty Roll
+                $sheet->setCellValue('I' . $row, '');            // Pack
 
-                $sheet->getStyle('A' . $row . ':G' . $row)->applyFromArray($matStyle);
+                $sheet->getStyle('A' . $row . ':I' . $row)->applyFromArray($matStyle);
                 $sheet->getRowDimension($row)->setRowHeight(18);
                 $row++;
             }
@@ -772,21 +904,23 @@ class New_ros extends Admin_Controller
 
         // Mapping kolom
         // ── Deteksi header row & mapping kolom (format baru) ──
-        $start_row   = 2;
-        $col_coil_no = 'A';
+        $start_row      = 2;
+        $col_coil_no    = 'A';
         $col_nama_alias = 'B';
         $col_nm_barang  = 'C';
-        $col_nw      = 'D';
-        $col_gw      = 'E';
-        $col_length  = 'F';
-        $col_bpm     = 'G';
+        $col_nw         = 'D';
+        $col_gw         = 'E';
+        $col_length     = 'F';
+        $col_bpm        = 'G';
+        $col_qty_roll   = 'H';
+        $col_pack       = 'I';
 
         for ($r = 1; $r <= min($highRow, 10); $r++) {
             $cellA = strtolower(trim((string) $sheet->getCell('A' . $r)->getValue()));
             $cellB = strtolower(trim((string) $sheet->getCell('B' . $r)->getValue()));
 
             if (strpos($cellA, 'coil no') !== false) {
-                // Format baru: A=COIL NO, B=Alias, C=Nama Asli, D=NW, E=GW, F=Length, G=BPM
+                // Format baru: A=COIL NO, B=Alias, C=Nama Asli, D=NW, E=GW, F=Length, G=BPM, H=Qty Roll, I=Pack
                 $col_coil_no    = 'A';
                 $col_nama_alias = 'B';
                 $col_nm_barang  = 'C';
@@ -794,10 +928,12 @@ class New_ros extends Admin_Controller
                 $col_gw         = 'E';
                 $col_length     = 'F';
                 $col_bpm        = 'G';
+                $col_qty_roll   = 'H';
+                $col_pack       = 'I';
                 $start_row      = $r + 1;
                 break;
             } elseif (strpos($cellB, 'coil no') !== false) {
-                // Format lama fallback: B=COIL NO, C=Alias, D=Number, E=NW, F=GW, G=Length, H=BPM
+                // Format lama fallback: B=COIL NO, C=Alias, D=Number, E=NW, F=GW, G=Length, H=BPM, I=Qty Roll, J=Pack
                 $col_coil_no    = 'B';
                 $col_nama_alias = 'C';
                 $col_nm_barang  = 'D';
@@ -805,6 +941,8 @@ class New_ros extends Admin_Controller
                 $col_gw         = 'F';
                 $col_length     = 'G';
                 $col_bpm        = 'H';
+                $col_qty_roll   = 'I';
+                $col_pack       = 'J';
                 $start_row      = $r + 1;
                 break;
             }
@@ -829,6 +967,8 @@ class New_ros extends Admin_Controller
             $gw         = $getCellValue($col_gw);
             $length     = $getCellValue($col_length);
             $bpm        = $getCellValue($col_bpm);
+            $qty_roll   = $getCellValue($col_qty_roll);
+            $pack       = $getCellValue($col_pack);
 
             if (empty($coil_no) || strtolower($coil_no) == 'total') continue;
             if (strpos(strtolower($coil_no), 'error') !== false) continue;
@@ -839,20 +979,72 @@ class New_ros extends Admin_Controller
             $gw_val     = (float) str_replace(',', '', (string) $gw);
             $length_val = (float) str_replace(',', '', (string) $length);
             $bpm_val    = (float) str_replace(',', '', (string) $bpm);
+            $qty_roll_val = max(1, (int) $qty_roll);
+            $pack_val     = trim((string) $pack) !== '' ? (int) $pack : null;
 
-            $kode_internal = $inisial . '-' . $coil_no . '-' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+            // Jika qty_roll > 1, insert mother coil + baby coils
+            if ($qty_roll_val > 1) {
+                $nw_avg = $nw_val / $qty_roll_val;
+                $gw_avg = $gw_val / $qty_roll_val;
 
-            $coils[] = [
-                'no_coil'       => $coil_no,
-                'nama_alias'    => $nama_alias,   // ← key baru, dipakai untuk matching
-                'nm_barang'     => $nm_barang,
-                'berat_bersih'  => $nw_val,
-                'berat_kotor'   => $gw_val,
-                'panjang'       => $length_val,
-                'bpm'           => $bpm_val,
-                'kode_internal' => $kode_internal,
-            ];
-            $counter++;
+                // Mother Coil (record induk)
+                $kode_internal_mother = $inisial . '-' . $coil_no . '-' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+                $coils[] = [
+                    'no_coil'        => $coil_no,
+                    'parent_no_coil' => null,
+                    'is_baby_coil'   => 0,
+                    'qty_roll'       => $qty_roll_val,
+                    'pack_no'        => $pack_val,
+                    'nama_alias'     => $nama_alias,
+                    'nm_barang'      => $nm_barang,
+                    'berat_bersih'   => $nw_val,
+                    'berat_kotor'    => $gw_val,
+                    'panjang'        => $length_val,
+                    'bpm'            => $bpm_val,
+                    'kode_internal'  => $kode_internal_mother,
+                ];
+                $counter++;
+
+                // Baby Coils (pecahan)
+                for ($bc = 1; $bc <= $qty_roll_val; $bc++) {
+                    $baby_coil_no  = $coil_no . '-' . str_pad($bc, 2, '0', STR_PAD_LEFT);
+                    $kode_internal = $inisial . '-' . $baby_coil_no . '-' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+
+                    $coils[] = [
+                        'no_coil'        => $baby_coil_no,
+                        'parent_no_coil' => $coil_no,
+                        'is_baby_coil'   => 1,
+                        'qty_roll'       => 1,
+                        'pack_no'        => $pack_val,
+                        'nama_alias'     => $nama_alias,
+                        'nm_barang'      => $nm_barang,
+                        'berat_bersih'   => round($nw_avg, 4),
+                        'berat_kotor'    => round($gw_avg, 4),
+                        'panjang'        => $length_val,
+                        'bpm'            => $bpm_val,
+                        'kode_internal'  => $kode_internal,
+                    ];
+                    $counter++;
+                }
+            } else {
+                $kode_internal = $inisial . '-' . $coil_no . '-' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+
+                $coils[] = [
+                    'no_coil'        => $coil_no,
+                    'parent_no_coil' => null,
+                    'is_baby_coil'   => 0,
+                    'qty_roll'       => 1,
+                    'pack_no'        => $pack_val,
+                    'nama_alias'     => $nama_alias,
+                    'nm_barang'      => $nm_barang,
+                    'berat_bersih'   => $nw_val,
+                    'berat_kotor'    => $gw_val,
+                    'panjang'        => $length_val,
+                    'bpm'            => $bpm_val,
+                    'kode_internal'  => $kode_internal,
+                ];
+                $counter++;
+            }
         }
 
         echo json_encode([
@@ -950,41 +1142,47 @@ class New_ros extends Admin_Controller
         $this->db->delete('tr_ros_upload_temp', ['id_ros' => $id_ros, 'session_id' => $session_id]);
 
         // Cari header row dan tentukan mapping kolom
-        // Format Excel: (A kosong) | B: COIL NO. | C: NAMA Sesuai PO | D: COIL NUMBER | E: N.W. | F: G.W. | G: LENGTH | H: BPM
-        $start_row = 2;
-        $col_coil_no = 'B';
-        $col_nama_po = 'C';
-        $col_number  = 'D';
-        $col_nw = 'E';
-        $col_gw = 'F';
-        $col_length  = 'G';
-        $col_bpm = 'H';
+        // Format Excel baru: A: COIL NO. | B: Alias Name | C: Original Name | D: N.W. | E: G.W. | F: LENGTH | G: BPM | H: Qty Roll | I: Pack
+        $start_row   = 2;
+        $col_coil_no = 'A';
+        $col_nama_po = 'B';
+        $col_number  = 'C';
+        $col_nw      = 'D';
+        $col_gw      = 'E';
+        $col_length  = 'F';
+        $col_bpm     = 'G';
+        $col_qty_roll = 'H';
+        $col_pack    = 'I';
 
         for ($r = 1; $r <= min($highRow, 10); $r++) {
             $cellA = strtolower(trim((string) $sheet->getCell('A' . $r)->getValue()));
             $cellB = strtolower(trim((string) $sheet->getCell('B' . $r)->getValue()));
 
             if (strpos($cellA, 'coil no') !== false) {
-                // Data mulai dari kolom A
-                $col_coil_no = 'A';
-                $col_nama_po = 'B';
-                $col_number = 'C';
-                $col_nw = 'D';
-                $col_gw = 'E';
-                $col_length = 'F';
-                $col_bpm = 'G';
-                $start_row = $r + 1;
+                // Format baru: Data mulai dari kolom A
+                $col_coil_no  = 'A';
+                $col_nama_po  = 'B';
+                $col_number   = 'C';
+                $col_nw       = 'D';
+                $col_gw       = 'E';
+                $col_length   = 'F';
+                $col_bpm      = 'G';
+                $col_qty_roll = 'H';
+                $col_pack     = 'I';
+                $start_row    = $r + 1;
                 break;
             } elseif (strpos($cellB, 'coil no') !== false) {
-                // Data mulai dari kolom B (kolom A kosong)
-                $col_coil_no = 'B';
-                $col_nama_po = 'C';
-                $col_number = 'D';
-                $col_nw = 'E';
-                $col_gw = 'F';
-                $col_length = 'G';
-                $col_bpm = 'H';
-                $start_row = $r + 1;
+                // Format lama fallback: Data mulai dari kolom B
+                $col_coil_no  = 'B';
+                $col_nama_po  = 'C';
+                $col_number   = 'D';
+                $col_nw       = 'E';
+                $col_gw       = 'F';
+                $col_length   = 'G';
+                $col_bpm      = 'H';
+                $col_qty_roll = 'I';
+                $col_pack     = 'J';
+                $start_row    = $r + 1;
                 break;
             }
         }
@@ -1016,43 +1214,112 @@ class New_ros extends Admin_Controller
             $gw          = $getCellValue($col_gw);
             $length      = $getCellValue($col_length);
             $bpm         = $getCellValue($col_bpm);
+            $qty_roll    = $getCellValue($col_qty_roll);
+            $pack        = $getCellValue($col_pack);
 
             // Skip row kosong atau row TOTAL/ERROR
             if (empty($coil_no) || strtolower($coil_no) == 'total') continue;
             if (strpos(strtolower($coil_no), 'error') !== false) continue;
 
-            $nw_val     = (float) str_replace(',', '', (string) $nw);
-            $gw_val     = (float) str_replace(',', '', (string) $gw);
-            $length_val = (float) str_replace(',', '', (string) $length);
-            $bpm_val    = (float) str_replace(',', '', (string) $bpm);
+            $nw_val       = (float) str_replace(',', '', (string) $nw);
+            $gw_val       = (float) str_replace(',', '', (string) $gw);
+            $length_val   = (float) str_replace(',', '', (string) $length);
+            $bpm_val      = (float) str_replace(',', '', (string) $bpm);
+            $qty_roll_val = max(1, (int) $qty_roll);
+            $pack_val     = trim((string) $pack) !== '' ? (int) $pack : null;
 
             // Match material
             $nm_po_lower = strtolower(trim($nm_po));
             $id_ros_material = isset($mat_lookup[$nm_po_lower]) ? $mat_lookup[$nm_po_lower] : null;
             $is_matched = $id_ros_material ? 1 : 0;
 
-            // Generate kode internal
-            $kode_internal = $inisial . '-' . $coil_no . '-' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+            // Jika qty_roll > 1, insert mother coil + baby coils
+            if ($qty_roll_val > 1) {
+                $nw_avg = $nw_val / $qty_roll_val;
+                $gw_avg = $gw_val / $qty_roll_val;
 
-            $this->db->insert('tr_ros_upload_temp', [
-                'id_ros'          => $id_ros,
-                'session_id'      => $session_id,
-                'no_coil'         => $coil_no,
-                'nama_sesuai_po'  => $nm_po,
-                'coil_number'     => (int) $coil_number ?: 1,
-                'berat_bersih'    => $nw_val,
-                'berat_kotor'     => $gw_val,
-                'panjang'         => $length_val,
-                'bpm'             => $bpm_val,
-                'id_ros_material' => $id_ros_material,
-                'kode_internal'   => $kode_internal,
-                'is_matched'      => $is_matched,
-                'created_on'      => date('Y-m-d H:i:s')
-            ]);
+                // Insert Mother Coil (record induk)
+                $kode_internal_mother = $inisial . '-' . $coil_no . '-' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+                $this->db->insert('tr_ros_upload_temp', [
+                    'id_ros'          => $id_ros,
+                    'session_id'      => $session_id,
+                    'pack_no'         => $pack_val,
+                    'no_coil'         => $coil_no,
+                    'parent_no_coil'  => null,
+                    'is_baby_coil'    => 0,
+                    'nama_sesuai_po'  => $nm_po,
+                    'coil_number'     => (int) $coil_number ?: 1,
+                    'qty_roll'        => $qty_roll_val,
+                    'berat_bersih'    => $nw_val,
+                    'berat_kotor'     => $gw_val,
+                    'panjang'         => $length_val,
+                    'bpm'             => $bpm_val,
+                    'id_ros_material' => $id_ros_material,
+                    'kode_internal'   => $kode_internal_mother,
+                    'is_matched'      => $is_matched,
+                    'created_on'      => date('Y-m-d H:i:s')
+                ]);
+                $rows_parsed++;
+                if ($is_matched) $rows_matched++;
+                $counter++;
 
-            $rows_parsed++;
-            if ($is_matched) $rows_matched++;
-            $counter++;
+                // Insert Baby Coils (pecahan)
+                for ($bc = 1; $bc <= $qty_roll_val; $bc++) {
+                    $baby_coil_no  = $coil_no . '-' . str_pad($bc, 2, '0', STR_PAD_LEFT);
+                    $kode_internal = $inisial . '-' . $baby_coil_no . '-' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+
+                    $this->db->insert('tr_ros_upload_temp', [
+                        'id_ros'          => $id_ros,
+                        'session_id'      => $session_id,
+                        'pack_no'         => $pack_val,
+                        'no_coil'         => $baby_coil_no,
+                        'parent_no_coil'  => $coil_no,
+                        'is_baby_coil'    => 1,
+                        'nama_sesuai_po'  => $nm_po,
+                        'coil_number'     => (int) $coil_number ?: 1,
+                        'qty_roll'        => 1,
+                        'berat_bersih'    => round($nw_avg, 4),
+                        'berat_kotor'     => round($gw_avg, 4),
+                        'panjang'         => $length_val,
+                        'bpm'             => $bpm_val,
+                        'id_ros_material' => $id_ros_material,
+                        'kode_internal'   => $kode_internal,
+                        'is_matched'      => $is_matched,
+                        'created_on'      => date('Y-m-d H:i:s')
+                    ]);
+
+                    $rows_parsed++;
+                    if ($is_matched) $rows_matched++;
+                    $counter++;
+                }
+            } else {
+                // Normal coil (qty_roll = 1)
+                $kode_internal = $inisial . '-' . $coil_no . '-' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+
+                $this->db->insert('tr_ros_upload_temp', [
+                    'id_ros'          => $id_ros,
+                    'session_id'      => $session_id,
+                    'pack_no'         => $pack_val,
+                    'no_coil'         => $coil_no,
+                    'parent_no_coil'  => null,
+                    'is_baby_coil'    => 0,
+                    'nama_sesuai_po'  => $nm_po,
+                    'coil_number'     => (int) $coil_number ?: 1,
+                    'qty_roll'        => 1,
+                    'berat_bersih'    => $nw_val,
+                    'berat_kotor'     => $gw_val,
+                    'panjang'         => $length_val,
+                    'bpm'             => $bpm_val,
+                    'id_ros_material' => $id_ros_material,
+                    'kode_internal'   => $kode_internal,
+                    'is_matched'      => $is_matched,
+                    'created_on'      => date('Y-m-d H:i:s')
+                ]);
+
+                $rows_parsed++;
+                if ($is_matched) $rows_matched++;
+                $counter++;
+            }
         }
 
         // Simpan info file ke header
@@ -1106,9 +1373,12 @@ class New_ros extends Admin_Controller
             return;
         }
 
-        // Hitung price_per_coil per material (jumlah coil matched per id_ros_material)
+        // Hitung price_per_coil per material (hanya coil fisik: baby coils + normal coils)
+        // Mother coil dengan qty_roll > 1 TIDAK dihitung karena bukan unit fisik terpisah
         $coil_count_per_mat = [];
         foreach ($temp_data as $row) {
+            $is_mother_with_baby = ((int) $row['is_baby_coil'] === 0 && (int) $row['qty_roll'] > 1);
+            if ($is_mother_with_baby) continue; // skip mother dari hitungan
             $id_mat = $row['id_ros_material'];
             $coil_count_per_mat[$id_mat] = isset($coil_count_per_mat[$id_mat])
                 ? $coil_count_per_mat[$id_mat] + 1 : 1;
@@ -1123,26 +1393,135 @@ class New_ros extends Admin_Controller
 
         $this->db->trans_begin();
 
-        $inserted = 0;
+        // ── Generate Pack records ──
+        // Kumpulkan semua pack_no unik dari temp_data
+        $pack_nos = [];
         foreach ($temp_data as $row) {
+            if (!empty($row['pack_no'])) {
+                $pack_nos[$row['pack_no']] = true;
+            }
+        }
+
+        // Generate tr_ros_pack untuk setiap pack_no unik dan buat mapping pack_no → id
+        $pack_map = []; // pack_no => id_ros_pack
+        foreach (array_keys($pack_nos) as $pack_no) {
+            $pack_code = $this->New_ros_model->generate_pack_code();
+            $this->db->insert('tr_ros_pack', [
+                'id_ros'     => $id_ros,
+                'pack_no'    => $pack_no,
+                'pack_code'  => $pack_code,
+                'created_by' => $this->auth->user_id(),
+                'created_on' => date('Y-m-d H:i:s')
+            ]);
+            $pack_map[$pack_no] = $this->db->insert_id();
+        }
+
+        // ── Insert coils ──
+        $inserted = 0;
+        $material_pack_assigned = []; // track id_ros_pack per material
+
+        // Pisahkan mother coils dan baby coils
+        $mother_coils = [];
+        $baby_coils   = [];
+        foreach ($temp_data as $row) {
+            if ((int) $row['is_baby_coil'] === 0) {
+                $mother_coils[] = $row;
+            } else {
+                $baby_coils[] = $row;
+            }
+        }
+
+        // Mapping: no_coil mother → inserted ID (untuk parent_coil_id baby)
+        $mother_id_map = []; // no_coil => id di tr_ros_material_coil
+
+        // Insert Mother Coils terlebih dahulu
+        foreach ($mother_coils as $row) {
             $id_mat         = $row['id_ros_material'];
-            $jumlah_coil    = $coil_count_per_mat[$id_mat];
-            $total_inv      = $inventory_per_mat[$id_mat];
-            $price_per_coil = ($jumlah_coil > 0) ? $total_inv / $jumlah_coil : 0;
+            $jumlah_coil    = isset($coil_count_per_mat[$id_mat]) ? $coil_count_per_mat[$id_mat] : 0;
+            $total_inv      = isset($inventory_per_mat[$id_mat]) ? $inventory_per_mat[$id_mat] : 0;
+
+            // Mother coil dengan qty_roll > 1 → price_per_coil = 0 (bukan unit fisik)
+            $qty_roll_mother = isset($row['qty_roll']) ? (int) $row['qty_roll'] : 1;
+            if ($qty_roll_mother > 1) {
+                $price_per_coil = 0;
+            } else {
+                $price_per_coil = ($jumlah_coil > 0) ? $total_inv / $jumlah_coil : 0;
+            }
+
+            $id_ros_pack = null;
+            if (!empty($row['pack_no']) && isset($pack_map[$row['pack_no']])) {
+                $id_ros_pack = $pack_map[$row['pack_no']];
+            }
 
             $this->db->insert('tr_ros_material_coil', [
                 'id_ros_material' => $id_mat,
+                'id_ros_pack'     => $id_ros_pack,
                 'no_coil'         => $row['no_coil'],
                 'berat_kotor'     => $row['berat_kotor'],
                 'berat_bersih'    => $row['berat_bersih'],
                 'panjang'         => $row['panjang'],
+                'qty_roll'        => isset($row['qty_roll']) ? (int) $row['qty_roll'] : 1,
                 'kode_internal'   => $row['kode_internal'],
+                'parent_coil_id'  => null,
+                'is_baby_coil'    => 0,
+                'bpm'             => isset($row['bpm']) ? (float) $row['bpm'] : 0,
+                'price_per_coil'  => $price_per_coil,
+                'created_by'      => $this->auth->user_id(),
+                'created_on'      => date('Y-m-d H:i:s')
+            ]);
+
+            $mother_id_map[$row['no_coil']] = $this->db->insert_id();
+            $inserted++;
+
+            if ($id_ros_pack && !isset($material_pack_assigned[$id_mat])) {
+                $material_pack_assigned[$id_mat] = $id_ros_pack;
+            }
+        }
+
+        // Insert Baby Coils dengan parent_coil_id
+        foreach ($baby_coils as $row) {
+            $id_mat         = $row['id_ros_material'];
+            $jumlah_coil    = isset($coil_count_per_mat[$id_mat]) ? $coil_count_per_mat[$id_mat] : 0;
+            $total_inv      = isset($inventory_per_mat[$id_mat]) ? $inventory_per_mat[$id_mat] : 0;
+            $price_per_coil = ($jumlah_coil > 0) ? $total_inv / $jumlah_coil : 0;
+
+            $id_ros_pack = null;
+            if (!empty($row['pack_no']) && isset($pack_map[$row['pack_no']])) {
+                $id_ros_pack = $pack_map[$row['pack_no']];
+            }
+
+            // Resolve parent_coil_id dari mother_id_map
+            $parent_coil_id = null;
+            if (!empty($row['parent_no_coil']) && isset($mother_id_map[$row['parent_no_coil']])) {
+                $parent_coil_id = $mother_id_map[$row['parent_no_coil']];
+            }
+
+            $this->db->insert('tr_ros_material_coil', [
+                'id_ros_material' => $id_mat,
+                'id_ros_pack'     => $id_ros_pack,
+                'no_coil'         => $row['no_coil'],
+                'berat_kotor'     => $row['berat_kotor'],
+                'berat_bersih'    => $row['berat_bersih'],
+                'panjang'         => $row['panjang'],
+                'qty_roll'        => 1,
+                'kode_internal'   => $row['kode_internal'],
+                'parent_coil_id'  => $parent_coil_id,
+                'is_baby_coil'    => 1,
                 'bpm'             => isset($row['bpm']) ? (float) $row['bpm'] : 0,
                 'price_per_coil'  => $price_per_coil,
                 'created_by'      => $this->auth->user_id(),
                 'created_on'      => date('Y-m-d H:i:s')
             ]);
             $inserted++;
+
+            if ($id_ros_pack && !isset($material_pack_assigned[$id_mat])) {
+                $material_pack_assigned[$id_mat] = $id_ros_pack;
+            }
+        }
+
+        // ── Update id_ros_pack di tr_ros_material ──
+        foreach ($material_pack_assigned as $id_mat => $id_pack) {
+            $this->db->update('tr_ros_material', ['id_ros_pack' => $id_pack], ['id' => $id_mat]);
         }
 
         $this->db->delete('tr_ros_upload_temp', ['id_ros' => $id_ros, 'session_id' => $session_id]);
@@ -1542,9 +1921,10 @@ class New_ros extends Admin_Controller
     {
         $id_ros = $this->input->post('id_ros');
 
-        $this->db->select('c.*, m.nm_barang, m.nm_alias');
+        $this->db->select('c.*, m.nm_barang, m.nm_alias, p.pack_no, p.pack_code');
         $this->db->from('tr_ros_material_coil c');
         $this->db->join('tr_ros_material m', 'm.id = c.id_ros_material', 'left');
+        $this->db->join('tr_ros_pack p', 'p.id = c.id_ros_pack', 'left');
         $this->db->where('m.id_ros', $id_ros);
         $this->db->order_by('m.id', 'ASC');
         $this->db->order_by('c.id', 'ASC');

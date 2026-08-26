@@ -304,34 +304,29 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                         </div>
                     </div>
 
-                    <!-- Tabel Coil -->
+                    <!-- Tabel Pack -->
                     <div class="table-responsive">
                         <table class="table table-bordered table-striped" id="table-coil">
                             <thead>
                                 <tr>
-                                    <th rowspan="2" class="text-center" style="vertical-align:middle;" width="3%">No</th>
-                                    <th rowspan="2" class="text-center" style="vertical-align:middle;" width="18%">Material</th>
-                                    <th rowspan="2" class="text-center" style="vertical-align:middle;" width="8%">Qty Order</th>
-                                    <th rowspan="2" class="text-center" style="vertical-align:middle;" width="5%">Uom</th>
-                                    <th rowspan="2" class="text-center" style="vertical-align:middle;" width="8%">Qty Not Shipped</th>
-                                    <th colspan="4" class="text-center" style="background-color:#d2d6de !important; color:#000;">From ROS Data (Packing List)</th>
+                                    <th class="text-center" style="vertical-align:middle;" width="3%">No</th>
+                                    <th class="text-center" style="vertical-align:middle;" width="12%">Pack Code</th>
+                                    <th class="text-center" style="vertical-align:middle;" width="18%">Materials</th>
+                                    <th class="text-center" style="vertical-align:middle;" width="6%">Coil Count</th>
+                                    <th class="text-center" style="vertical-align:middle; background-color:#d2d6de !important; color:#000;" width="10%">Total N.W. (Kg)</th>
+                                    <th class="text-center" style="vertical-align:middle; background-color:#d2d6de !important; color:#000;" width="10%">Total G.W. (Kg)</th>
+                                    <th class="text-center" style="vertical-align:middle;" width="5%">Detail</th>
                                     <?php foreach ($list_gudang as $gd): ?>
-                                        <th rowspan="2" class="text-center" style="vertical-align:middle; background-color:#c8e6c9 !important; color:#000;" width="10%">
+                                        <th class="text-center" style="vertical-align:middle; background-color:#c8e6c9 !important; color:#000;" width="10%">
                                             <?= htmlspecialchars($gd['nm_gudang']) ?><br><small>(<?= htmlspecialchars($gd['kd_gudang']) ?>)</small>
                                         </th>
                                     <?php endforeach; ?>
                                 </tr>
-                                <tr>
-                                    <th class="text-center" style="background-color:#d2d6de !important; color:#000;">No. Coil</th>
-                                    <th class="text-center" style="background-color:#d2d6de !important; color:#000;">Gross Weight</th>
-                                    <th class="text-center" style="background-color:#d2d6de !important; color:#000;">Net Weight</th>
-                                    <th class="text-center" style="background-color:#d2d6de !important; color:#000;">Length</th>
-                                </tr>
                             </thead>
                             <tbody id="list-item-coil">
                                 <tr>
-                                    <td colspan="<?= 9 + count($list_gudang) ?>" class="text-center">
-                                        <i class="fa fa-spinner fa-spin"></i> Loading coil data...
+                                    <td colspan="<?= 7 + count($list_gudang) ?>" class="text-center">
+                                        <i class="fa fa-spinner fa-spin"></i> Loading pack data...
                                     </td>
                                 </tr>
                             </tbody>
@@ -355,8 +350,7 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                         </button>
 
                         <?php if ($is_edit && !empty($no_ros_default)): ?>
-                            <?php $coil_ids_print = implode('-', array_column($draft_coils, 'id_ros_coil_detail')); ?>
-                            <a href="<?= base_url('incoming/print_qr/' . $coil_ids_print) ?>" target="_blank" class="btn btn-info">
+                            <a href="<?= base_url('incoming/print_qr/' . $no_ros_default) ?>" target="_blank" class="btn btn-info">
                                 <i class="fa fa-print"></i> Print Label
                             </a>
                             <a href="<?= base_url('incoming/print_pl_by_gudang/' . $no_ros_default) ?>" target="_blank" class="btn btn-success">
@@ -450,8 +444,10 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
             /* ── Load tabel coil via AJAX ── */
             var listGudang = <?= json_encode($list_gudang ?? []) ?>;
 
+            var packDataStore = []; // Store pack data untuk modal detail
+
             function loadCoilTable(no_ros) {
-                var colSpan = 9 + listGudang.length;
+                var colSpan = 7 + listGudang.length;
                 $('#list-item-coil').html(
                     '<tr><td colspan="' + colSpan + '" class="text-center">' +
                     '<i class="fa fa-spinner fa-spin"></i> Loading data...</td></tr>'
@@ -466,83 +462,90 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                     dataType: 'json',
                     success: function(data) {
                         var html = '';
-                        var currentMaterial = '';
-                        var rowCounter = 0;
+                        packDataStore = data || [];
 
                         if (data && data.length > 0) {
-                            data.forEach(function(item, index) {
+                            data.forEach(function(pack, packIndex) {
+                                var packCode = pack.pack_code || ('Pack #' + pack.pack_no);
 
-                                /* Prefill dari draft jika mode edit */
-                                var saved = draftCoilsMap[item.id_ros_coil_detail] || {};
-                                var savedGudang = saved.id_gudang_ke || '';
-                                var savedKdGudang = saved.kd_gudang_ke || '';
+                                /* Build material list */
+                                var matList = '';
+                                var matKeys = Object.keys(pack.materials || {});
+                                matKeys.forEach(function(key, idx) {
+                                    var m = pack.materials[key];
+                                    var dot = '<span class="text-primary me-1">&#9679;</span>';
+                                    matList += '<div style="font-size:11px;">' + dot + '<b>' + (m.nm_alias || '') + '</b> <small class="text-muted">(' + (m.nm_material || '') + ')</small></div>';
+                                });
 
-                                /* Kolom material — hanya muncul di baris pertama per material */
-                                var rowMaterial = '';
-                                if (item.id_material !== currentMaterial) {
-                                    var qty_belum = (parseFloat(item.qty_po) || 0) - (parseFloat(item.qty_in) || 0);
-                                    rowCounter++;
-                                    rowMaterial =
-                                        '<td class="text-center" style="vertical-align:top;">' + rowCounter + '</td>' +
-                                        '<td style="vertical-align:top;"><b>' + item.nm_alias + '</b><br><small><i>' + item.nm_material + '</i></small></td>' +
-                                        '<td class="text-right" style="vertical-align:top;">' + (parseFloat(item.qty_po) || 0).toLocaleString('id-ID') + '</td>' +
-                                        '<td class="text-center" style="vertical-align:top;">Kg</td>' +
-                                        '<td class="text-right" style="vertical-align:top;">' + qty_belum.toLocaleString('id-ID') + '</td>';
-                                    currentMaterial = item.id_material;
-                                } else {
-                                    rowMaterial = '<td colspan="5" style="border-top:none;border-bottom:none;"></td>';
+                                /* Prefill gudang dari draft: ambil dari coil pertama (semua coil dalam pack harus sama) */
+                                var savedGudang = pack.id_gudang_ke || '';
+                                var savedKdGudang = pack.kd_gudang_ke || '';
+
+                                /* Juga cek dari draftCoilsMap jika ada */
+                                if (!savedGudang && pack.coils && pack.coils.length > 0) {
+                                    var firstCoilId = pack.coils[0].id_ros_coil_detail;
+                                    var saved = draftCoilsMap[firstCoilId] || {};
+                                    savedGudang = saved.id_gudang_ke || '';
+                                    savedKdGudang = saved.kd_gudang_ke || '';
                                 }
 
-                                /* Build checkbox gudang per coil */
+                                /* Build checkbox gudang per pack */
                                 var gudangCheckboxes = '';
                                 listGudang.forEach(function(g) {
                                     var isChecked = (String(g.id) === String(savedGudang)) ? ' checked' : '';
                                     gudangCheckboxes +=
                                         '<td class="text-center" style="background-color:#f1f8e9;">' +
                                         '<input type="checkbox" class="form-check-input gudang-checkbox" ' +
-                                        'name="detail[' + index + '][gudang_' + g.id + ']" ' +
-                                        'data-index="' + index + '" ' +
+                                        'data-pack-index="' + packIndex + '" ' +
                                         'data-gudang-id="' + g.id + '" ' +
                                         'data-gudang-kd="' + g.kd_gudang + '"' + isChecked + '>' +
                                         '</td>';
                                 });
 
-                                    html +=
-                                    '<tr class="coil-row"' +
-                                    ' data-material="' + (item.nm_material || '').toLowerCase() + '"' +
-                                    ' data-alias="' + (item.nm_alias || '').toLowerCase() + '"' +
-                                    ' data-nocoil="' + (item.no_coil || '').toLowerCase() + '"' +
-                                    ' data-group="' + rowCounter + '">' +
-                                    rowMaterial +
-                                    '<td class="text-center bg-light">' + item.no_coil + '</td>' +
-                                    '<td class="text-end bg-light">' + parseFloat(item.ros_kotor).toLocaleString('id-ID') + '</td>' +
-                                    '<td class="text-end bg-light">' + parseFloat(item.ros_bersih).toLocaleString('id-ID') + '</td>' +
-                                    '<td class="text-end bg-light">' + (parseFloat(item.panjang || 0)).toLocaleString('id-ID') + '</td>' +
+                                /* Hidden inputs untuk semua coils dalam pack ini */
+                                var hiddenInputs = '';
+                                if (pack.coils) {
+                                    pack.coils.forEach(function(coil, coilIdx) {
+                                        var globalIdx = packIndex + '_' + coilIdx;
+                                        hiddenInputs +=
+                                            '<input type="hidden" name="detail[' + globalIdx + '][id_ros_header]"   value="' + (coil.no_ros || '') + '">' +
+                                            '<input type="hidden" name="detail[' + globalIdx + '][id_ros_material]" value="' + (coil.id_ros_material || '') + '">' +
+                                            '<input type="hidden" name="detail[' + globalIdx + '][id_ros_coil]"     value="' + (coil.id_ros_coil_detail || '') + '">' +
+                                            '<input type="hidden" name="detail[' + globalIdx + '][id_po_detail]"    value="' + (coil.id_po_detail || '') + '">' +
+                                            '<input type="hidden" name="detail[' + globalIdx + '][id_material]"     value="' + (coil.id_material || '') + '">' +
+                                            '<input type="hidden" name="detail[' + globalIdx + '][no_coil]"         value="' + (coil.no_coil || '') + '">' +
+                                            '<input type="hidden" name="detail[' + globalIdx + '][aktual_bersih]"   value="' + (coil.ros_bersih || '') + '">' +
+                                            '<input type="hidden" name="detail[' + globalIdx + '][id_gudang_ke]" class="hidden-gudang-id" value="' + savedGudang + '">' +
+                                            '<input type="hidden" name="detail[' + globalIdx + '][kd_gudang_ke]" class="hidden-gudang-kd" value="' + savedKdGudang + '">';
+                                    });
+                                }
+
+                                html +=
+                                    '<tr class="pack-row"' +
+                                    ' data-pack-index="' + packIndex + '"' +
+                                    ' data-pack-code="' + (pack.pack_code || '').toLowerCase() + '"' +
+                                    '>' +
+                                    '<td class="text-center">' + (packIndex + 1) + '</td>' +
+                                    '<td class="text-center"><span class="badge bg-primary">' + packCode + '</span></td>' +
+                                    '<td>' + matList + '</td>' +
+                                    '<td class="text-center">' + (pack.coil_count || 0) + '</td>' +
+                                    '<td class="text-end bg-light fw-bold">' + parseFloat(pack.total_nw || 0).toLocaleString('id-ID', {minimumFractionDigits: 2}) + '</td>' +
+                                    '<td class="text-end bg-light fw-bold">' + parseFloat(pack.total_gw || 0).toLocaleString('id-ID', {minimumFractionDigits: 2}) + '</td>' +
+                                    '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-info btn-view-pack" data-pack-index="' + packIndex + '" title="View Material & Coil"><i class="fa fa-eye"></i></button></td>' +
                                     gudangCheckboxes +
-                                    /* Hidden inputs in last td */
-                                    '<td class="d-none">' +
-                                    '<input type="hidden" name="detail[' + index + '][id_ros_header]"   value="' + item.no_ros + '">' +
-                                    '<input type="hidden" name="detail[' + index + '][id_ros_material]" value="' + item.id_ros_material + '">' +
-                                    '<input type="hidden" name="detail[' + index + '][id_ros_coil]"     value="' + item.id_ros_coil_detail + '">' +
-                                    '<input type="hidden" name="detail[' + index + '][id_po_detail]"    value="' + item.id_po_detail + '">' +
-                                    '<input type="hidden" name="detail[' + index + '][id_material]"     value="' + item.id_material + '">' +
-                                    '<input type="hidden" name="detail[' + index + '][no_coil]"         value="' + item.no_coil + '">' +
-                                    '<input type="hidden" name="detail[' + index + '][aktual_bersih]"   value="' + item.ros_bersih + '">' +
-                                    '<input type="hidden" name="detail[' + index + '][id_gudang_ke]" class="hidden-gudang-id" value="' + savedGudang + '">' +
-                                    '<input type="hidden" name="detail[' + index + '][kd_gudang_ke]" class="hidden-gudang-kd" value="' + savedKdGudang + '">' +
-                                    '</td>' +
+                                    '<td class="d-none">' + hiddenInputs + '</td>' +
                                     '</tr>';
                             });
                         } else {
-                            html = '<tr><td colspan="' + (9 + listGudang.length) + '" class="text-center text-warning">Data Coil tidak ditemukan untuk ROS ini.</td></tr>';
+                            html = '<tr><td colspan="' + colSpan + '" class="text-center text-warning">Data Pack tidak ditemukan untuk ROS ini.</td></tr>';
                         }
 
                         $('#list-item-coil').html(html);
                     },
                     error: function(xhr) {
-                        console.error('Error load coil:', xhr.responseText);
+                        console.error('Error load pack:', xhr.responseText);
                         $('#list-item-coil').html(
-                            '<tr><td colspan="' + (9 + listGudang.length) + '" class="text-center text-danger">Failed to load coil data.</td></tr>'
+                            '<tr><td colspan="' + colSpan + '" class="text-center text-danger">Failed to load pack data.</td></tr>'
                         );
                     }
                 });
@@ -553,9 +556,8 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                 loadCoilTable('<?= addslashes($ros_data->id) ?>');
             <?php endif; ?>
 
-            /* ── Checkbox gudang: hanya boleh pilih 1 per coil (mutual exclusive) ── */
+            /* ── Checkbox gudang: hanya boleh pilih 1 per pack (mutual exclusive) ── */
             $(document).on('change', '.gudang-checkbox', function() {
-                var idx = $(this).data('index');
                 var gudangId = $(this).data('gudang-id');
                 var gudangKd = $(this).data('gudang-kd');
                 var row = $(this).closest('tr');
@@ -563,7 +565,7 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                 if ($(this).is(':checked')) {
                     // Uncheck checkbox gudang lain di baris yang sama
                     row.find('.gudang-checkbox').not(this).prop('checked', false);
-                    // Update hidden fields
+                    // Update ALL hidden fields dalam pack ini
                     row.find('.hidden-gudang-id').val(gudangId);
                     row.find('.hidden-gudang-kd').val(gudangKd);
                 } else {
@@ -571,9 +573,12 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                     row.find('.hidden-gudang-id').val('');
                     row.find('.hidden-gudang-kd').val('');
                 }
+
+                // Sync "Assign All" checkbox state
+                syncCheckAllState();
             });
 
-            /* ── Check All per gudang ── */
+            /* ── Check All per gudang (assign semua pack ke gudang tertentu) ── */
             $(document).on('change', '.check-all-gudang', function() {
                 var gudangId = $(this).data('gudang-id');
                 var gudangKd = $(this).data('gudang-kd');
@@ -583,23 +588,19 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                     // Uncheck "check all" gudang lain
                     $('.check-all-gudang').not(this).prop('checked', false);
 
-                    // Set semua coil ke gudang ini
-                    $('#list-item-coil .coil-row').each(function() {
+                    // Set semua pack ke gudang ini
+                    $('#list-item-coil .pack-row').each(function() {
                         var row = $(this);
-                        // Uncheck semua checkbox gudang di row
                         row.find('.gudang-checkbox').prop('checked', false);
-                        // Check yang sesuai gudang ini
                         row.find('.gudang-checkbox[data-gudang-id="' + gudangId + '"]').prop('checked', true);
-                        // Update hidden
                         row.find('.hidden-gudang-id').val(gudangId);
                         row.find('.hidden-gudang-kd').val(gudangKd);
                     });
                 } else {
-                    // Uncheck semua coil dari gudang ini
-                    $('#list-item-coil .coil-row').each(function() {
+                    // Uncheck semua pack dari gudang ini
+                    $('#list-item-coil .pack-row').each(function() {
                         var row = $(this);
                         row.find('.gudang-checkbox[data-gudang-id="' + gudangId + '"]').prop('checked', false);
-                        // Cek apakah masih ada gudang lain yang checked
                         var anyChecked = row.find('.gudang-checkbox:checked');
                         if (anyChecked.length === 0) {
                             row.find('.hidden-gudang-id').val('');
@@ -609,17 +610,21 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                 }
             });
 
-            /* ── Search / filter tabel coil ── */
+            /* ── Sync check-all state berdasarkan keadaan tabel ── */
+            function syncCheckAllState() {
+                var totalPacks = $('#list-item-coil .pack-row').length;
+                if (totalPacks === 0) return;
+
+                listGudang.forEach(function(g) {
+                    var checkedCount = $('#list-item-coil .pack-row .gudang-checkbox[data-gudang-id="' + g.id + '"]:checked').length;
+                    $('#checkall-gudang-' + g.id).prop('checked', checkedCount === totalPacks && totalPacks > 0);
+                });
+            }
+
+            /* ── Search / filter tabel pack ── */
             $(document).on('keyup', '#search-coil-table', function() {
                 var keyword = $(this).val().toLowerCase().trim();
-                var $rows = $('#list-item-coil .coil-row');
-
-                // Hapus highlight sebelumnya
-                $rows.find('.highlight-search').each(function() {
-                    var parent = $(this).parent();
-                    $(this).replaceWith($(this).text());
-                    parent.get(0).normalize();
-                });
+                var $rows = $('#list-item-coil .pack-row');
 
                 if (!keyword) {
                     $rows.show();
@@ -627,45 +632,21 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                     return;
                 }
 
-                // Cari group yang punya match
-                var matchedGroups = {};
+                var visibleCount = 0;
                 $rows.each(function() {
-                    var group = $(this).data('group');
-                    var material = $(this).data('material') || '';
-                    var alias = $(this).data('alias') || '';
-                    var nocoil = $(this).data('nocoil') || '';
-                    if (
-                        material.indexOf(keyword) > -1 ||
-                        alias.indexOf(keyword) > -1 ||
-                        nocoil.indexOf(keyword) > -1
-                    ) {
-                        matchedGroups[group] = true;
-                    }
-                });
-
-                // Show/hide + highlight teks yang match
-                var regex = new RegExp('(' + keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-                $rows.each(function() {
-                    var group = $(this).data('group');
-                    if (matchedGroups[group]) {
+                    var packCode = $(this).data('pack-code') || '';
+                    var rowText = $(this).text().toLowerCase();
+                    if (packCode.indexOf(keyword) > -1 || rowText.indexOf(keyword) > -1) {
                         $(this).show();
-                        $(this).find('td').each(function() {
-                            var td = $(this);
-                            if (td.find('input,select,button').length) return;
-                            var text = td.text();
-                            if (text.toLowerCase().indexOf(keyword) > -1) {
-                                td.html(td.html().replace(regex, '<span class="highlight-search" style="background-color:#ffe066;border-radius:2px;padding:0 2px;">$1</span>'));
-                            }
-                        });
+                        visibleCount++;
                     } else {
                         $(this).hide();
                     }
                 });
 
-                // Tampilkan keterangan jika tidak ada hasil
                 $('#no-result-coil').remove();
-                if (Object.keys(matchedGroups).length === 0) {
-                    var colSpan = 9 + listGudang.length;
+                if (visibleCount === 0) {
+                    var colSpan = 7 + listGudang.length;
                     $('#list-item-coil').append(
                         '<tr id="no-result-coil"><td colspan="' + colSpan + '" class="text-center text-muted py-3">' +
                         '<i class="fa fa-search"></i> No results found for "<b>' + keyword + '</b>"</td></tr>'
@@ -673,13 +654,44 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                 }
             });
 
-            /* ── Validasi gudang semua coil sudah dipilih ── */
+            /* ── Validasi gudang semua pack sudah dipilih ── */
             function validateGudang() {
                 var kosong = false;
-                $('#list-item-coil .coil-row').each(function() {
-                    if (!$(this).find('.hidden-gudang-id').val()) kosong = true;
+                $('#list-item-coil .pack-row').each(function() {
+                    // Cek apakah ada minimal 1 hidden-gudang-id yang terisi di pack ini
+                    var firstGudang = $(this).find('.hidden-gudang-id').first().val();
+                    if (!firstGudang) kosong = true;
                 });
                 return !kosong;
+            }
+
+            /* ── Collect details dari semua pack rows ── */
+            function collectDetails() {
+                var details = [];
+                $('#list-item-coil .pack-row').each(function() {
+                    var row = $(this);
+                    row.find('input[name*="[id_ros_coil]"]').each(function() {
+                        var name = $(this).attr('name');
+                        // Extract index prefix: detail[X_Y]
+                        var match = name.match(/detail\[([^\]]+)\]/);
+                        if (!match) return;
+                        var idx = match[1];
+
+                        details.push({
+                            id_ros_coil: row.find('input[name="detail[' + idx + '][id_ros_coil]"]').val(),
+                            id_ros_header: row.find('input[name="detail[' + idx + '][id_ros_header]"]').val(),
+                            id_ros_material: row.find('input[name="detail[' + idx + '][id_ros_material]"]').val(),
+                            id_po_detail: row.find('input[name="detail[' + idx + '][id_po_detail]"]').val(),
+                            id_material: row.find('input[name="detail[' + idx + '][id_material]"]').val(),
+                            no_coil: row.find('input[name="detail[' + idx + '][no_coil]"]').val(),
+                            aktual_bersih: row.find('input[name="detail[' + idx + '][aktual_bersih]"]').val(),
+                            id_gudang_ke: row.find('input[name="detail[' + idx + '][id_gudang_ke]"]').val(),
+                            kd_gudang_ke: row.find('input[name="detail[' + idx + '][kd_gudang_ke]"]').val(),
+                            status_qc: 'OK',
+                        });
+                    });
+                });
+                return details;
             }
 
             /* ── SAVE DRAFT ── */
@@ -708,25 +720,7 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                     if (!result.isConfirmed) return;
 
                     // ── detail sebagai array JSON ──
-                    var details = [];
-                    $('#list-item-coil .coil-row').each(function() {
-                        var row = $(this);
-                        var idCoil = row.find('input[name*="[id_ros_coil]"]').val();
-                        if (!idCoil) return; // skip baris tanpa coil
-
-                        details.push({
-                            id_ros_coil: idCoil,
-                            id_ros_header: row.find('input[name*="[id_ros_header]"]').val(),
-                            id_ros_material: row.find('input[name*="[id_ros_material]"]').val(),
-                            id_po_detail: row.find('input[name*="[id_po_detail]"]').val(),
-                            id_material: row.find('input[name*="[id_material]"]').val(),
-                            no_coil: row.find('input[name*="[no_coil]"]').val(),
-                            aktual_bersih: row.find('input[name*="[aktual_bersih]"]').val(),
-                            id_gudang_ke: row.find('.hidden-gudang-id').val(),
-                            kd_gudang_ke: row.find('.hidden-gudang-kd').val(),
-                            status_qc: 'OK',
-                        });
-                    });
+                    var details = collectDetails();
 
                     // ── Kirim via FormData (untuk support file upload) ──
                     var fd = new FormData();
@@ -814,25 +808,7 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                 }).then(function(result) {
                     if (!result.isConfirmed) return;
 
-                    var details = [];
-                    $('#list-item-coil .coil-row').each(function() {
-                        var row = $(this);
-                        var idCoil = row.find('input[name*="[id_ros_coil]"]').val();
-                        if (!idCoil) return;
-
-                        details.push({
-                            id_ros_coil: idCoil,
-                            id_ros_header: row.find('input[name*="[id_ros_header]"]').val(),
-                            id_ros_material: row.find('input[name*="[id_ros_material]"]').val(),
-                            id_po_detail: row.find('input[name*="[id_po_detail]"]').val(),
-                            id_material: row.find('input[name*="[id_material]"]').val(),
-                            no_coil: row.find('input[name*="[no_coil]"]').val(),
-                            aktual_bersih: row.find('input[name*="[aktual_bersih]"]').val(),
-                            id_gudang_ke: row.find('.hidden-gudang-id').val(),
-                            kd_gudang_ke: row.find('.hidden-gudang-kd').val(),
-                            status_qc: 'OK',
-                        });
-                    });
+                    var details = collectDetails();
 
                     var fd = new FormData();
                     fd.append('no_ros', $('input[name="no_ros"]').val());
@@ -957,6 +933,84 @@ $tgl_default = !empty($ros_data->incoming_date) ? $ros_data->incoming_date : dat
                 });
             });
 
+            /* ── View Pack Detail Modal ── */
+            $(document).on('click', '.btn-view-pack', function() {
+                var packIndex = $(this).data('pack-index');
+                var pack = packDataStore[packIndex];
+                if (!pack) return;
+
+                var packCode = pack.pack_code || ('Pack #' + pack.pack_no);
+                var modalHtml = '';
+
+                /* Materials section */
+                modalHtml += '<h6 class="fw-bold mb-2"><i class="fa fa-boxes text-primary me-1"></i> Materials in this Pack</h6>';
+                modalHtml += '<table class="table table-sm table-bordered mb-3" style="font-size:12px;">';
+                modalHtml += '<thead class="table-light"><tr><th>No</th><th>Alias Name</th><th>Material Name (ERP)</th></tr></thead><tbody>';
+                var matKeys = Object.keys(pack.materials || {});
+                matKeys.forEach(function(key, idx) {
+                    var m = pack.materials[key];
+                    modalHtml += '<tr><td class="text-center">' + (idx + 1) + '</td><td><b>' + (m.nm_alias || '-') + '</b></td><td>' + (m.nm_material || '-') + '</td></tr>';
+                });
+                modalHtml += '</tbody></table>';
+
+                /* Coils section */
+                modalHtml += '<h6 class="fw-bold mb-2"><i class="fa fa-circle text-info me-1"></i> Coils in this Pack</h6>';
+                modalHtml += '<table class="table table-sm table-bordered table-striped" style="font-size:11px;">';
+                modalHtml += '<thead class="table-light"><tr><th class="text-center">No</th><th>Coil No.</th><th>Material</th><th class="text-end">N.W. (Kg)</th><th class="text-end">G.W. (Kg)</th><th class="text-end">Length (M)</th><th class="text-center">Type</th></tr></thead><tbody>';
+
+                var displayNo = 0;
+                if (pack.coils) {
+                    pack.coils.forEach(function(coil) {
+                        // Skip mother coil yang punya baby
+                        var isMother = (parseInt(coil.is_baby_coil) === 0);
+                        var qtyRoll = parseInt(coil.qty_roll) || 1;
+                        if (isMother && qtyRoll > 1) return;
+
+                        displayNo++;
+                        var typeBadge = parseInt(coil.is_baby_coil) === 1
+                            ? '<span class="badge bg-warning text-dark">Baby</span>'
+                            : '<span class="badge bg-secondary">Normal</span>';
+
+                        modalHtml += '<tr>' +
+                            '<td class="text-center">' + displayNo + '</td>' +
+                            '<td>' + (coil.no_coil || '-') + '</td>' +
+                            '<td>' + (coil.nm_alias || coil.nm_material || '-') + '</td>' +
+                            '<td class="text-end">' + parseFloat(coil.ros_bersih || 0).toLocaleString('id-ID', {minimumFractionDigits: 2}) + '</td>' +
+                            '<td class="text-end">' + parseFloat(coil.ros_kotor || 0).toLocaleString('id-ID', {minimumFractionDigits: 2}) + '</td>' +
+                            '<td class="text-end">' + parseFloat(coil.panjang || 0).toLocaleString('id-ID', {minimumFractionDigits: 2}) + '</td>' +
+                            '<td class="text-center">' + typeBadge + '</td>' +
+                            '</tr>';
+                    });
+                }
+
+                modalHtml += '</tbody>';
+                modalHtml += '<tfoot class="table-secondary"><tr><td colspan="3" class="text-end fw-bold">Total</td>';
+                modalHtml += '<td class="text-end fw-bold">' + parseFloat(pack.total_nw || 0).toLocaleString('id-ID', {minimumFractionDigits: 2}) + '</td>';
+                modalHtml += '<td class="text-end fw-bold">' + parseFloat(pack.total_gw || 0).toLocaleString('id-ID', {minimumFractionDigits: 2}) + '</td>';
+                modalHtml += '<td colspan="2"></td></tr></tfoot>';
+                modalHtml += '</table>';
+
+                $('#modalPackDetailLabel').text('Pack Detail — ' + packCode);
+                $('#modalPackDetailBody').html(modalHtml);
+                $('#modalPackDetail').modal('show');
+            });
+
         });
     </script>
 <?php endif; ?>
+
+<!-- Modal Pack Detail -->
+<div class="modal fade" id="modalPackDetail" tabindex="-1" aria-labelledby="modalPackDetailLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="modalPackDetailLabel"><i class="fa fa-eye me-1"></i> Pack Detail</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modalPackDetailBody" style="max-height:70vh; overflow-y:auto;"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><i class="fa fa-times"></i> Close</button>
+            </div>
+        </div>
+    </div>
+</div>

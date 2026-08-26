@@ -135,6 +135,40 @@ class Pengajuan_mutasi extends Admin_Controller
     }
 
     // ---------------------------------------------------------------
+    // AJAX — GET PACKS BY GUDANG (for pack-based mutation)
+    // ---------------------------------------------------------------
+
+    public function get_packs()
+    {
+        $id_gudang = $this->input->get('id_gudang');
+
+        if (!$id_gudang) {
+            return $this->_json(['status' => 0, 'message' => 'id_gudang wajib diisi']);
+        }
+
+        $packs = $this->pengajuan_mutasi_model->get_packs_by_gudang($id_gudang);
+
+        return $this->_json(['status' => 1, 'data' => $packs]);
+    }
+
+    // ---------------------------------------------------------------
+    // AJAX — GET COILS INSIDE A PACK (for detail modal)
+    // ---------------------------------------------------------------
+
+    public function get_pack_coils()
+    {
+        $id_pack = (int) $this->input->get('id_pack');
+
+        if (!$id_pack) {
+            return $this->_json(['status' => 0, 'message' => 'id_pack wajib diisi']);
+        }
+
+        $coils = $this->pengajuan_mutasi_model->get_coils_by_pack($id_pack);
+
+        return $this->_json(['status' => 1, 'data' => $coils]);
+    }
+
+    // ---------------------------------------------------------------
     // SAVE (ADD)
     // ---------------------------------------------------------------
 
@@ -364,40 +398,60 @@ class Pengajuan_mutasi extends Admin_Controller
             return;
         }
 
-        // Kumpulkan semua coil dari detail mutasi, ambil data lengkap dari warehouse_stock_coil
-        $coils = [];
+        // Group details by pack
+        $pack_groups = [];
         foreach ($mutation['details'] as $detail) {
-            foreach ($detail['coils'] as $coil) {
-                // Ambil data terkini dari warehouse_stock_coil
-                $live_coil = $this->db->query("
-                    SELECT wsc.*, ni4.trade_name, ni4.thickness
-                    FROM warehouse_stock_coil wsc
-                    LEFT JOIN new_inventory_4 ni4 ON ni4.code_lv4 = wsc.id_material
-                    WHERE wsc.id = ?
-                    LIMIT 1
-                ", [$coil['id_warehouse_stock_coil']])->row_array();
-
-                $coils[] = [
-                    'no_ros'            => $coil['no_ros'] ?? '',
-                    'trade_name'          => $live_coil['trade_name'] ?? $detail['trade_name'],
-                    'kode_internal'     => $live_coil['kode_internal'] ?? $coil['kode_internal'],
-                    'berat_bersih'      => $live_coil['net_weight'] ?? $coil['net_weight'],
-                    'berat_kotor'       => $live_coil['gross_weight'] ?? $coil['gross_weight'],
-                    'thickness'         => $live_coil['thickness'] ?? '',
-                    'nm_gudang_tujuan'  => $mutation['nm_gudang_to'],
-                    'kd_gudang_ke'      => $mutation['kd_gudang_to'],
-                    'id_gudang_ke'      => $mutation['id_gudang_to'],
-                    'incoming_date'     => $mutation['approved_date'] ?? $mutation['mutation_date'],
+            $pk = $detail['pack_code'] ?: ($detail['id_warehouse_pack'] ?: 'unknown');
+            if (!isset($pack_groups[$pk])) {
+                $pack_groups[$pk] = [
+                    'pack_code'   => $detail['pack_code'] ?: $pk,
+                    'materials'   => [],
+                    'thicknesses' => [],
+                    'total_nw'    => 0,
+                    'total_gw'    => 0,
                 ];
+            }
+            $mat_name = $detail['trade_name'] ?: $detail['nm_material'];
+            if ($mat_name && !in_array($mat_name, $pack_groups[$pk]['materials'])) {
+                $pack_groups[$pk]['materials'][] = $mat_name;
+            }
+
+            foreach ($detail['coils'] ?? [] as $coil) {
+                $pack_groups[$pk]['total_nw'] += (float) $coil['net_weight'];
+                $pack_groups[$pk]['total_gw'] += (float) $coil['gross_weight'];
+            }
+
+            // Thickness from inventory
+            if (!empty($detail['code_lv4'])) {
+                $inv = $this->db->select('thickness')->get_where('new_inventory_4', ['code_lv4' => $detail['code_lv4']])->row();
+                if ($inv && !empty($inv->thickness)) {
+                    $pack_groups[$pk]['thicknesses'][] = $inv->thickness;
+                }
             }
         }
 
-        if (empty($coils)) {
-            show_error('No coil data found for this mutation.', 404);
+        // Build results per pack
+        $results = [];
+        foreach ($pack_groups as $pg) {
+            $results[] = [
+                'pack_code'        => $pg['pack_code'],
+                'no_ros'           => '',
+                'materials'        => $pg['materials'],
+                'thicknesses'      => $pg['thicknesses'],
+                'total_nw'         => $pg['total_nw'],
+                'total_gw'         => $pg['total_gw'],
+                'nm_gudang_tujuan' => $mutation['nm_gudang_to'],
+                'kd_gudang_ke'     => $mutation['kd_gudang_to'],
+                'id_gudang_ke'     => $mutation['id_gudang_to'],
+            ];
+        }
+
+        if (empty($results)) {
+            show_error('No pack data found for this mutation.', 404);
             return;
         }
 
-        $data = ['results' => $coils, 'mutation' => $mutation];
+        $data = ['results' => $results, 'mutation' => $mutation];
         $this->load->view('print_qr_label', $data);
     }
 
@@ -458,29 +512,35 @@ class Pengajuan_mutasi extends Admin_Controller
             if (!empty($d['coils'])) {
                 foreach ($d['coils'] as $c) {
                     $coils[] = [
-                        'id_warehouse_stock_coil' => $c['id'],
-                        'no_coil'                 => $c['no_coil'],
-                        'no_ipp'                  => $c['no_ipp'],
-                        'no_po'                   => $c['no_po'],
-                        'no_ros'                  => $c['no_ros'],
-                        'gross_weight'            => $c['gross_weight'],
-                        'net_weight'              => $c['net_weight'],
-                        'length'                  => $c['length'],
-                        'harga_beli'              => $c['harga_beli'],
-                        'kode_internal'           => $c['kode_internal'],
+                        'id_warehouse_stock_coil' => $c['id_warehouse_stock_coil'] ?? ($c['id'] ?? 0),
+                        'id_warehouse_pack'       => $c['id_warehouse_pack'] ?? null,
+                        'pack_code'               => $c['pack_code'] ?? null,
+                        'no_coil'                 => $c['no_coil'] ?? '',
+                        'no_ipp'                  => $c['no_ipp'] ?? '',
+                        'no_po'                   => $c['no_po'] ?? '',
+                        'no_ros'                  => $c['no_ros'] ?? '',
+                        'kode_internal'           => $c['kode_internal'] ?? '',
+                        'parent_coil_id'          => $c['parent_coil_id'] ?? null,
+                        'is_baby_coil'            => $c['is_baby_coil'] ?? 0,
+                        'gross_weight'            => $c['gross_weight'] ?? 0,
+                        'net_weight'              => $c['net_weight'] ?? 0,
+                        'length'                  => $c['length'] ?? 0,
+                        'qty_roll'                => $c['qty_roll'] ?? 1,
+                        'harga_beli'              => $c['harga_beli'] ?? 0,
+                        'total_nilai_mutasi'      => $c['total_nilai_mutasi'] ?? 0,
                     ];
                 }
             }
 
-
-            // Disesuaikan agar hanya menyimpan code_lv4 demi efisiensi tabel detail
             $details[] = [
-                'id_warehouse_stock' => $d['id_warehouse_stock'],
-                'id_material'        => $d['id_material'],
-                'nm_material'        => $d['nm_material'],
-                'trade_name'         => $d['trade_name'],
-                'code_lv4'           => $d['code_lv4'],
-                'id_unit'            => $d['id_unit'],
+                'id_warehouse_stock' => $d['id_warehouse_stock'] ?? 0,
+                'id_warehouse_pack'  => $d['id_warehouse_pack'] ?? null,
+                'pack_code'          => $d['pack_code'] ?? null,
+                'id_material'        => $d['id_material'] ?? '',
+                'nm_material'        => $d['nm_material'] ?? '',
+                'trade_name'         => $d['trade_name'] ?? '',
+                'code_lv4'           => $d['code_lv4'] ?? '',
+                'id_unit'            => $d['id_unit'] ?? null,
                 'qty'                => !empty($coils) ? 0 : ($d['qty'] ?? 0),
                 'harga_beli'         => $d['harga_beli'] ?? 0,
                 'coils'              => $coils,

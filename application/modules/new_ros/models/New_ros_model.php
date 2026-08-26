@@ -274,4 +274,20 @@ class New_ros_model extends BF_Model
             ->row();
         return $row ? (float) $row->total : 0;
     }
+
+    /**
+     * Generate pack code: PCK-YYMM-XXX (global counter)
+     */
+    public function generate_pack_code()
+    {
+        $prefix = 'PCK-' . date('ym');
+        $row = $this->db->query("SELECT MAX(pack_code) AS max_code FROM tr_ros_pack WHERE pack_code LIKE '{$prefix}%'")->row();
+        $urutan = 0;
+        if ($row && $row->max_code) {
+            // PCK-YYMM-XXX → ambil 3 digit terakhir
+            $urutan = (int) substr($row->max_code, -3);
+        }
+        $urutan++;
+        return $prefix . '-' . sprintf("%03d", $urutan);
+    }
 }

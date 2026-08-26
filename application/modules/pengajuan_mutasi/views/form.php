@@ -20,170 +20,134 @@ $details = $m['details'] ?? [];
         <?php if (!$is_add && !empty($m)): ?>
             <div class="p-3 bg-light border rounded mb-4 w-100">
                 <div class="row align-items-center g-3 m-0">
-
                     <div class="<?= empty($m['reject_reason']) ? 'col-12' : 'col-md-7 col-12' ?> p-0">
                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 w-100">
-
                             <div class="px-2 flex-fill">
                                 <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Mutation No.</small>
                                 <span class="fs-6 fw-bold text-dark"><?= ($m['mutation_number']) ?></span>
                             </div>
-
                             <div class="px-2 flex-fill border-start-custom">
                                 <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Request Date</small>
-                                <span class="text-dark fw-semibold">
-                                    <?= date('d/m/Y', strtotime($m['mutation_date'])) ?>
-                                </span>
+                                <span class="text-dark fw-semibold"><?= date('d/m/Y', strtotime($m['mutation_date'])) ?></span>
                             </div>
-
                             <div class="px-2 flex-fill border-start-custom">
                                 <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Created By</small>
-                                <span class="text-dark fw-semibold">
-                                    <?= !empty($m['create_by']) ? $m['create_by'] : '-' ?>
-                                </span>
+                                <span class="text-dark fw-semibold"><?= !empty($m['create_by']) ? $m['create_by'] : '-' ?></span>
                             </div>
-
                             <div class="px-2 flex-fill border-start-custom">
                                 <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Status</small>
                                 <?php
-                                $status_map = [
-                                    0 => ['Open',            'primary'],
-                                    1 => ['Waiting Approval', 'warning'],
-                                    2 => ['Approved',        'success'],
-                                    3 => ['Rejected',        'danger'],
-                                    4 => ['Done',            'dark'],
-                                    5 => ['Cancelled',       'secondary'],
-                                    6 => ['Revision',        'danger'],
-                                ];
-                                $st = $status_map[$m['status']] ?? ['-', 'secondary'];
+                                $status_map = [0 => ['Open','primary'], 1 => ['Waiting Approval','warning'], 2 => ['Approved','success'], 3 => ['Rejected','danger'], 4 => ['Done','dark'], 5 => ['Cancelled','secondary'], 6 => ['Revision','danger']];
+                                $st = $status_map[$m['status']] ?? ['-','secondary'];
                                 ?>
                                 <span class="badge bg-<?= $st[1] ?> px-2 py-1"><?= $st[0] ?></span>
                             </div>
-
                         </div>
                     </div>
-
                     <?php if (!empty($m['reject_reason'])): ?>
                         <div class="col-md-5 col-12 border-start-md ps-md-4 py-1 text-start">
                             <small class="text-muted d-block text-uppercase font-size-xs fw-bold">Reject/Cancel Reason</small>
-                            <span class="text-danger fw-semibold">
-                                <i class="fa-solid fa-circle-exclamation me-1"></i> <?= ($m['reject_reason']) ?>
-                            </span>
+                            <span class="text-danger fw-semibold"><i class="fa-solid fa-circle-exclamation me-1"></i> <?= ($m['reject_reason']) ?></span>
                         </div>
                     <?php endif; ?>
-
                 </div>
             </div>
         <?php endif; ?>
 
-
         <form id="formMutasi" enctype="multipart/form-data">
-
             <div class="row g-3 mb-4">
                 <div class="col-md-4">
                     <label class="form-label">Minutes of Meeting No. <span class="text-danger">*</span></label>
-                    <input type="text" id="no_berita_acara" name="no_berita_acara"
-                        class="form-control" <?= $readonly ?>
-                        value="<?= ($m['no_berita_acara'] ?? '') ?>"
-                        placeholder="Enter Minutes of Meeting No.">
+                    <input type="text" id="no_berita_acara" name="no_berita_acara" class="form-control" <?= $readonly ?>
+                        value="<?= ($m['no_berita_acara'] ?? '') ?>" placeholder="Enter Minutes of Meeting No.">
                 </div>
-
                 <div class="col-md-4">
                     <label class="form-label">Source Warehouse <span class="text-danger">*</span></label>
-                    <select id="id_gudang_from" class="form-select" <?= $disabled ?>>
+                    <select id="id_gudang_from" class="form-select" <?= ($disabled || $is_edit) ? 'disabled' : '' ?>>
                         <option value="">-- Select Source Warehouse --</option>
                         <?php foreach ($warehouses as $wh): ?>
-                            <option value="<?= $wh['id'] ?>"
-                                <?= (isset($m['id_gudang_from']) && $m['id_gudang_from'] == $wh['id']) ? 'selected' : '' ?>>
+                            <option value="<?= $wh['id'] ?>" <?= (isset($m['id_gudang_from']) && $m['id_gudang_from'] == $wh['id']) ? 'selected' : '' ?>>
                                 <?= ($wh['nm_gudang']) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
+                    <?php if ($is_edit): ?>
+                        <input type="hidden" name="id_gudang_from" value="<?= $m['id_gudang_from'] ?? '' ?>">
+                    <?php endif; ?>
                 </div>
-
                 <div class="col-md-4">
                     <label class="form-label">Destination Warehouse <span class="text-danger">*</span></label>
                     <select id="id_gudang_to" class="form-select" disabled>
                         <option value="">-- Auto-selected --</option>
                         <?php foreach ($warehouses as $wh): ?>
-                            <option value="<?= $wh['id'] ?>"
-                                <?= (isset($m['id_gudang_to']) && $m['id_gudang_to'] == $wh['id']) ? 'selected' : '' ?>>
+                            <option value="<?= $wh['id'] ?>" <?= (isset($m['id_gudang_to']) && $m['id_gudang_to'] == $wh['id']) ? 'selected' : '' ?>>
                                 <?= ($wh['nm_gudang']) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
                     <input type="hidden" id="id_gudang_to_hidden" name="id_gudang_to" value="<?= $m['id_gudang_to'] ?? '' ?>">
                 </div>
-
                 <div class="col-md-8">
                     <label class="form-label">Description <span class="text-danger">*</span></label>
-                    <input type="text" id="description" name="description"
-                        class="form-control" <?= $readonly ?>
-                        value="<?= ($m['description'] ?? '') ?>"
-                        placeholder="Enter mutation reason">
+                    <input type="text" id="description" name="description" class="form-control" <?= $readonly ?>
+                        value="<?= ($m['description'] ?? '') ?>" placeholder="Enter mutation reason">
                 </div>
-
                 <div class="col-md-4">
                     <label class="form-label">Attach File <small class="text-muted">(PDF/JPG/PNG, max 5MB)</small></label>
                     <?php if ($is_view): ?>
                         <?php if (!empty($m['file_name_hash'])): ?>
                             <div class="d-flex align-items-center gap-2">
                                 <i class="fa-solid fa-paperclip text-primary"></i>
-                                <a href="<?= base_url('uploads/berita_acara_mutasi/' . $m['file_name_hash']) ?>"
-                                    target="_blank" class="text-truncate" style="max-width:200px;"
-                                    title="<?= ($m['file_name_original']) ?>">
-                                    <?= ($m['file_name_original']) ?>
-                                </a>
+                                <a href="<?= base_url('uploads/berita_acara_mutasi/' . $m['file_name_hash']) ?>" target="_blank" class="text-truncate" style="max-width:200px;"><?= ($m['file_name_original']) ?></a>
                             </div>
                         <?php else: ?>
                             <span class="text-muted">No file attached</span>
                         <?php endif; ?>
                     <?php else: ?>
-                        <input type="file" id="berita_acara_file" name="berita_acara_file"
-                            class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+                        <input type="file" id="berita_acara_file" name="berita_acara_file" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
                         <?php if ($is_edit && !empty($m['file_name_hash'])): ?>
-                            <div class="mt-1 d-flex align-items-center gap-2">
-                                <small class="text-muted">Current file:</small>
-                                <a href="<?= base_url('uploads/berita_acara_mutasi/' . $m['file_name_hash']) ?>"
-                                    target="_blank" class="small text-truncate" style="max-width:200px;"
-                                    title="<?= ($m['file_name_original']) ?>">
-                                    <?= ($m['file_name_original']) ?>
-                                </a>
-                                <small class="text-muted">(leave empty to keep current file)</small>
-                            </div>
+                            <div class="mt-1"><small class="text-muted">Current: <a href="<?= base_url('uploads/berita_acara_mutasi/' . $m['file_name_hash']) ?>" target="_blank"><?= ($m['file_name_original']) ?></a></small></div>
                         <?php endif; ?>
                     <?php endif; ?>
                 </div>
             </div>
 
+            <!-- Pack List -->
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="mb-0">Material & Coil Details</h6>
+                <h6 class="mb-0"><i class="fa-solid fa-boxes-stacked me-1"></i> Pack Details</h6>
                 <?php if (!$is_view): ?>
-                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddMaterial">
-                        <i class="fa-solid fa-plus"></i> Group Material
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddPack">
+                        <i class="fa-solid fa-plus"></i> Add Pack
                     </button>
                 <?php endif; ?>
             </div>
 
             <div class="table-responsive">
-                <table class="table table-bordered align-middle" id="tblDetail">
+                <table class="table table-bordered table-sm align-middle" id="tblPack">
                     <thead class="table-light">
                         <tr>
-                            <th>Material</th>
-                            <th>Kode Internal (Coil)</th>
-                            <th>No. Coil</th>
-                            <th width="140">Net Weight (kg)</th>
-                            <th width="140">Length (m)</th> <?php if (!$is_view): ?>
-                                <th width="60">Aksi</th>
+                            <th width="3%">No</th>
+                            <th class="text-center" width="12%">Pack Code</th>
+                            <th>Materials</th>
+                            <th class="text-center" width="5%">Roll</th>
+                            <th class="text-end" width="10%">N.W. Total</th>
+                            <th class="text-end" width="10%">G.W. Total</th>
+                            <th class="text-center" width="6%">Detail</th>
+                            <?php if (!$is_view): ?>
+                                <th class="text-center" width="5%">Aksi</th>
                             <?php endif; ?>
                         </tr>
                     </thead>
-                    <tbody id="detailBody"></tbody>
+                    <tbody id="packBody">
+                        <tr><td colspan="<?= $is_view ? 7 : 8 ?>" class="text-center text-muted py-3">No pack selected yet.</td></tr>
+                    </tbody>
                     <tfoot>
                         <tr class="table-light fw-bold">
-                            <td colspan="3" class="text-end">Total Keseluruhan</td>
-                            <td id="totalNetWeight">0.00</td>
-                            <td id="totalLength">0.00</td> <?php if (!$is_view): ?><td></td><?php endif; ?>
+                            <td colspan="3" class="text-end">Total</td>
+                            <td class="text-center" id="totalRoll">0</td>
+                            <td class="text-end" id="totalNW">0.00</td>
+                            <td class="text-end" id="totalGW">0.00</td>
+                            <td colspan="<?= $is_view ? 1 : 2 ?>"></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -194,74 +158,49 @@ $details = $m['details'] ?? [];
             <?php if (!$is_view): ?>
                 <div class="mt-3 d-flex gap-2 justify-content-end">
                     <a href="<?= site_url('pengajuan_mutasi') ?>" class="btn btn-secondary">Cancel</a>
-                    <button type="button" class="btn btn-primary" id="btnSave">
-                        <i class="fa-solid fa-save"></i> Save
-                    </button>
+                    <button type="button" class="btn btn-primary" id="btnSave"><i class="fa-solid fa-save"></i> Save</button>
+                </div>
+            <?php else: ?>
+                <div class="mt-3 d-flex gap-2 justify-content-end">
+                    <a href="<?= site_url('pengajuan_mutasi') ?>" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Back</a>
                 </div>
             <?php endif; ?>
-
         </form>
     </div>
 </div>
 
-<div class="modal fade" id="modalCoil" tabindex="-1">
+<!-- Modal Pack Picker -->
+<div class="modal fade" id="modalPackPicker" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Select Coils for Material</h5>
+                <h5 class="modal-title"><i class="fa-solid fa-boxes-stacked me-2"></i> Select Pack</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="coilLoading" class="text-center py-3" style="display:none;">
-                    <div class="spinner-border spinner-border-sm text-primary"></div> Loading coil data...
+                <div class="input-group mb-3">
+                    <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="searchPackInput" class="form-control" placeholder="Search pack code or material...">
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover align-middle" id="tblCoil">
-                        <thead class="table-light">
-                            <tr>
-                                <th width="50" class="text-center th-clickable" style="cursor: pointer; vertical-align: middle;">
-                                    <input type="checkbox" id="checkAllCoil" class="form-check-input"
-                                        style="width: 20px; height: 20px; margin: 0; cursor: pointer;">
-                                </th>
-                                <th>Kode Internal</th>
-                                <th>No. Coil</th>
-                                <th>Gross (kg)</th>
-                                <th>Net (kg)</th>
-                                <th>Length (m)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="coilBody"></tbody>
-                    </table>
+                <div id="packListContainer" style="max-height:400px; overflow-y:auto;">
+                    <div class="text-center py-3 text-muted">Loading...</div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="btnConfirmCoil">
-                    <i class="fa-solid fa-check"></i> Confirm Selection
-                </button>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="modalMaterial" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-md modal-dialog-scrollable">
+<!-- Modal Pack Detail (view coils) -->
+<div class="modal fade" id="modalPackDetail" tabindex="-1">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fa-solid fa-box-open me-2"></i>Select Material Group</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="fa fa-eye me-1"></i> Pack Detail — <span id="detailPackCode"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="input-group mb-3">
-                    <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                    <input type="text" id="searchMaterialInput" class="form-control" placeholder="Search material or trade name...">
-                </div>
-
-                <div class="list-group" id="materialListContainer" style="max-height: 350px; overflow-y: auto;">
-                </div>
-            </div>
+            <div class="modal-body" id="detailPackBody" style="max-height:70vh; overflow-y:auto;"></div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -271,568 +210,386 @@ $details = $m['details'] ?? [];
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    const BASE_URL = '<?= site_url('pengajuan_mutasi') ?>';
-    const MODE = '<?= $mode ?>';
-    const RECORD_ID = '<?= $id ?? '' ?>';
-    const IS_VIEW = MODE === 'view';
+const BASE_URL = '<?= site_url('pengajuan_mutasi') ?>';
+const MODE = '<?= $mode ?>';
+const RECORD_ID = '<?= $id ?? '' ?>';
+const IS_VIEW = MODE === 'view';
+const EXISTING_DETAILS = <?= json_encode($details) ?>;
 
-    const EXISTING_DETAILS = <?= json_encode($details) ?>;
+let selectedPacks = []; // Array of { id_warehouse_pack, pack_code, materials_concat, roll_count, total_nw, total_gw, coils: [...] }
 
-    let detailRows = [];
-    let currentRowId = null;
-    let rowCounter = 0;
+$(document).ready(function() {
 
-    $(document).ready(function() {
-        // Load existing data
-        if (EXISTING_DETAILS.length > 0) {
-            EXISTING_DETAILS.forEach(function(d) {
-                const rowId = ++rowCounter;
-                detailRows.push({
-                    rowId: rowId,
-                    material: {
-                        id_warehouse_stock: d.id_warehouse_stock,
-                        id_material: d.id_material,
-                        nm_material: d.nm_material,
-                        trade_name: d.trade_name,
-                        code_lv4: d.code_lv4,
-                        id_unit: d.id_unit,
-                        harga_beli: d.harga_beli
-                    },
-                    coils: d.coils || []
+    // Load existing data (edit/view mode)
+    if (EXISTING_DETAILS.length > 0) {
+        // Group existing details by id_warehouse_pack
+        var packMap = {};
+        EXISTING_DETAILS.forEach(function(d) {
+            var pk = String(d.id_warehouse_pack || d.pack_code || 'unknown');
+            if (!packMap[pk]) {
+                packMap[pk] = {
+                    id_warehouse_pack: d.id_warehouse_pack || 0,
+                    pack_code: d.pack_code || pk,
+                    materials_concat: '',
+                    roll_count: 0,
+                    total_nw: 0,
+                    total_gw: 0,
+                    coils: []
+                };
+            }
+            // Accumulate from coils
+            if (d.coils && d.coils.length > 0) {
+                d.coils.forEach(function(c) {
+                    packMap[pk].roll_count++;
+                    packMap[pk].total_nw += parseFloat(c.net_weight || 0);
+                    packMap[pk].total_gw += parseFloat(c.gross_weight || 0);
+                    // Map coil fields to expected format
+                    packMap[pk].coils.push({
+                        id: c.id_warehouse_stock_coil || c.id || 0,
+                        id_material: d.id_material || d.code_lv4 || '',
+                        nm_material: d.nm_material || '',
+                        trade_name: d.trade_name || '',
+                        no_coil: c.no_coil || '',
+                        no_ipp: c.no_ipp || '',
+                        no_po: c.no_po || '',
+                        no_ros: c.no_ros || '',
+                        kode_internal: c.kode_internal || '',
+                        parent_coil_id: c.parent_coil_id || null,
+                        is_baby_coil: c.is_baby_coil || 0,
+                        gross_weight: c.gross_weight || 0,
+                        net_weight: c.net_weight || 0,
+                        length: c.length || 0,
+                        qty_roll: c.qty_roll || 1,
+                        harga_beli: c.harga_beli || 0,
+                        total_nilai: c.total_nilai_mutasi || 0,
+                        id_pack: d.id_warehouse_pack || 0,
+                        pack_code: d.pack_code || ''
+                    });
                 });
-            });
-            renderTable();
-        }
-
-        $('#btnAddMaterial').on('click', function() {
-            const idGudang = $('#id_gudang_from').val();
-            if (!idGudang) {
-                Swal.fire('Attention', 'Please select a source warehouse first.', 'warning');
-                return;
             }
-            showMaterialPicker(idGudang);
-        });
-
-        // Auto-set destination warehouse (PRO <-> SLI)
-        $('#id_gudang_from').on('change', function() {
-            const selectedVal = $(this).val();
-            let oppositeVal = '';
-
-            // Cari option di id_gudang_to yang nilainya TIDAK SAMA dengan yang dipilih di id_gudang_from
-            $('#id_gudang_to option').not(':first').each(function() {
-                if ($(this).val() !== selectedVal && $(this).val() !== '') {
-                    oppositeVal = $(this).val();
+            // Build materials_concat
+            var matEntry = (d.trade_name || '') + '||' + (d.nm_material || '') + '||' + (d.code_lv4 || '');
+            if (packMap[pk].materials_concat) {
+                if (packMap[pk].materials_concat.indexOf(matEntry) === -1) {
+                    packMap[pk].materials_concat += ';;' + matEntry;
                 }
-            });
-
-            if (selectedVal && oppositeVal) {
-                $('#id_gudang_to').val(oppositeVal);
-                $('#id_gudang_to_hidden').val(oppositeVal);
             } else {
-                $('#id_gudang_to').val('');
-                $('#id_gudang_to_hidden').val('');
+                packMap[pk].materials_concat = matEntry;
             }
-
-            // Reset list material/coil jika warehouse asal diubah
-            detailRows = [];
-            renderTable();
         });
+        selectedPacks = Object.values(packMap);
+        renderPackTable();
+    }
 
-        // Trigger on load for edit mode
-        if (MODE === 'edit' || MODE === 'view') {
-            const currentTo = '<?= $m['id_gudang_to'] ?? '' ?>';
-            if (currentTo) {
-                $('#id_gudang_to').val(currentTo);
-                $('#id_gudang_to_hidden').val(currentTo);
-            }
-        }
-
-        $('#btnSave').on('click', saveForm);
-
-        $('#checkAllCoil').on('change', function() {
-            $('#coilBody input[type=checkbox]').prop('checked', this.checked);
+    // Auto-set destination warehouse
+    $('#id_gudang_from').on('change', function() {
+        var val = $(this).val();
+        var opposite = '';
+        $('#id_gudang_to option').not(':first').each(function() {
+            if ($(this).val() !== val && $(this).val() !== '') opposite = $(this).val();
         });
-
-        $('#btnConfirmCoil').on('click', confirmCoilSelection);
+        $('#id_gudang_to').val(opposite);
+        $('#id_gudang_to_hidden').val(opposite);
+        selectedPacks = [];
+        renderPackTable();
     });
 
-    // ---------------------------------------------------------------
-    // MATERIAL PICKER
-    // ---------------------------------------------------------------
-    function showMaterialPicker(idGudang) {
-        // Tampilkan loading/kosongkan list lama terlebih dahulu
-        $('#materialListContainer').html('<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Loading data...</div>');
-        $('#searchMaterialInput').val(''); // Reset form input pencarian
-        $('#modalMaterial').modal('show');
-
-        // Ambil daftar ID material yang sudah berada di tabel detail saat ini
-        const existingIds = detailRows.map(r => parseInt(r.material.id_warehouse_stock));
-
-        $.get(BASE_URL + '/get_material?id_gudang=' + idGudang, function(res) {
-            if (res.status != 1 || !res.data.length) {
-                $('#materialListContainer').html('<div class="text-center text-muted py-3">No materials available in this warehouse.</div>');
-                return;
-            }
-
-            let listHtml = '';
-            res.data.forEach(function(m) {
-                const isAlreadySelected = existingIds.includes(parseInt(m.id));
-                const tradeNameLabel = m.trade_name ? ` <span class="text-muted small">(${escHtml(m.trade_name)})</span>` : '';
-
-                // Konfigurasi atribut jika material sudah dipilih sebelumnya
-                const disabledAttr = isAlreadySelected ? 'disabled' : '';
-                const customStyle = isAlreadySelected ? 'style="background-color: #f8f9fa; cursor: not-allowed; opacity: 0.6;"' : '';
-                const statusLabel = isAlreadySelected ? '<span class="badge bg-secondary text-white small">Already Selected</span>' : '<i class="fa-solid fa-chevron-right text-muted small"></i>';
-
-                listHtml += `
-                <button type="button" class="list-group-item list-group-item-action material-item-btn py-2.5" 
-                        data-json='${JSON.stringify(m)}' 
-                        data-search="${escHtml(m.nm_material.toLowerCase())} ${escHtml((m.trade_name || '').toLowerCase())}"
-                        ${disabledAttr}
-                        ${customStyle}>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="fw-semibold text-dark search-target">${escHtml(m.nm_material)}</span>
-                            ${tradeNameLabel}
-                        </div>
-                        <div>
-                            ${statusLabel}
-                        </div>
-                    </div>
-                </button>
-            `;
-            });
-
-            $('#materialListContainer').html(listHtml);
-
-            // --- Logika Fitur Pencarian / Search Di Dalam Modal ---
-            $('#searchMaterialInput').off('input').on('input', function() {
-                const keyword = this.value.toLowerCase().trim();
-
-                $('.material-item-btn').each(function() {
-                    const searchTarget = $(this).attr('data-search');
-                    if (searchTarget.includes(keyword)) {
-                        $(this).show();
-                    } else {
-                        $(this).hide();
-                    }
-                });
-            });
-
-            // --- Logika Saat Material Dipilih ---
-            $('.material-item-btn').off('click').on('click', function() {
-                // Pengaman tambahan jika button disabled dipaksa klik bypass HTML
-                if ($(this).prop('disabled')) return;
-
-                const mat = JSON.parse($(this).attr('data-json'));
-
-                // Tutup modal material
-                $('#modalMaterial').modal('hide');
-
-                const rowId = ++rowCounter;
-                detailRows.push({
-                    rowId: rowId,
-                    material: {
-                        id_warehouse_stock: mat.id,
-                        id_material: mat.id,
-                        nm_material: mat.nm_material,
-                        trade_name: mat.trade_name,
-                        code_lv4: mat.code_lv4,
-                        id_unit: mat.id_unit,
-                        harga_beli: mat.harga_beli,
-                    },
-                    coils: []
-                });
-
-                // Render ulang tabel utama
-                renderTable();
-
-                // Langsung buka modal coil secara otomatis setelah modal material tertutup
-                setTimeout(function() {
-                    openCoilModal(rowId);
-                }, 400);
-            });
-
-        }, 'json');
+    if (MODE === 'edit' || MODE === 'view') {
+        var currentTo = '<?= $m['id_gudang_to'] ?? '' ?>';
+        if (currentTo) { $('#id_gudang_to').val(currentTo); $('#id_gudang_to_hidden').val(currentTo); }
     }
 
-    // ---------------------------------------------------------------
-    // RENDER TABEL (GROUP BY MATERIAL)
-    // ---------------------------------------------------------------
-    function renderTable() {
-        const tbody = $('#detailBody');
-        tbody.empty();
+    // Add Pack button
+    $('#btnAddPack').on('click', function() {
+        var idGudang = $('#id_gudang_from').val();
+        if (!idGudang) { Swal.fire('Attention', 'Please select a source warehouse first.', 'warning'); return; }
+        showPackPicker(idGudang);
+    });
 
-        if (detailRows.length === 0) {
-            // Colspan disesuaikan: 6 jika edit/add, 5 jika view
-            const colCount = IS_VIEW ? 5 : 6;
-            tbody.html(`<tr><td colspan="${colCount}" class="text-center text-muted py-3">No material data selected yet.</td></tr>`);
-            recalcTotals();
+    $('#btnSave').on('click', saveForm);
+});
+
+// ── Pack Picker Modal ──
+function showPackPicker(idGudang) {
+    $('#packListContainer').html('<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Loading...</div>');
+    $('#searchPackInput').val('');
+    new bootstrap.Modal(document.getElementById('modalPackPicker')).show();
+
+    var existingIds = selectedPacks.map(function(p) { return parseInt(p.id_warehouse_pack); });
+
+    $.get(BASE_URL + '/get_packs?id_gudang=' + idGudang, function(res) {
+        if (res.status != 1 || !res.data.length) {
+            $('#packListContainer').html('<div class="text-center text-muted py-3">No packs available in this warehouse.</div>');
             return;
         }
 
-        detailRows.forEach(function(row) {
-            const coilsCount = row.coils.length;
-            const actionBtnHtml = IS_VIEW ? '' : `
-        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeMaterialGroup(${row.rowId})" title="Remove Material Group">
-            <i class="fa-solid fa-trash"></i>
-        </button>
-    `;
+        var html = '<table class="table table-bordered table-sm table-hover" style="font-size:12px;"><thead class="table-light"><tr><th width="3%"></th><th>Pack Code</th><th>Materials</th><th class="text-center">Roll</th><th class="text-end">N.W.</th><th class="text-end">G.W.</th></tr></thead><tbody>';
 
-            const addCoilBtnHtml = IS_VIEW ? '' : `
-        <div class="mt-2">
-            <button type="button" class="btn btn-sm btn-primary" style="font-size: 11px; padding: 2px 8px;" onclick="openCoilModal(${row.rowId})">
-                <i class="fa-solid fa-plus-circle"></i> Select / Manage Coils
-            </button>
-        </div>
-    `;
+        res.data.forEach(function(p) {
+            var isSelected = existingIds.includes(parseInt(p.id_warehouse_pack));
+            var inMutation = parseInt(p.in_mutation) > 0;
+            var isDisabled = isSelected || inMutation;
+            var disabled = isDisabled ? 'disabled' : '';
+            var badge = isSelected ? '<span class="badge bg-secondary">Selected</span>' : (inMutation ? '<span class="badge bg-warning text-dark">In Mutation</span>' : '');
+            var matHtml = parseMaterials(p.materials_concat);
 
-            if (coilsCount === 0) {
-                // Colspan disesuaikan jika tidak ada coil
-                const emptyColspan = IS_VIEW ? 4 : 4;
-                let emptyRow = `
-            <tr class="table-warning-bg" id="group-${row.rowId}">
-                <td>
-                    <div class="fw-bold text-dark">${escHtml(row.material.nm_material)}</div>
-                    ${row.material.trade_name ? '<small class="text-muted d-block">' + escHtml(row.material.trade_name) + '</small>' : ''}
-                    ${addCoilBtnHtml}
-                </td>
-                <td colspan="${emptyColspan}" class="text-center text-danger fw-semibold">No coils selected yet</td>
-                ${!IS_VIEW ? `<td class="text-center">${actionBtnHtml}</td>` : ''}
-            </tr>
-        `;
-                tbody.append(emptyRow);
-            } else {
-                row.coils.forEach(function(coil, index) {
-                    const netW = parseFloat(coil.net_weight || 0);
-                    const lenW = parseFloat(coil.length || 0);
+            html += '<tr class="pack-pick-row" data-search="' + (p.pack_code + ' ' + (p.materials_concat||'')).toLowerCase() + '">' +
+                '<td class="text-center"><input type="checkbox" class="form-check-input pack-check" value="' + p.id_warehouse_pack + '" data-json=\'' + JSON.stringify(p) + '\' ' + disabled + '></td>' +
+                '<td><span class="badge bg-primary">' + p.pack_code + '</span> ' + badge + '</td>' +
+                '<td>' + matHtml + '</td>' +
+                '<td class="text-center">' + (parseInt(p.roll_count)||0) + '</td>' +
+                '<td class="text-end">' + fmtNum(p.total_nw) + '</td>' +
+                '<td class="text-end">' + fmtNum(p.total_gw) + '</td></tr>';
+        });
 
-                    let rowHtml = '<tr>';
+        html += '</tbody></table><div class="text-end mt-2"><button type="button" class="btn btn-primary btn-sm" id="btnConfirmPack"><i class="fa-solid fa-check"></i> Add Selected</button></div>';
+        $('#packListContainer').html(html);
 
-                    if (index === 0) {
-                        rowHtml += `
-                    <td rowspan="${coilsCount}">
-                        <div class="fw-bold text-dark">${escHtml(row.material.nm_material)}</div>
-                        ${row.material.trade_name ? '<small class="text-muted d-block">' + escHtml(row.material.trade_name) + '</small>' : ''}
-                        ${addCoilBtnHtml}
-                    </td>
-                `;
-                    }
-
-                    rowHtml += `
-                <td><span class="badge bg-light text-dark border">${escHtml(coil.kode_internal || '-')}</span></td>
-                <td>${escHtml(coil.no_coil)}</td>
-                <td>${formatNum(netW, 2)}</td>
-                <td>${formatNum(lenW, 2)}</td>`;
-
-                    // --- PERBAIKAN DI SINI ---
-                    // Pastikan tag <td> hanya dirender jika BUKAN mode view
-                    if (index === 0 && !IS_VIEW) {
-                        rowHtml += `
-                    <td rowspan="${coilsCount}" class="text-center">
-                        ${actionBtnHtml}
-                    </td>
-                `;
-                    }
-
-                    rowHtml += '</tr>';
-                    tbody.append(rowHtml);
-                });
+        // Search
+        $('#searchPackInput').off('input').on('input', function() {
+            var kw = this.value.toLowerCase().trim();
+            var visible = 0;
+            $('.pack-pick-row').each(function() {
+                var match = ($(this).data('search')||'').indexOf(kw) > -1;
+                $(this).toggle(match);
+                if (match) visible++;
+            });
+            $('#no-result-pack-picker').remove();
+            if (kw && visible === 0) {
+                $('#packListContainer tbody').append('<tr id="no-result-pack-picker"><td colspan="6" class="text-center text-muted py-3"><i class="fa fa-search"></i> No results for "<b>' + kw + '</b>"</td></tr>');
             }
         });
 
+        // Confirm
+        $('#btnConfirmPack').off('click').on('click', function() {
+            $('.pack-check:checked:not(:disabled)').each(function() {
+                var p = JSON.parse($(this).attr('data-json'));
+                selectedPacks.push({
+                    id_warehouse_pack: p.id_warehouse_pack,
+                    pack_code: p.pack_code,
+                    materials_concat: p.materials_concat,
+                    roll_count: parseInt(p.roll_count) || 0,
+                    total_nw: parseFloat(p.total_nw) || 0,
+                    total_gw: parseFloat(p.total_gw) || 0,
+                    coils: [] // Will be loaded on save
+                });
+            });
+            bootstrap.Modal.getInstance(document.getElementById('modalPackPicker')).hide();
+            renderPackTable();
+        });
+    }, 'json');
+}
+
+// ── Render Pack Table ──
+function renderPackTable() {
+    var tbody = $('#packBody');
+    var colCount = IS_VIEW ? 7 : 8;
+
+    if (!selectedPacks.length) {
+        tbody.html('<tr><td colspan="' + colCount + '" class="text-center text-muted py-3">No pack selected yet.</td></tr>');
         recalcTotals();
+        return;
     }
 
-    function removeMaterialGroup(rowId) {
-        detailRows = detailRows.filter(r => r.rowId !== rowId);
-        renderTable();
+    var html = '';
+    selectedPacks.forEach(function(p, i) {
+        var matHtml = parseMaterials(p.materials_concat);
+        var detBtn = '<button type="button" class="btn btn-sm btn-outline-info btn-view-detail" data-idx="' + i + '"><i class="fa fa-eye"></i></button>';
+        var delBtn = IS_VIEW ? '' : '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger btn-remove-pack" data-idx="' + i + '"><i class="fa-solid fa-trash"></i></button></td>';
+
+        html += '<tr>' +
+            '<td class="text-center">' + (i + 1) + '</td>' +
+            '<td class="text-center"><span class="badge bg-primary">' + p.pack_code + '</span></td>' +
+            '<td>' + matHtml + '</td>' +
+            '<td class="text-center">' + p.roll_count + '</td>' +
+            '<td class="text-end">' + fmtNum(p.total_nw) + '</td>' +
+            '<td class="text-end">' + fmtNum(p.total_gw) + '</td>' +
+            '<td class="text-center">' + detBtn + '</td>' +
+            delBtn + '</tr>';
+    });
+    tbody.html(html);
+    recalcTotals();
+}
+
+function recalcTotals() {
+    var tRoll = 0, tNW = 0, tGW = 0;
+    selectedPacks.forEach(function(p) { tRoll += p.roll_count; tNW += p.total_nw; tGW += p.total_gw; });
+    $('#totalRoll').text(tRoll);
+    $('#totalNW').text(fmtNum(tNW));
+    $('#totalGW').text(fmtNum(tGW));
+}
+
+// Remove pack
+$(document).on('click', '.btn-remove-pack', function() { selectedPacks.splice($(this).data('idx'), 1); renderPackTable(); });
+
+// View detail
+$(document).on('click', '.btn-view-detail', function() {
+    var idx = $(this).data('idx');
+    var p = selectedPacks[idx];
+    if (!p) return;
+
+    $('#detailPackCode').text(p.pack_code);
+    $('#detailPackBody').html('<div class="text-center py-4"><i class="fa fa-spinner fa-spin fa-2x text-muted"></i></div>');
+    new bootstrap.Modal(document.getElementById('modalPackDetail')).show();
+
+    // If coils already loaded
+    if (p.coils && p.coils.length > 0) {
+        renderDetailModal(p.coils);
+        return;
     }
 
-    // ---------------------------------------------------------------
-    // MODAL COIL MAPPER
-    // ---------------------------------------------------------------
-    function openCoilModal(rowId) {
-        currentRowId = rowId;
-        const rowData = detailRows.find(r => r.rowId === rowId);
-        if (!rowData) return;
-
-        if ($.fn.DataTable.isDataTable('#tblCoil')) {
-            $('#tblCoil').DataTable().destroy();
+    // Load from server
+    $.get(BASE_URL + '/get_pack_coils?id_pack=' + p.id_warehouse_pack, function(res) {
+        if (res.status == 1 && res.data.length > 0) {
+            p.coils = res.data;
+            renderDetailModal(res.data);
+        } else {
+            $('#detailPackBody').html('<div class="text-center text-muted py-4">No coil data found.</div>');
         }
+    }, 'json');
+});
 
-        $('#coilBody').empty();
-        $('#coilLoading').show();
-        $('#checkAllCoil').prop('checked', false);
-        $('#modalCoil').modal('show');
+function renderDetailModal(coils) {
+    var html = '<table class="table table-bordered table-sm table-striped" style="font-size:11px;"><thead class="table-light"><tr><th class="text-center">No</th><th>Material</th><th>No. Coil</th><th>Internal Code</th><th class="text-end">N.W.</th><th class="text-end">G.W.</th><th class="text-end">Length</th></tr></thead><tbody>';
+    var tNw = 0, tGw = 0;
+    coils.forEach(function(c, i) {
+        tNw += parseFloat(c.net_weight) || 0;
+        tGw += parseFloat(c.gross_weight) || 0;
+        html += '<tr><td class="text-center">' + (i+1) + '</td><td>' + (c.trade_name || c.nm_material || '-') + '</td><td>' + (c.no_coil||'-') + '</td><td>' + (c.kode_internal||'-') + '</td><td class="text-end">' + fmtNum(c.net_weight) + '</td><td class="text-end">' + fmtNum(c.gross_weight) + '</td><td class="text-end">' + fmtNum(c.length) + '</td></tr>';
+    });
+    html += '</tbody><tfoot class="table-secondary"><tr><td colspan="4" class="text-end fw-bold">Total</td><td class="text-end fw-bold">' + fmtNum(tNw) + '</td><td class="text-end fw-bold">' + fmtNum(tGw) + '</td><td></td></tr></tfoot></table>';
+    $('#detailPackBody').html(html);
+}
 
-        const idGudang = $('#id_gudang_from').val();
+// ── Save ──
+function saveForm() {
+    var no_berita_acara = $('#no_berita_acara').val().trim();
+    var id_gudang_from = $('#id_gudang_from').val();
+    var id_gudang_to = $('#id_gudang_to_hidden').val();
+    var description = $('#description').val().trim();
 
-        $.get(BASE_URL + '/get_coil?code_lv4=' + rowData.material.code_lv4 + '&id_gudang=' + idGudang, function(res) {
-            $('#coilLoading').hide();
+    if (!no_berita_acara) { Swal.fire('Attention', 'Minutes of Meeting No. is required.', 'warning'); return; }
+    if (!id_gudang_from) { Swal.fire('Attention', 'Source warehouse must be selected.', 'warning'); return; }
+    if (!id_gudang_to) { Swal.fire('Attention', 'Destination warehouse not set.', 'warning'); return; }
+    if (!selectedPacks.length) { Swal.fire('Attention', 'At least one pack must be selected.', 'warning'); return; }
+    if (!description) { Swal.fire('Attention', 'Description is required.', 'warning'); return; }
 
-            if (res.status != 1 || !res.data.length) {
-                $('#coilBody').html('<tr><td colspan="7" class="text-center text-muted">No coils available for this material</td></tr>');
-                return;
-            }
+    // Check all packs have coils loaded
+    var needLoad = selectedPacks.filter(function(p) { return !p.coils || p.coils.length === 0; });
 
-            const selectedIds = rowData.coils.map(c => parseInt(c.id_warehouse_stock_coil || c.id));
-            let html = '';
+    if (needLoad.length > 0) {
+        // Load coils for packs that don't have them yet
+        Swal.fire({ title: 'Loading coil data...', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
 
-            res.data.forEach(function(c) {
-                const isChecked = selectedIds.includes(parseInt(c.id)) ? 'checked' : '';
-                html += `
-        <tr>
-            <td class="text-center align-middle td-clickable" style="cursor: pointer; min-width: 50px;">
-                <input type="checkbox" class="form-check-input coil-check" value="${c.id}"
-                    style="width: 20px; height: 20px; margin: 0; cursor: pointer;"
-                    data-json='${JSON.stringify(c)}' ${isChecked}>
-            </td>
-            <td class="align-middle"><span class="badge bg-light text-dark border">${escHtml(c.kode_internal || '-')}</span></td>
-            <td class="align-middle"><strong>${escHtml(c.no_coil)}</strong></td>
-            <td class="align-middle">${formatNum(c.gross_weight, 2)}</td>
-            <td class="align-middle">${formatNum(c.net_weight, 2)}</td>
-            <td class="align-middle">${formatNum(c.length, 2)}</td>
-        </tr>`;
+        var promises = needLoad.map(function(p) {
+            return $.get(BASE_URL + '/get_pack_coils?id_pack=' + p.id_warehouse_pack);
+        });
+
+        Promise.all(promises).then(function(results) {
+            results.forEach(function(res, i) {
+                if (res.status == 1) needLoad[i].coils = res.data;
             });
+            Swal.close();
+            doSave(no_berita_acara, id_gudang_from, id_gudang_to, description);
+        });
+    } else {
+        doSave(no_berita_acara, id_gudang_from, id_gudang_to, description);
+    }
+}
 
-            $('#coilBody').html(html);
+function doSave(no_berita_acara, id_gudang_from, id_gudang_to, description) {
+    Swal.fire({
+        title: 'Are you sure?', text: 'Save this mutation request?', icon: 'question',
+        showCancelButton: true, confirmButtonText: 'Yes, save!', cancelButtonText: 'Cancel'
+    }).then(function(result) {
+        if (!result.isConfirmed) return;
 
-            // 2. Inisialisasi DataTables setelah HTML berhasil di-render ke tbody
-            const tableCoil = $('#tblCoil').DataTable({
-                "responsive": true,
-                "paging": false,
-                "order": [],
-                "columnDefs": [{
-                    "orderable": false,
-                    "targets": 0
-                }]
-            });
-
-            // 3. Fix Check All agar bekerja di seluruh halaman DataTables
-            $('#checkAllCoil').off('change').on('change', function() {
-                const cells = tableCoil.cells({
-                    page: 'current'
-                }).nodes();
-                $(cells).find('.coil-check').prop('checked', this.checked);
-            });
-
-            // BARU: Event Listener untuk membuat satu kolom TD bisa diklik
-            $('#tblCoil').off('click', '.td-clickable').on('click', '.td-clickable', function(e) {
-                // Mencegah trigger double jika yang diklik tepat di target input checkbox-nya
-                if ($(e.target).is('.coil-check')) {
-                    return;
+        // Build details payload: group coils by material within each pack
+        var detailsPayload = [];
+        selectedPacks.forEach(function(p) {
+            // Group coils by material
+            var matGroup = {};
+            (p.coils || []).forEach(function(c) {
+                var mk = c.id_material || c.code_lv4 || 'unknown';
+                if (!matGroup[mk]) {
+                    matGroup[mk] = {
+                        id_warehouse_stock: 0,
+                        id_warehouse_pack: p.id_warehouse_pack,
+                        pack_code: p.pack_code,
+                        id_material: mk,
+                        nm_material: c.nm_material || '',
+                        trade_name: c.trade_name || '',
+                        code_lv4: c.id_material || mk,
+                        id_unit: c.id_unit || null,
+                        harga_beli: c.harga_beli || 0,
+                        coils: []
+                    };
                 }
-
-                const checkbox = $(this).find('.coil-check');
-                checkbox.prop('checked', !checkbox.prop('checked')).trigger('change');
-            });
-
-            // Sync checkAllCoil state when individual checkboxes change
-            $('#tblCoil').off('change', '.coil-check').on('change', '.coil-check', function() {
-                const totalCheckboxes = $('#coilBody .coil-check').length;
-                const checkedCheckboxes = $('#coilBody .coil-check:checked').length;
-                $('#checkAllCoil').prop('checked', totalCheckboxes > 0 && totalCheckboxes === checkedCheckboxes);
-            });
-
-            // Update checkAllCoil on initial load (for edit mode with pre-selected coils)
-            const totalCheckboxes = $('#coilBody .coil-check').length;
-            const checkedCheckboxes = $('#coilBody .coil-check:checked').length;
-            $('#checkAllCoil').prop('checked', totalCheckboxes > 0 && totalCheckboxes === checkedCheckboxes);
-
-        }, 'json');
-    }
-
-    function confirmCoilSelection() {
-        const selectedCoils = [];
-        $('#coilBody .coil-check:checked').each(function() {
-            selectedCoils.push(JSON.parse($(this).attr('data-json')));
-        });
-
-        if (!selectedCoils.length) {
-            Swal.fire('Attention', 'Please select at least one coil, or remove the group to cancel.', 'warning');
-            return;
-        }
-
-        const rowData = detailRows.find(r => r.rowId === currentRowId);
-        if (rowData) {
-            rowData.coils = selectedCoils.map(c => ({
-                id: c.id,
-                id_warehouse_stock_coil: c.id,
-                no_coil: c.no_coil,
-                no_ipp: c.no_ipp,
-                no_po: c.no_po,
-                no_ros: c.no_ros,
-                kode_internal: c.kode_internal,
-                gross_weight: c.gross_weight,
-                net_weight: c.net_weight,
-                length: c.length,
-                harga_beli: c.harga_beli,
-                total_nilai: c.total_nilai,
-                total_nilai_mutasi: parseFloat(c.total_nilai || 0)
-            }));
-        }
-
-        $('#modalCoil').modal('hide');
-        renderTable();
-    }
-
-    // ---------------------------------------------------------------
-    // CALCULATE TOTALS
-    // ---------------------------------------------------------------
-    function recalcTotals() {
-        let totalNet = 0,
-            totalLen = 0;
-
-        detailRows.forEach(function(r) {
-            r.coils.forEach(function(c) {
-                totalNet += parseFloat(c.net_weight || 0);
-                totalLen += parseFloat(c.length || 0); // Menjumlahkan total length
-            });
-        });
-
-        $('#totalNetWeight').text(formatNum(totalNet, 2));
-        $('#totalLength').text(formatNum(totalLen, 2)); // Render total length ke footer
-    }
-
-    // ---------------------------------------------------------------
-    // SAVE FORM HANDLER
-    // ---------------------------------------------------------------
-    function saveForm() {
-        const no_berita_acara = $('#no_berita_acara').val().trim();
-        const id_gudang_from = $('#id_gudang_from').val();
-        const id_gudang_to = $('#id_gudang_to_hidden').val();
-        const description = $('#description').val().trim();
-
-        // --- 1. VALIDASI INPUT FORM ---
-        if (!no_berita_acara) {
-            Swal.fire('Attention', 'Minutes of Meeting No. is required.', 'warning');
-            return;
-        }
-        if (!id_gudang_from) {
-            Swal.fire('Attention', 'Source warehouse must be selected.', 'warning');
-            return;
-        }
-        if (!id_gudang_to) {
-            Swal.fire('Attention', 'Destination warehouse is not set. Please select a source warehouse.', 'warning');
-            return;
-        }
-        if (id_gudang_from === id_gudang_to) {
-            Swal.fire('Attention', 'Source and destination warehouse cannot be the same.', 'warning');
-            return;
-        }
-        if (!detailRows.length) {
-            Swal.fire('Attention', 'At least one material must be added.', 'warning');
-            return;
-        }
-        if (!description) {
-            Swal.fire('Attention', 'Description/reason is required.', 'warning');
-            return;
-        }
-
-        const noCoil = detailRows.find(r => r.coils.length === 0);
-        if (noCoil) {
-            Swal.fire('Attention', `Material "${noCoil.material.nm_material}" has no coils selected.`, 'warning');
-            return;
-        }
-
-        const fileInput = document.getElementById('berita_acara_file');
-        if (fileInput && fileInput.files.length > 0) {
-            const maxSize = 5 * 1024 * 1024;
-            if (fileInput.files[0].size > maxSize) {
-                Swal.fire('Attention', 'Maximum file size is 5MB.', 'warning');
-                return;
-            }
-        }
-
-        // --- 2. KONFIRMASI SEBELUM SIMPAN ---
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'Are you sure you want to save this mutation request?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, save it!',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // --- 3. EKSEKUSI PENYIMPANAN (JIKA USER KLIK YES) ---
-                const detailsPayload = detailRows.map(r => ({
-                    id_warehouse_stock: r.material.id_warehouse_stock,
-                    id_material: r.material.id_material,
-                    nm_material: r.material.nm_material,
-                    trade_name: r.material.trade_name,
-                    code_lv4: r.material.code_lv4,
-                    id_unit: r.material.id_unit,
-                    harga_beli: r.material.harga_beli,
-                    coils: r.coils,
-                }));
-
-                $('#details_json').val(JSON.stringify(detailsPayload));
-
-                const formData = new FormData(document.getElementById('formMutasi'));
-                formData.set('no_berita_acara', no_berita_acara);
-                formData.set('id_gudang_from', id_gudang_from);
-                formData.set('id_gudang_to', id_gudang_to);
-                formData.set('description', $('#description').val());
-                formData.set('details_json', JSON.stringify(detailsPayload));
-
-                const url = MODE === 'edit' ? BASE_URL + '/update/' + RECORD_ID : BASE_URL + '/save';
-
-                $('#btnSave').prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Saving...');
-
-                $.ajax({
-                    url: url,
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    dataType: 'json',
-                    success: function(res) {
-                        $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-save"></i> Save');
-                        if (res.status == 1) {
-                            Swal.fire({
-                                title: 'Success',
-                                text: res.message,
-                                icon: 'success',
-                                showConfirmButton: false,
-                                timer: 1500,
-                                timerProgressBar: true
-                            }).then(() => {
-                                window.location.href = '<?= site_url('pengajuan_mutasi') ?>';
-                            });
-                        } else {
-                            Swal.fire('Failed', res.message, 'error');
-                        }
-                    },
-                    error: function() {
-                        $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-save"></i> Save');
-                        Swal.fire('Error', 'A server error occurred.', 'error');
-                    }
+                matGroup[mk].coils.push({
+                    id_warehouse_stock_coil: c.id_warehouse_stock_coil || c.id || 0,
+                    id_warehouse_pack: p.id_warehouse_pack,
+                    pack_code: p.pack_code,
+                    no_coil: c.no_coil || '',
+                    no_ipp: c.no_ipp || '',
+                    no_po: c.no_po || '',
+                    no_ros: c.no_ros || '',
+                    kode_internal: c.kode_internal || '',
+                    parent_coil_id: c.parent_coil_id || null,
+                    is_baby_coil: c.is_baby_coil || 0,
+                    gross_weight: c.gross_weight || 0,
+                    net_weight: c.net_weight || 0,
+                    length: c.length || 0,
+                    qty_roll: c.qty_roll || 1,
+                    harga_beli: c.harga_beli || 0,
+                    total_nilai_mutasi: parseFloat(c.total_nilai_mutasi || c.total_nilai || 0)
                 });
+            });
+            Object.values(matGroup).forEach(function(mg) { detailsPayload.push(mg); });
+        });
+
+        var formData = new FormData(document.getElementById('formMutasi'));
+        formData.set('no_berita_acara', no_berita_acara);
+        formData.set('id_gudang_from', id_gudang_from);
+        formData.set('id_gudang_to', id_gudang_to);
+        formData.set('description', description);
+        formData.set('details_json', JSON.stringify(detailsPayload));
+
+        var url = MODE === 'edit' ? BASE_URL + '/update/' + RECORD_ID : BASE_URL + '/save';
+        $('#btnSave').prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Saving...');
+
+        $.ajax({
+            url: url, type: 'POST', data: formData, processData: false, contentType: false, dataType: 'json',
+            success: function(res) {
+                $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-save"></i> Save');
+                if (res.status == 1) {
+                    Swal.fire({ title: 'Success', text: res.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(function() {
+                        window.location.href = '<?= site_url('pengajuan_mutasi') ?>';
+                    });
+                } else {
+                    Swal.fire('Failed', res.message, 'error');
+                }
+            },
+            error: function() {
+                $('#btnSave').prop('disabled', false).html('<i class="fa-solid fa-save"></i> Save');
+                Swal.fire('Error', 'A server error occurred.', 'error');
             }
         });
-    }
+    });
+}
 
-    // ---------------------------------------------------------------
-    // UTILITIES
-    // ---------------------------------------------------------------
-    function escHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
+// ── Utilities ──
+function parseMaterials(str) {
+    if (!str) return '-';
+    var mats = [...new Set(str.split(';;'))];
+    var html = '';
+    mats.forEach(function(m) {
+        var parts = m.split('||');
+        html += '<div style="font-size:11px;"><span class="text-primary me-1">&#9679;</span><b>' + (parts[0]||'') + '</b> <small class="text-muted">(' + (parts[1]||'') + ')</small></div>';
+    });
+    return html;
+}
 
-    function formatNum(val, dec) {
-        return parseFloat(val || 0).toLocaleString('id-ID', {
-            minimumFractionDigits: dec,
-            maximumFractionDigits: dec
-        });
-    }
-
-    function formatRp(val) {
-        return 'Rp ' + parseFloat(val || 0).toLocaleString('id-ID', {
-            minimumFractionDigits: 0
-        });
-    }
+function fmtNum(val) {
+    return parseFloat(val || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 </script>

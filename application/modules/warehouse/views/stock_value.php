@@ -94,7 +94,7 @@
                                 <th width="4%">No</th>
                                 <th>Material Code</th>
                                 <th>Material Name</th>
-                                <th class="text-center">Coil Count</th>
+                                <th class="text-center">Roll</th>
                                 <th class="text-end">Qty Stock (Kg)</th>
                                 <th class="text-end">Purchase Price (Avg)</th>
                                 <th class="text-end">Total Value</th>
@@ -122,7 +122,7 @@
                                 <th width="4%">No</th>
                                 <th>Material Code</th>
                                 <th>Material Name</th>
-                                <th class="text-center">Coil Count</th>
+                                <th class="text-center">Roll</th>
                                 <th class="text-end">Qty Stock (Kg)</th>
                                 <th class="text-end">Purchase Price (Avg)</th>
                                 <th class="text-end">Total Value</th>
@@ -276,7 +276,7 @@
             <div class="modal-header bg-warning">
                 <h5 class="modal-title">
                     <i class="fa fa-list"></i>
-                    Detail Coil — <span id="coil-title-material"></span>
+                    Detail Roll — <span id="coil-title-material"></span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -286,16 +286,17 @@
                         <thead>
                             <tr>
                                 <th width="5%" class="text-center">No</th>
+                                <th>Pack</th>
                                 <th>No. Coil</th>
                                 <th>Internal Code</th>
                                 <th class="text-end">Net Weight (Kg)</th>
                                 <th class="text-end">Gross Weight (Kg)</th>
-                                <th class="text-end">Panjang (m)</th>
+                                <th class="text-end">Length (M)</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-detail-coil">
                             <tr>
-                                <td colspan="6" class="text-center">—</td>
+                                <td colspan="7" class="text-center">—</td>
                             </tr>
                         </tbody>
                     </table>
@@ -734,20 +735,21 @@
 
     function showDetailCoil(id_material, nm_material, id_gudang) {
         $('#coil-title-material').text(nm_material);
-        $('#tbody-detail-coil').html('<tr><td colspan="6" class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading...</td></tr>');
+        $('#tbody-detail-coil').html('<tr><td colspan="7" class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading...</td></tr>');
         new bootstrap.Modal(document.getElementById('modal-detail-coil')).show();
         $.post(siteurl + 'warehouse/get_detail_coil', {
             id_material,
             id_gudang
         }, function(data) {
             if (!data.length) {
-                $('#tbody-detail-coil').html('<tr><td colspan="6" class="text-center">No data available.coil</td></tr>');
+                $('#tbody-detail-coil').html('<tr><td colspan="7" class="text-center">No data available.</td></tr>');
                 return;
             }
             var html = '';
             $.each(data, function(i, r) {
                 html += '<tr>' +
                     '<td class="text-center">' + (i + 1) + '</td>' +
+                    '<td><span class="badge bg-primary">' + (r.pack_code || '-') + '</span></td>' +
                     '<td>' + (r.no_coil || '-') + '</td><td>' + (r.kode_internal || '-') + '</td>' +
                     '<td class="text-end">' + fmtDec(r.net_weight) + '</td>' +
                     '<td class="text-end">' + fmtDec(r.gross_weight) + '</td>' +

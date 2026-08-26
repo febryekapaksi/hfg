@@ -73,6 +73,114 @@ class Warehouse extends Admin_Controller
         $this->Warehouse_model->get_json_warehouse_stock(self::GUDANG_SLITTING);
     }
 
+    // ── SERVER SIDE — STOCK PER PACK ──────────────────────────────────────
+    // Tab Produksi
+    public function data_side_pack_produksi()
+    {
+        $this->Warehouse_model->get_json_warehouse_pack(self::GUDANG_PRODUKSI);
+    }
+
+    // Tab Slitting
+    public function data_side_pack_slitting()
+    {
+        $this->Warehouse_model->get_json_warehouse_pack(self::GUDANG_SLITTING);
+    }
+
+    // AJAX — Detail coils dalam satu pack (untuk modal)
+    public function get_pack_detail_ajax()
+    {
+        $id_pack = (int) $this->input->post('id_pack');
+        $coils = $this->Warehouse_model->get_pack_detail($id_pack);
+        echo json_encode(['status' => 1, 'data' => $coils]);
+    }
+
+    // AJAX — Get all packs for a warehouse (simple JSON, no DataTables format)
+    public function get_packs_by_gudang()
+    {
+        $kd_gudang = $this->input->post('kd_gudang') ?? '';
+
+        $where_gudang = '';
+        if (!empty($kd_gudang)) {
+            $kd = $this->db->escape($kd_gudang);
+            $where_gudang = " AND wp.kd_gudang = {$kd}";
+        }
+
+        $sql = "
+            SELECT
+                wp.id AS id_pack,
+                wp.pack_code,
+                wp.kd_gudang,
+                GROUP_CONCAT(DISTINCT CONCAT(IFNULL(wsc.trade_name,''), '||', IFNULL(wsc.nm_material,'')) SEPARATOR ';;') AS materials_concat,
+                COUNT(wsc.id) AS roll_count,
+                SUM(wsc.net_weight) AS total_nw,
+                AVG(wsc.net_weight) AS nw_per_roll,
+                SUM(wsc.gross_weight) AS total_gw,
+                AVG(wsc.gross_weight) AS gw_per_roll
+            FROM warehouse_pack wp
+            LEFT JOIN warehouse_stock_coil wsc ON wsc.id_pack = wp.id
+                AND (wsc.is_baby_coil = 1 OR (wsc.is_baby_coil = 0 AND wsc.qty_roll <= 1))
+            WHERE wp.status = 1
+            {$where_gudang}
+            GROUP BY wp.id
+            ORDER BY wp.pack_code ASC
+        ";
+
+        $rows = $this->db->query($sql)->result_array();
+        echo json_encode($rows);
+    }
+
+    // AJAX — Get packs for history per day (simple JSON)
+    public function get_packs_perday()
+    {
+        $kd_gudang = $this->input->post('kd_gudang') ?? '';
+        $date_snap = $this->input->post('date_snap') ?? '';
+
+        if (empty($date_snap)) {
+            echo json_encode([]);
+            return;
+        }
+
+        $snap_datetime = $date_snap . ' 23:59:59';
+
+        $where_gudang = '';
+        if (!empty($kd_gudang)) {
+            $kd = $this->db->escape($kd_gudang);
+            $where_gudang = " AND cpd.kd_gudang = {$kd}";
+        }
+
+        $sql = "
+            SELECT
+                wp.id AS id_pack,
+                wp.pack_code,
+                wp.kd_gudang,
+                GROUP_CONCAT(DISTINCT CONCAT(IFNULL(ni.trade_name,''), '||', IFNULL(ni.nama,'')) SEPARATOR ';;') AS materials_concat,
+                COUNT(cpd.id) AS roll_count,
+                SUM(cpd.net_weight) AS total_nw,
+                AVG(cpd.net_weight) AS nw_per_roll,
+                SUM(cpd.gross_weight) AS total_gw,
+                AVG(cpd.gross_weight) AS gw_per_roll
+            FROM warehouse_coil_per_day cpd
+            JOIN warehouse_stock_coil wsc ON wsc.no_coil = cpd.no_coil AND wsc.id_gudang = cpd.id_gudang
+            JOIN warehouse_pack wp ON wp.id = wsc.id_pack
+            LEFT JOIN new_inventory_4 ni ON ni.code_lv4 = cpd.id_material
+            WHERE cpd.hist_date <= '{$snap_datetime}'
+              AND cpd.status = 'IN'
+              AND NOT EXISTS (
+                  SELECT 1 FROM warehouse_coil_per_day cpd2
+                  WHERE cpd2.no_coil    = cpd.no_coil
+                    AND cpd2.id_gudang  = cpd.id_gudang
+                    AND cpd2.status     = 'OUT'
+                    AND cpd2.hist_date <= '{$snap_datetime}'
+              )
+              {$where_gudang}
+            GROUP BY wp.id
+            ORDER BY wp.pack_code ASC
+        ";
+
+        $rows = $this->db->query($sql)->result_array();
+        echo json_encode($rows);
+    }
+
     // ── SERVER SIDE — STOCK VALUE PER MATERIAL ────────────────────────────
     // Tab Produksi
 
@@ -122,6 +230,231 @@ class Warehouse extends Admin_Controller
         $this->db->order_by('wh.update_date', 'ASC');
 
         echo json_encode($this->db->get()->result_array());
+    }
+
+    // ── EXPORT EXCEL HISTORY PER PACK (3 sheets) ────────────────────────
+
+    public function export_excel_history_pack()
+    {
+        $date_snap = $this->input->get('date_snap') ?: date('Y-m-d');
+        $kd_gudang = $this->input->get('kd_gudang') ?: '';
+        $snap_datetime = $date_snap . ' 23:59:59';
+
+        $where_gudang = '';
+        if (!empty($kd_gudang)) {
+            $kd = $this->db->escape($kd_gudang);
+            $where_gudang = " AND cpd.kd_gudang = {$kd}";
+        }
+
+        // Query semua coils yang masih IN per tanggal
+        $coils = $this->db->query("
+            SELECT cpd.id_material, cpd.no_coil, cpd.kode_internal,
+                   cpd.net_weight, cpd.gross_weight, cpd.length, cpd.kd_gudang,
+                   ni.nama AS nm_material, ni.trade_name,
+                   wsc.id_pack, wsc.is_baby_coil, wsc.qty_roll,
+                   wp.pack_code
+            FROM warehouse_coil_per_day cpd
+            JOIN warehouse_stock_coil wsc ON wsc.no_coil = cpd.no_coil AND wsc.id_gudang = cpd.id_gudang
+            JOIN warehouse_pack wp ON wp.id = wsc.id_pack
+            LEFT JOIN new_inventory_4 ni ON ni.code_lv4 = cpd.id_material
+            WHERE cpd.hist_date <= '{$snap_datetime}'
+              AND cpd.status = 'IN'
+              AND NOT EXISTS (
+                  SELECT 1 FROM warehouse_coil_per_day cpd2
+                  WHERE cpd2.no_coil = cpd.no_coil
+                    AND cpd2.id_gudang = cpd.id_gudang
+                    AND cpd2.status = 'OUT'
+                    AND cpd2.hist_date <= '{$snap_datetime}'
+              )
+              {$where_gudang}
+            ORDER BY wp.pack_code ASC, ni.trade_name ASC, cpd.no_coil ASC
+        ")->result_array();
+
+        // ── Build data untuk 3 sheet ──
+
+        // Sheet 1: Per Pack
+        $sheet1_data = [];
+        $pack_groups = [];
+        foreach ($coils as $c) {
+            $pk = $c['pack_code'];
+            if (!isset($pack_groups[$pk])) {
+                $pack_groups[$pk] = ['materials' => [], 'roll_count' => 0, 'total_nw' => 0, 'total_gw' => 0, 'kd_gudang' => $c['kd_gudang']];
+            }
+            $pack_groups[$pk]['roll_count']++;
+            $pack_groups[$pk]['total_nw'] += (float) $c['net_weight'];
+            $pack_groups[$pk]['total_gw'] += (float) $c['gross_weight'];
+            $mat_name = $c['trade_name'] ?: $c['nm_material'];
+            if (!in_array($mat_name, $pack_groups[$pk]['materials'])) {
+                $pack_groups[$pk]['materials'][] = $mat_name;
+            }
+        }
+        // Sheet 2: Per Material (akan di-build langsung dari $coils saat generate Excel)
+
+        // Sheet 3: Per Coil (semua baby coils)
+        $sheet3_data = $coils;
+
+        // ── Generate Excel ──
+        set_time_limit(0);
+        ini_set('memory_limit', '512M');
+        $this->load->library('PHPExcel');
+        $objPHPExcel = new PHPExcel();
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'size' => 10],
+            'alignment' => ['horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER],
+            'borders' => ['allborders' => ['style' => PHPExcel_Style_Border::BORDER_THIN]],
+            'fill' => ['type' => PHPExcel_Style_Fill::FILL_SOLID, 'color' => ['rgb' => 'D9E1F2']],
+        ];
+        $dataStyle = [
+            'borders' => ['allborders' => ['style' => PHPExcel_Style_Border::BORDER_THIN]],
+        ];
+
+        // ── Sheet 1: Per Pack (merge pack cells for multi-material) ──
+        $sheet = $objPHPExcel->getActiveSheet();
+        $sheet->setTitle('Per Pack');
+        $headers1 = ['No', 'Pack Code', 'Material', 'Roll', 'N.W. Total', 'N.W. Per Roll', 'G.W. Total', 'G.W. Per Roll', 'Gudang'];
+        foreach ($headers1 as $col => $h) { $sheet->setCellValueByColumnAndRow($col, 1, $h); }
+        $sheet->getStyle('A1:I1')->applyFromArray($headerStyle);
+
+        // Build per pack → per material rows
+        $row = 2;
+        $pack_no = 0;
+        foreach ($pack_groups as $pk => $pg) {
+            $pack_no++;
+            $mat_count = count($pg['materials']);
+            $nw_per = $pg['roll_count'] > 0 ? $pg['total_nw'] / $pg['roll_count'] : 0;
+            $gw_per = $pg['roll_count'] > 0 ? $pg['total_gw'] / $pg['roll_count'] : 0;
+            $gudang = $pg['kd_gudang'] ?? '';
+
+            $start_row = $row;
+            foreach ($pg['materials'] as $mat_name) {
+                // Per material in this pack: count rolls for this material
+                $mat_rolls = 0;
+                $mat_nw = 0;
+                $mat_gw = 0;
+                foreach ($coils as $c) {
+                    if ($c['pack_code'] === $pk) {
+                        $mn = $c['trade_name'] ?: $c['nm_material'];
+                        if ($mn === $mat_name) {
+                            $mat_rolls++;
+                            $mat_nw += (float) $c['net_weight'];
+                            $mat_gw += (float) $c['gross_weight'];
+                        }
+                    }
+                }
+                $mat_nw_per = $mat_rolls > 0 ? $mat_nw / $mat_rolls : 0;
+                $mat_gw_per = $mat_rolls > 0 ? $mat_gw / $mat_rolls : 0;
+
+                $sheet->setCellValueByColumnAndRow(2, $row, $mat_name);
+                $sheet->setCellValueByColumnAndRow(3, $row, $mat_rolls);
+                $sheet->setCellValueByColumnAndRow(4, $row, $mat_nw);
+                $sheet->setCellValueByColumnAndRow(5, $row, $mat_nw_per);
+                $sheet->setCellValueByColumnAndRow(6, $row, $mat_gw);
+                $sheet->setCellValueByColumnAndRow(7, $row, $mat_gw_per);
+                $row++;
+            }
+            $end_row = $row - 1;
+
+            // Set pack columns on first row
+            $sheet->setCellValueByColumnAndRow(0, $start_row, $pack_no);
+            $sheet->setCellValueByColumnAndRow(1, $start_row, $pk);
+            $sheet->setCellValueByColumnAndRow(8, $start_row, $gudang);
+
+            // Merge cells jika multi-material
+            if ($mat_count > 1) {
+                $sheet->mergeCells('A' . $start_row . ':A' . $end_row);
+                $sheet->mergeCells('B' . $start_row . ':B' . $end_row);
+                $sheet->mergeCells('I' . $start_row . ':I' . $end_row);
+            }
+        }
+        $sheet->getStyle('A2:I' . max($row - 1, 2))->applyFromArray($dataStyle);
+        $sheet->getStyle('A2:I' . max($row - 1, 2))->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+        foreach (range('A', 'I') as $c) { $sheet->getColumnDimension($c)->setAutoSize(true); }
+
+        // ── Sheet 2: Per Material per Gudang ──
+        $sheet2 = $objPHPExcel->createSheet();
+        $sheet2->setTitle('Per Material');
+        $headers2 = ['No', 'ID Material', 'Material Name', 'Trade Name', 'Gudang', 'Roll', 'N.W. Total', 'N.W. Per Roll', 'G.W. Total', 'G.W. Per Roll'];
+        foreach ($headers2 as $col => $h) { $sheet2->setCellValueByColumnAndRow($col, 1, $h); }
+        $sheet2->getStyle('A1:J1')->applyFromArray($headerStyle);
+
+        // Group by material + gudang
+        $mat_gudang_groups = [];
+        foreach ($coils as $c) {
+            $key = $c['id_material'] . '_' . $c['kd_gudang'];
+            if (!isset($mat_gudang_groups[$key])) {
+                $mat_gudang_groups[$key] = [
+                    'id_material' => $c['id_material'],
+                    'nm_material' => $c['nm_material'],
+                    'trade_name'  => $c['trade_name'],
+                    'kd_gudang'   => $c['kd_gudang'],
+                    'roll_count'  => 0,
+                    'total_nw'    => 0,
+                    'total_gw'    => 0,
+                ];
+            }
+            $mat_gudang_groups[$key]['roll_count']++;
+            $mat_gudang_groups[$key]['total_nw'] += (float) $c['net_weight'];
+            $mat_gudang_groups[$key]['total_gw'] += (float) $c['gross_weight'];
+        }
+
+        $row = 2;
+        $no = 0;
+        foreach ($mat_gudang_groups as $mg) {
+            $no++;
+            $nw_per = $mg['roll_count'] > 0 ? $mg['total_nw'] / $mg['roll_count'] : 0;
+            $gw_per = $mg['roll_count'] > 0 ? $mg['total_gw'] / $mg['roll_count'] : 0;
+            $sheet2->setCellValueByColumnAndRow(0, $row, $no);
+            $sheet2->setCellValueByColumnAndRow(1, $row, $mg['id_material']);
+            $sheet2->setCellValueByColumnAndRow(2, $row, $mg['nm_material']);
+            $sheet2->setCellValueByColumnAndRow(3, $row, $mg['trade_name']);
+            $sheet2->setCellValueByColumnAndRow(4, $row, $mg['kd_gudang']);
+            $sheet2->setCellValueByColumnAndRow(5, $row, $mg['roll_count']);
+            $sheet2->setCellValueByColumnAndRow(6, $row, $mg['total_nw']);
+            $sheet2->setCellValueByColumnAndRow(7, $row, $nw_per);
+            $sheet2->setCellValueByColumnAndRow(8, $row, $mg['total_gw']);
+            $sheet2->setCellValueByColumnAndRow(9, $row, $gw_per);
+            $row++;
+        }
+        $sheet2->getStyle('A2:J' . max($row - 1, 2))->applyFromArray($dataStyle);
+        foreach (range('A', 'J') as $c) { $sheet2->getColumnDimension($c)->setAutoSize(true); }
+
+        // ── Sheet 3: Per Coil ──
+        $sheet3 = $objPHPExcel->createSheet();
+        $sheet3->setTitle('Per Coil');
+        $headers3 = ['No', 'Pack Code', 'No. Coil', 'Internal Code', 'Material', 'Trade Name', 'N.W.', 'G.W.', 'Length', 'Gudang', 'Baby Coil'];
+        foreach ($headers3 as $col => $h) { $sheet3->setCellValueByColumnAndRow($col, 1, $h); }
+        $sheet3->getStyle('A1:K1')->applyFromArray($headerStyle);
+        $row = 2;
+        foreach ($sheet3_data as $i => $r) {
+            $sheet3->setCellValueByColumnAndRow(0, $row, $i + 1);
+            $sheet3->setCellValueByColumnAndRow(1, $row, $r['pack_code']);
+            $sheet3->setCellValueByColumnAndRow(2, $row, $r['no_coil']);
+            $sheet3->setCellValueByColumnAndRow(3, $row, $r['kode_internal']);
+            $sheet3->setCellValueByColumnAndRow(4, $row, $r['nm_material']);
+            $sheet3->setCellValueByColumnAndRow(5, $row, $r['trade_name']);
+            $sheet3->setCellValueByColumnAndRow(6, $row, (float) $r['net_weight']);
+            $sheet3->setCellValueByColumnAndRow(7, $row, (float) $r['gross_weight']);
+            $sheet3->setCellValueByColumnAndRow(8, $row, (float) $r['length']);
+            $sheet3->setCellValueByColumnAndRow(9, $row, $r['kd_gudang']);
+            $sheet3->setCellValueByColumnAndRow(10, $row, (int) $r['is_baby_coil'] ? 'Yes' : 'No');
+            $row++;
+        }
+        $sheet3->getStyle('A2:K' . ($row - 1))->applyFromArray($dataStyle);
+        foreach (range('A', 'K') as $c) { $sheet3->getColumnDimension($c)->setAutoSize(true); }
+
+        // ── Output ──
+        $objPHPExcel->setActiveSheetIndex(0);
+        $filename = 'Stock_History_Pack_' . $date_snap . '.xlsx';
+
+        ob_end_clean();
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+        $objWriter->save('php://output');
+        exit;
     }
 
     // ── EXPORT EXCEL ──────────────────────────────────────────────────────
@@ -223,7 +556,7 @@ class Warehouse extends Admin_Controller
             'B' => 'Kode Material',
             'C' => 'Nama Material',
             'D' => 'Nama Lain (Trade Name)',
-            'E' => 'Jumlah Coil',
+            'E' => 'Jumlah Roll',
             'F' => 'Qty Stock (Kg)',
             'G' => 'Harga Beli (Avg)',
             'H' => 'Total Nilai',
@@ -249,7 +582,7 @@ class Warehouse extends Admin_Controller
         $sheet->getColumnDimension('B')->setWidth(20);
         $sheet->getColumnDimension('C')->setWidth(40);
         $sheet->getColumnDimension('D')->setWidth(30);
-        $sheet->getColumnDimension('E')->setWidth(12); // Jumlah Coil
+        $sheet->getColumnDimension('E')->setWidth(12); // Jumlah Roll
         $sheet->getColumnDimension('F')->setWidth(15); // Qty Stock
         $sheet->getColumnDimension('G')->setWidth(20); // Harga Beli
         $sheet->getColumnDimension('H')->setWidth(20); // Total Nilai
@@ -654,11 +987,13 @@ class Warehouse extends Admin_Controller
         $id_gudang   = $this->input->post('id_gudang');
 
         $rows = $this->db->query("
-            SELECT no_coil, kode_internal, net_weight, gross_weight, length
-            FROM warehouse_stock_coil
-            WHERE id_material = ?
-            AND id_gudang     = ?
-            ORDER BY no_coil ASC
+            SELECT wsc.no_coil, wsc.kode_internal, wsc.net_weight, wsc.gross_weight, wsc.length,
+                   wp.pack_code
+            FROM warehouse_stock_coil wsc
+            LEFT JOIN warehouse_pack wp ON wp.id = wsc.id_pack
+            WHERE wsc.id_material = ?
+            AND wsc.id_gudang     = ?
+            ORDER BY wp.pack_code ASC, wsc.no_coil ASC
         ", [$id_material, $id_gudang])->result_array();
 
         echo json_encode($rows);
@@ -709,7 +1044,7 @@ class Warehouse extends Admin_Controller
     public function data_side_stock_perday()
     {
         $kd_gudang = $this->input->post('kd_gudang') ?? '';
-        $this->Warehouse_model->get_json_warehouse_stock_perday($kd_gudang);
+        $this->Warehouse_model->get_json_warehouse_pack_perday($kd_gudang);
     }
 
     // Untuk tabel history modal (menggantikan / melengkapi get_history_material)
@@ -894,7 +1229,7 @@ class Warehouse extends Admin_Controller
             'D' => 'Nama Lain (Trade Name)',
             'E' => 'Gudang',
             'F' => 'Tanggal',
-            'G' => 'Jumlah Coil',
+            'G' => 'Jumlah Roll',
             'H' => 'Qty Stock (Kg)',
             'I' => 'Harga Beli / Costbook (Avg)',
             'J' => 'Total Nilai',

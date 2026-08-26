@@ -124,7 +124,7 @@ class Incoming extends Admin_Controller
                 $coil_ids_str = $coil_ids ? $coil_ids->ids : '';
 
                 $btn_print = $coil_ids_str
-                    ? '<a href="' . base_url('incoming/print_qr/' . $coil_ids_str) . '" target="_blank" 
+                    ? '<a href="' . base_url('incoming/print_qr/' . $row['id']) . '" target="_blank" 
                       class="btn btn-sm btn-info" style="width:100px">
                       <i class="fa fa-print"></i> Print QR
                    </a>'
@@ -324,7 +324,7 @@ class Incoming extends Admin_Controller
             $coil_ids_str = $coil_ids ? $coil_ids->ids : '';
 
             $btn_print = $coil_ids_str
-                ? '<a href="' . base_url('incoming/print_qr/' . $coil_ids_str) . '" target="_blank" class="btn btn-sm btn-info" title="Print Label" style="width:100px">
+                ? '<a href="' . base_url('incoming/print_qr/' . $row['id']) . '" target="_blank" class="btn btn-sm btn-info" title="Print Label" style="width:100px">
                     <i class="fa fa-print"></i> Print QR
                   </a>'
                 : '';
@@ -464,7 +464,7 @@ class Incoming extends Admin_Controller
             </a>';
 
             $btn_print = $coil_ids_str
-                ? '<a href="' . base_url('incoming/print_qr/' . $coil_ids_str) . '" target="_blank" class="btn btn-sm btn-info" title="Print Label" style="width:100px">
+                ? '<a href="' . base_url('incoming/print_qr/' . $row['id']) . '" target="_blank" class="btn btn-sm btn-info" title="Print Label" style="width:100px">
                     <i class="fa fa-print"></i> Print QR
                   </a>'
                 : '';
@@ -525,7 +525,7 @@ class Incoming extends Admin_Controller
         ")->result();
 
         $list_gudang = $this->db->query("
-            SELECT id, nm_gudang, kd_gudang FROM warehouse WHERE status = 'Y' ORDER BY urut ASC
+            SELECT id, nm_gudang, kd_gudang FROM warehouse WHERE status = 'Y' AND kd_gudang IN ('PRO','SLI') ORDER BY urut ASC
         ")->result_array();
 
         $ros_data = null;
@@ -582,7 +582,7 @@ class Incoming extends Admin_Controller
         ")->result();
 
         $list_gudang = $this->db->query("
-            SELECT id, nm_gudang, kd_gudang FROM warehouse WHERE status = 'Y' ORDER BY urut ASC
+            SELECT id, nm_gudang, kd_gudang FROM warehouse WHERE status = 'Y' AND kd_gudang IN ('PRO','SLI') ORDER BY urut ASC
         ")->result_array();
 
         $draft_coils = $this->db->query("
@@ -740,12 +740,18 @@ class Incoming extends Admin_Controller
 
         $this->db->trans_begin();
 
+        // Cache lookup warehouse agar tidak query berulang
+        $gudang_cache = [];
         foreach ($details as $val) {
-            $gd        = $this->db->get_where('warehouse', ['id' => (int) $val['id_gudang_ke']])->row();
-            $kd_gudang = $gd ? $gd->kd_gudang : '';
+            $id_gudang = (int) $val['id_gudang_ke'];
+            if (!isset($gudang_cache[$id_gudang])) {
+                $gd = $this->db->get_where('warehouse', ['id' => $id_gudang])->row();
+                $gudang_cache[$id_gudang] = $gd ? $gd->kd_gudang : '';
+            }
+            $kd_gudang = $gudang_cache[$id_gudang];
 
             $this->db->update('tr_ros_material_coil', [
-                'id_gudang_ke' => (int) $val['id_gudang_ke'],
+                'id_gudang_ke' => $id_gudang,
                 'kd_gudang_ke' => $kd_gudang,
                 'status_qc'    => $val['status_qc'] ?? 'OK',
             ], ['id' => (int) $val['id_ros_coil']]);
@@ -791,7 +797,7 @@ class Incoming extends Admin_Controller
             'status'       => 1,
             'pesan'        => 'Draft saved successfully!',
             'no_ros'       => $no_ros,
-            'print_url'    => base_url('incoming/print_qr/' . ($coil_ids->ids ?? '')),
+            'print_url'    => base_url('incoming/print_qr/' . $no_ros),
             'print_pl_url' => base_url('incoming/print_pl_by_gudang/' . $no_ros),
         ]);
     }
@@ -1888,31 +1894,147 @@ class Incoming extends Admin_Controller
         ]);
     }
 
-    // PRINT QR — include info gudang per coil
-    public function print_qr($ids)
+    // PRINT QR — per pack (barcode = pack_code)
+    public function print_qr($no_ros)
     {
-        $array_id = explode('-', $ids);
-        $escaped_ids = implode(',', array_map('intval', $array_id));
+        // Ambil semua pack untuk ROS ini
+        $packs = $this->db->query("
+            SELECT p.id, p.pack_no, p.pack_code, p.id_ros,
+                   h.id AS no_ros, h.nm_supplier
+            FROM tr_ros_pack p
+            JOIN tr_ros_header h ON h.id = p.id_ros
+            WHERE p.id_ros = ?
+            ORDER BY p.pack_no ASC
+        ", [$no_ros])->result_array();
 
-        $data_coil = $this->db->query("
-        SELECT c.*, m.nm_barang, m.nm_alias, m.nm_erp, m.id_barang,
-               h.id as no_ros, h.nm_supplier, h.incoming_date,
-               w.nm_gudang AS nm_gudang_tujuan,
-               c.kd_gudang_ke,
-               i4.thickness
+        // Fallback: jika belum ada pack data, group coils by id_ros_pack dari material_coil
+        if (empty($packs)) {
+            // Coba ambil pack dari coils yang punya id_ros_pack
+            $packs = $this->db->query("
+                SELECT DISTINCT p.id, p.pack_no, p.pack_code, p.id_ros,
+                       h.id AS no_ros, h.nm_supplier
                 FROM tr_ros_material_coil c
-                JOIN tr_ros_material m  ON m.id = c.id_ros_material
-                JOIN tr_ros_header h    ON h.id = m.id_ros
-                LEFT JOIN warehouse w   ON w.id  = c.id_gudang_ke
-                LEFT JOIN new_inventory_4 i4 ON i4.code_lv4 = m.id_barang
-                WHERE c.id IN ($escaped_ids)
-            ")->result_array();
-
-        if (empty($data_coil)) {
-            die("Data not found.");
+                JOIN tr_ros_material m ON m.id = c.id_ros_material
+                JOIN tr_ros_header h ON h.id = m.id_ros
+                JOIN tr_ros_pack p ON p.id = c.id_ros_pack
+                WHERE m.id_ros = ?
+                ORDER BY p.pack_no ASC
+            ", [$no_ros])->result_array();
         }
 
-        $data = ['results' => $data_coil];
+        // Jika masih kosong, coba generate 1 virtual pack dari semua coils
+        if (empty($packs)) {
+            $coils_exist = $this->db->query("
+                SELECT COUNT(*) as cnt FROM tr_ros_material_coil c
+                JOIN tr_ros_material m ON m.id = c.id_ros_material
+                WHERE m.id_ros = ?
+            ", [$no_ros])->row();
+
+            if ($coils_exist && (int) $coils_exist->cnt > 0) {
+                $packs = [[
+                    'id'        => 0,
+                    'pack_no'   => 1,
+                    'pack_code' => $no_ros,
+                    'id_ros'    => $no_ros,
+                    'no_ros'    => $no_ros,
+                    'nm_supplier' => '',
+                    '_virtual'  => true,
+                ]];
+            }
+        }
+
+        if (empty($packs)) {
+            die("No pack data found for this ROS.");
+        }
+
+        // Untuk setiap pack, ambil coils dan hitung total
+        $results = [];
+        foreach ($packs as $pack) {
+            $is_virtual = isset($pack['_virtual']) && $pack['_virtual'];
+
+            if ($is_virtual) {
+                // Virtual pack: ambil semua coils
+                $coils = $this->db->query("
+                    SELECT c.no_coil, c.berat_bersih, c.berat_kotor, c.is_baby_coil, c.qty_roll,
+                           c.id_gudang_ke, c.kd_gudang_ke,
+                           m.nm_alias, m.nm_erp, m.nm_barang, m.id_barang,
+                           w.nm_gudang AS nm_gudang_tujuan,
+                           i4.thickness
+                    FROM tr_ros_material_coil c
+                    JOIN tr_ros_material m ON m.id = c.id_ros_material
+                    LEFT JOIN warehouse w ON w.id = c.id_gudang_ke
+                    LEFT JOIN new_inventory_4 i4 ON i4.code_lv4 = m.id_barang
+                    WHERE m.id_ros = ?
+                    ORDER BY m.nm_alias ASC, c.no_coil ASC
+                ", [$no_ros])->result_array();
+            } else {
+                $coils = $this->db->query("
+                    SELECT c.no_coil, c.berat_bersih, c.berat_kotor, c.is_baby_coil, c.qty_roll,
+                           c.id_gudang_ke, c.kd_gudang_ke,
+                           m.nm_alias, m.nm_erp, m.nm_barang, m.id_barang,
+                           w.nm_gudang AS nm_gudang_tujuan,
+                           i4.thickness
+                    FROM tr_ros_material_coil c
+                    JOIN tr_ros_material m ON m.id = c.id_ros_material
+                    LEFT JOIN warehouse w ON w.id = c.id_gudang_ke
+                    LEFT JOIN new_inventory_4 i4 ON i4.code_lv4 = m.id_barang
+                    WHERE c.id_ros_pack = ?
+                    ORDER BY m.nm_alias ASC, c.no_coil ASC
+                ", [$pack['id']])->result_array();
+            }
+
+            // Hitung total (skip mother with baby)
+            $total_nw = 0;
+            $total_gw = 0;
+            $materials = [];
+            $thicknesses = [];
+            $mat_thickness_collected = []; // track material yang sudah diambil thickness-nya
+            foreach ($coils as $c) {
+                $is_mother_with_baby = ((int) $c['is_baby_coil'] === 0 && (int) $c['qty_roll'] > 1);
+                if (!$is_mother_with_baby) {
+                    $total_nw += (float) $c['berat_bersih'];
+                    $total_gw += (float) $c['berat_kotor'];
+                }
+                $mat_name = $c['nm_alias'] ?: $c['nm_erp'];
+                if ($mat_name && !in_array($mat_name, $materials)) {
+                    $materials[] = $mat_name;
+                }
+                // Collect thickness per material (1 thickness per material, bukan unique)
+                $mat_id = $c['id_barang'] ?? '';
+                if (!empty($c['thickness']) && $mat_id && !isset($mat_thickness_collected[$mat_id])) {
+                    $thicknesses[] = $c['thickness'];
+                    $mat_thickness_collected[$mat_id] = true;
+                }
+            }
+
+            // Gudang dari coil pertama
+            $gudang_name = '';
+            $kd_gudang = '';
+            $id_gudang = null;
+            foreach ($coils as $c) {
+                if (!empty($c['id_gudang_ke'])) {
+                    $gudang_name = $c['nm_gudang_tujuan'] ?: '';
+                    $kd_gudang = $c['kd_gudang_ke'] ?: '';
+                    $id_gudang = $c['id_gudang_ke'];
+                    break;
+                }
+            }
+
+            $results[] = [
+                'pack_code'        => $pack['pack_code'],
+                'pack_no'          => $pack['pack_no'],
+                'no_ros'           => $pack['no_ros'],
+                'materials'        => $materials,
+                'thicknesses'      => $thicknesses,
+                'total_nw'         => $total_nw,
+                'total_gw'         => $total_gw,
+                'nm_gudang_tujuan' => $gudang_name,
+                'kd_gudang_ke'     => $kd_gudang,
+                'id_gudang_ke'     => $id_gudang,
+            ];
+        }
+
+        $data = ['results' => $results];
         $this->load->view('print_qr_label', $data);
     }
 
@@ -1948,22 +2070,77 @@ class Incoming extends Admin_Controller
     public function get_ros_detail_to_table()
     {
         $no_ros = $this->input->post('no_ros');
+
+        // Query semua coil dengan info pack
         $query = "
-                SELECT c.id AS id_ros_coil_detail, c.no_coil,
+            SELECT c.id AS id_ros_coil_detail, c.no_coil,
                 c.berat_kotor AS ros_kotor, c.berat_bersih AS ros_bersih, c.panjang,
                 c.id_gudang_ke, c.kd_gudang_ke, c.status_qc,
+                c.is_baby_coil, c.qty_roll, c.id_ros_pack,
                 b.id AS id_ros_material, b.nm_erp AS nm_material, b.nm_alias,
                 b.id_barang AS id_material, b.unit_price_usd AS price_coil,
                 b.total_value_rp AS price_coil_idr, b.bm_rp, b.forwarding_cost,
-                d.qty AS qty_po, d.qty_in, d.id AS id_po_detail, b.id_ros AS no_ros
+                d.qty AS qty_po, d.qty_in, d.id AS id_po_detail, b.id_ros AS no_ros,
+                p.pack_no, p.pack_code
             FROM tr_ros_material b
             JOIN tr_ros_material_coil c ON b.id = c.id_ros_material
             LEFT JOIN dt_trans_po d     ON b.id_po_detail = d.id
+            LEFT JOIN tr_ros_pack p     ON p.id = c.id_ros_pack
             WHERE b.id_ros = ?
-            ORDER BY b.id_barang, c.no_coil ASC
+            ORDER BY p.pack_no ASC, b.id_barang ASC, c.no_coil ASC
         ";
-        $data = $this->db->query($query, [$no_ros])->result();
-        echo json_encode($data);
+        $rows = $this->db->query($query, [$no_ros])->result_array();
+
+        // Group by pack
+        $packs = [];
+        foreach ($rows as $row) {
+            $pack_id = $row['id_ros_pack'] ?: 0;
+
+            if (!isset($packs[$pack_id])) {
+                $packs[$pack_id] = [
+                    'id_ros_pack' => $row['id_ros_pack'],
+                    'pack_no'     => $row['pack_no'],
+                    'pack_code'   => $row['pack_code'],
+                    'total_nw'    => 0,
+                    'total_gw'    => 0,
+                    'coil_count'  => 0,
+                    'materials'   => [],
+                    'coils'       => [],
+                    // Gudang dari coil pertama (semua coil dalam pack seharusnya sama)
+                    'id_gudang_ke' => $row['id_gudang_ke'],
+                    'kd_gudang_ke' => $row['kd_gudang_ke'],
+                ];
+            }
+
+            // Skip mother coil dari hitungan (hanya tampilkan baby/normal)
+            $is_mother_with_baby = ((int) $row['is_baby_coil'] === 0 && (int) $row['qty_roll'] > 1);
+            if (!$is_mother_with_baby) {
+                $packs[$pack_id]['total_nw'] += (float) $row['ros_bersih'];
+                $packs[$pack_id]['total_gw'] += (float) $row['ros_kotor'];
+                $packs[$pack_id]['coil_count']++;
+            }
+
+            // Collect material names (unique)
+            $mat_key = $row['id_material'];
+            if (!isset($packs[$pack_id]['materials'][$mat_key])) {
+                $packs[$pack_id]['materials'][$mat_key] = [
+                    'nm_alias'    => $row['nm_alias'],
+                    'nm_material' => $row['nm_material'],
+                    'id_material' => $row['id_material'],
+                    'qty_po'      => $row['qty_po'],
+                    'qty_in'      => $row['qty_in'],
+                    'id_po_detail' => $row['id_po_detail'],
+                ];
+            }
+
+            // Collect all coils for this pack (for hidden inputs)
+            $packs[$pack_id]['coils'][] = $row;
+        }
+
+        // Convert to indexed array
+        $result = array_values($packs);
+
+        echo json_encode($result);
     }
 
     // PROSES INCOMING COIL (SAVE)
@@ -2680,18 +2857,23 @@ class Incoming extends Admin_Controller
             c.status_qc,
             c.id_gudang_ke,
             c.kd_gudang_ke,
+            c.is_baby_coil,
+            c.qty_roll,
+            c.id_ros_pack,
             w.nm_gudang,
             b.nm_erp            AS nm_material,
             b.id_barang         AS id_material,
             b.nm_alias          AS trade_name,
+            p.pack_code,
+            p.pack_no,
             IFNULL(ms.code, 'Kg') AS unit_satuan
         FROM tr_ros_material_coil c
         JOIN tr_ros_material b      ON c.id_ros_material = b.id
         JOIN tr_ros_header a        ON b.id_ros = a.id
         LEFT JOIN warehouse w       ON c.id_gudang_ke = w.id
+        LEFT JOIN tr_ros_pack p     ON p.id = c.id_ros_pack
         LEFT JOIN dt_trans_po f     ON b.id_po_detail = f.id AND f.tipe IS NOT NULL
         LEFT JOIN ms_satuan ms      ON ms.id = (
-            /* Prioritas satuan: dari PO > dari inventory */
             COALESCE(
                 (SELECT id_unit FROM new_inventory_4 WHERE code_lv4 = b.id_barang LIMIT 1),
                 (SELECT id_unit_gudang FROM accessories WHERE id = b.id_barang LIMIT 1)
@@ -2699,7 +2881,7 @@ class Incoming extends Admin_Controller
         )
         WHERE a.id = ?
           AND c.id_gudang_ke IS NOT NULL
-        ORDER BY w.nm_gudang ASC, b.id_barang ASC, c.no_coil ASC
+        ORDER BY w.nm_gudang ASC, p.pack_no ASC, b.id_barang ASC, c.no_coil ASC
     ", [$no_ros])->result_array();
 
         $grouped_by_gudang = [];
@@ -2712,11 +2894,25 @@ class Incoming extends Admin_Controller
                     'id_gudang'  => $row['id_gudang_ke'],
                     'kd_gudang'  => $row['kd_gudang_ke'],
                     'nm_gudang'  => $row['nm_gudang'] ?? '-',
-                    'items'      => [],
+                    'packs'      => [],
                 ];
             }
 
-            $grouped_by_gudang[$gid]['items'][] = $row;
+            // Group by pack within gudang
+            $pack_id = $row['id_ros_pack'] ?: 0;
+            if (!isset($grouped_by_gudang[$gid]['packs'][$pack_id])) {
+                $grouped_by_gudang[$gid]['packs'][$pack_id] = [
+                    'pack_code' => $row['pack_code'] ?: '-',
+                    'pack_no'   => $row['pack_no'] ?: 0,
+                    'items'     => [],
+                ];
+            }
+
+            // Skip mother coil with baby from items
+            $is_mother_with_baby = ((int) $row['is_baby_coil'] === 0 && (int) $row['qty_roll'] > 1);
+            if (!$is_mother_with_baby) {
+                $grouped_by_gudang[$gid]['packs'][$pack_id]['items'][] = $row;
+            }
         }
 
         // ── 4. Kirim ke view ──────────────────────────────────────────────────

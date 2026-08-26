@@ -508,6 +508,20 @@ class Approval_mutasi_model extends BF_Model
             $this->db->insert('warehouse_stock_transaction_summary', $s);
         }
 
+        // ═══════════════════════════════════════════════════
+        // G. UPDATE warehouse_pack — pindahkan pack ke gudang tujuan
+        // ═══════════════════════════════════════════════════
+        $pack_ids_moved = [];
+        foreach ($mutation['details'] as $detail) {
+            if (!empty($detail['id_warehouse_pack']) && !in_array($detail['id_warehouse_pack'], $pack_ids_moved)) {
+                $this->db->update('warehouse_pack', [
+                    'id_gudang' => $id_gudang_to,
+                    'kd_gudang' => $kd_gudang_to,
+                ], ['id' => $detail['id_warehouse_pack']]);
+                $pack_ids_moved[] = $detail['id_warehouse_pack'];
+            }
+        }
+
         return true;
     }
 

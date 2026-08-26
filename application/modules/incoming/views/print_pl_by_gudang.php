@@ -293,11 +293,19 @@
         <?php foreach ($grouped_by_gudang as $gudang): ?>
 
             <?php
-            $items       = $gudang['items'];
+            $packs       = $gudang['packs'];
             $nm_gudang   = $gudang['nm_gudang'];
             $kd_gudang   = $gudang['kd_gudang'];
-            $ttl_kotor   = array_sum(array_column($items, 'berat_kotor'));
-            $ttl_bersih  = array_sum(array_column($items, 'berat_bersih'));
+
+            // Hitung total keseluruhan gudang ini
+            $ttl_kotor  = 0;
+            $ttl_bersih = 0;
+            foreach ($packs as $p) {
+                foreach ($p['items'] as $item) {
+                    $ttl_kotor  += (float) $item['berat_kotor'];
+                    $ttl_bersih += (float) $item['berat_bersih'];
+                }
+            }
             ?>
 
             <div class="page-gudang">
@@ -333,7 +341,6 @@
                     <!-- Kanan -->
                     <div class="info-block">
                         <table>
-
                             <tr>
                                 <td>Supplier</td>
                                 <td>:</td>
@@ -355,55 +362,78 @@
 
                 <hr class="divider">
 
-                <!-- ── Tabel Detail Coil ── -->
-                <table class="detail-table">
-                    <thead>
-                        <tr>
-                            <th style="width:24px;">No.</th>
-                            <th style="width:200px;">Item Name</th>
-                            <th style="width:200px;">Alias / Other Name</th>
-                            <th style="width:36px;">Unit</th>
-                            <th style="width:80px;">Length</th>
-                            <th style="width:100px;">Coil No.</th>
-                            <th style="width:100px;">Internal Code</th>
-                            <th style="width:100px;">Gross Weight (kg)</th>
-                            <th style="width:100px;">Net Weight (kg)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($items)): ?>
-                            <?php $no = 1;
-                            foreach ($items as $row): ?>
+                <!-- ── Tabel per Pack ── -->
+                <?php foreach ($packs as $pack): ?>
+                    <?php
+                    $items = $pack['items'];
+                    if (empty($items)) continue;
+
+                    // Group items by material dan hitung summary
+                    $mat_summary = [];
+                    foreach ($items as $row) {
+                        $mat_key = $row['id_material'];
+                        if (!isset($mat_summary[$mat_key])) {
+                            $mat_summary[$mat_key] = [
+                                'nm_material' => $row['nm_material'],
+                                'trade_name'  => $row['trade_name'],
+                                'total_nw'    => 0,
+                                'total_gw'    => 0,
+                                'coil_count'  => 0,
+                            ];
+                        }
+                        $mat_summary[$mat_key]['total_nw'] += (float) $row['berat_bersih'];
+                        $mat_summary[$mat_key]['total_gw'] += (float) $row['berat_kotor'];
+                        $mat_summary[$mat_key]['coil_count']++;
+                    }
+
+                    $pack_nw = array_sum(array_column($items, 'berat_bersih'));
+                    $pack_gw = array_sum(array_column($items, 'berat_kotor'));
+                    ?>
+
+                    <div style="margin-bottom: 16px;">
+                        <div style="background:#eaf2f8; padding:6px 12px; border-left:4px solid #2980b9; margin-bottom:6px;">
+                            <b>Pack:</b> <span class="badge-ros"><?= htmlspecialchars($pack['pack_code']) ?></span>
+                        </div>
+
+                        <table class="detail-table">
+                            <thead>
                                 <tr>
-                                    <td class="text-center"><?= $no++ ?></td>
-                                    <td><?= htmlspecialchars($row['nm_material']) ?></td>
-                                    <td><?= htmlspecialchars($row['trade_name']) ?></td>
-                                    <td class="text-center"><?= ucfirst($row['unit_satuan']) ?></td>
-                                    <td class="text-end"><?= number_format((float)($row['length'] ?? 0), 2) ?></td>
-                                    <td class="text-center"><?= htmlspecialchars($row['no_coil']) ?></td>
-                                    <td class="text-center">
-                                        <?= !empty($row['kode_internal']) ? htmlspecialchars($row['kode_internal']) : '-' ?>
-                                    </td>
-                                    <td class="text-end"><?= number_format((float)($row['berat_kotor'] ?? 0), 2) ?></td>
-                                    <td class="text-end"><?= number_format((float)($row['berat_bersih'] ?? 0), 2) ?></td>
+                                    <th style="width:30px;">No.</th>
+                                    <th style="width:220px;">Item Name</th>
+                                    <th style="width:220px;">Alias / Other Name</th>
+                                    <th style="width:80px;">Coil Qty</th>
+                                    <th style="width:110px;">Gross Weight (kg)</th>
+                                    <th style="width:110px;">Net Weight (kg)</th>
                                 </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="9" class="text-center" style="color:#999; padding:20px;">
-                                    No coil data.
-                                </td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="7" class="text-end">Total</td>
-                            <td class="text-end"><?= number_format($ttl_kotor, 2) ?></td>
-                            <td class="text-end"><?= number_format($ttl_bersih, 2) ?></td>
-                        </tr>
-                    </tfoot>
-                </table>
+                            </thead>
+                            <tbody>
+                                <?php $no = 1; foreach ($mat_summary as $mat): ?>
+                                    <tr>
+                                        <td class="text-center"><?= $no++ ?></td>
+                                        <td><?= htmlspecialchars($mat['nm_material']) ?></td>
+                                        <td><?= htmlspecialchars($mat['trade_name']) ?></td>
+                                        <td class="text-center"><?= $mat['coil_count'] ?></td>
+                                        <td class="text-end"><?= number_format($mat['total_gw'], 2) ?></td>
+                                        <td class="text-end"><?= number_format($mat['total_nw'], 2) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="4" class="text-end">Pack Total</td>
+                                    <td class="text-end"><?= number_format($pack_gw, 2) ?></td>
+                                    <td class="text-end"><?= number_format($pack_nw, 2) ?></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                <?php endforeach; ?>
+
+                <!-- ── Grand Total per Gudang ── -->
+                <div style="margin-top:12px; padding:8px 12px; background:#ecf0f1; border:1px solid #bdc3c7; font-weight:bold; font-size:13px; display:flex; justify-content:space-between;">
+                    <span>Grand Total — <?= htmlspecialchars($nm_gudang) ?></span>
+                    <span>G.W.: <?= number_format($ttl_kotor, 2) ?> Kg &nbsp;|&nbsp; N.W.: <?= number_format($ttl_bersih, 2) ?> Kg</span>
+                </div>
 
                 <!-- ── Footer ── -->
                 <div class="print-footer">
