@@ -239,6 +239,7 @@ $catatan    = $is_edit ? $spk['catatan'] : '';
                                     <th class="text-end">Berat Dibutuhkan</th>
                                     <th class="text-end">Stok WIP</th>
                                     <th class="text-end">Stok Gudang Produksi</th>
+                                    <th class="text-center">Pack Available</th>
                                 </tr>
                             </thead>
                             <tbody id="modal-material-body"></tbody>
@@ -615,11 +616,15 @@ $catatan    = $is_edit ? $spk['catatan'] : '';
                 var tbody = '';
                 if (res.data && res.data.length > 0) {
                     res.data.forEach(function(m) {
+                        var packBadge = parseInt(m.pack_count) > 0
+                            ? '<span class="badge bg-success">' + m.pack_count + ' pack</span>'
+                            : '<span class="badge bg-danger">0</span>';
                         tbody += '<tr><td>' + escHtml(m.nm_material) + '</td><td class="text-end">' + parseFloat(m.qty_needed).toFixed(4) + '</td>';
-                        tbody += '<td class="text-end">' + parseFloat(m.stok_wip || 0).toFixed(2) + '</td><td class="text-end">' + parseFloat(m.stok_produksi || 0).toFixed(2) + '</td></tr>';
+                        tbody += '<td class="text-end">' + parseFloat(m.stok_wip || 0).toFixed(2) + '</td><td class="text-end">' + parseFloat(m.stok_produksi || 0).toFixed(2) + '</td>';
+                        tbody += '<td class="text-center">' + packBadge + '</td></tr>';
                     });
                 } else {
-                    tbody = '<tr><td colspan="4" class="text-center text-muted">Tidak ada data material.</td></tr>';
+                    tbody = '<tr><td colspan="5" class="text-center text-muted">Tidak ada data material.</td></tr>';
                 }
                 $('#modal-material-body').html(tbody);
                 $('#modal-content').show();

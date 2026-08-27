@@ -124,7 +124,7 @@ class New_ros extends Admin_Controller
     {
         $id_supplier = $this->input->post('id_supplier');
 
-        $this->db->select('no_po, no_surat');
+        $this->db->select('no_po, no_surat, loi');
         $this->db->from('tr_purchase_order');
         $this->db->where('id_suplier', $id_supplier);
         $this->db->where('status', 2);
@@ -134,6 +134,44 @@ class New_ros extends Admin_Controller
         $list = $this->db->get()->result_array();
 
         echo json_encode(['status' => 1, 'data' => $list]);
+    }
+
+    // ─── AJAX: Validasi DP PO sebelum load materials ───────────────
+    public function check_dp_status()
+    {
+        $no_po = $this->input->post('no_po');
+
+        // Cek apakah PO ini punya TOP DP (group_top = 76)
+        $top_dp = $this->db->get_where('tr_top_po', [
+            'no_po'     => $no_po,
+            'group_top' => 76
+        ])->row();
+
+        if (!$top_dp) {
+            // Tidak ada term DP, tidak perlu validasi — lanjut
+            echo json_encode(['status' => 1, 'dp_required' => false]);
+            return;
+        }
+
+        // Ada term DP, cek apakah sudah dibayar (tr_receive_invoice tipe=dp, status=payment)
+        $invoice_dp = $this->db->get_where('tr_receive_invoice', [
+            'id_top'  => $top_dp->id,
+            'tipe'    => 'dp',
+            'status'  => 'payment'
+        ])->row();
+
+        if ($invoice_dp) {
+            // DP sudah dibayar — lanjut
+            echo json_encode(['status' => 1, 'dp_required' => false]);
+        } else {
+            // DP belum dibayar — block
+            echo json_encode([
+                'status'      => 1,
+                'dp_required' => true,
+                'message'     => 'PO ini memiliki term DP yang belum dibayar. Silakan proses pembayaran DP terlebih dahulu.',
+                'link'        => base_url('purchase_order_payment/index/dp')
+            ]);
+        }
     }
 
     // ─── EDIT ────────────────────────────────────────────────────────
@@ -158,7 +196,7 @@ class New_ros extends Admin_Controller
         // UPDATE: Ambil list PO untuk supplier ini (tanpa JOIN ke ROS)
         // Sesuai dengan logic get_po_by_supplier()
         // ========================================================================
-        $this->db->select('no_po, no_surat');
+        $this->db->select('no_po, no_surat, loi');
         $this->db->from('tr_purchase_order');
         $this->db->where('id_suplier', $header['id_supplier']);
         $this->db->where('status', 2);
@@ -241,9 +279,16 @@ class New_ros extends Admin_Controller
             ];
         }
 
-        // var_dump($bm_persen);die;
+        // Sertakan info loi (Lokal/Import) dan total PO value
+        $loi = $po ? $po->loi : 'Import';
+        $total_po_value = array_sum(array_column($result, 'total_value_usd'));
 
-        echo json_encode(['status' => 1, 'data' => $result]);
+        echo json_encode([
+            'status' => 1,
+            'data'   => $result,
+            'loi'    => $loi,
+            'total_po_value' => $total_po_value
+        ]);
     }
 
     // ─── AJAX: Save Others Cost ──────────────────────────────────────
@@ -2005,7 +2050,18 @@ class New_ros extends Admin_Controller
             }
         }
 
-        // ── Generate Jurnal GL Interface ──
+        // ── Generate Jurnal GL Interface (hanya untuk PO Import) ──
+        $po_data = $this->db->get_where('tr_purchase_order', ['no_po' => $header['no_po']])->row();
+        $is_lokal = ($po_data && strtolower($po_data->loi) === 'lokal');
+
+        if ($is_lokal) {
+            // PO Lokal: skip generate jurnal GL Interface
+            ob_clean();
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 1, 'msg' => 'ROS closed successfully.']);
+            exit;
+        }
+
         if (isset($header['gl_persediaan_intransit']) && $header['gl_persediaan_intransit'] > 0) {
             try {
                 $this->load->model('gl_interface/Gl_interface_model');

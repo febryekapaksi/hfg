@@ -202,6 +202,98 @@ class Request_list_model extends BF_Model
         return array_merge($pro_coils, $wip_coils);
     }
 
+    // ---------------------------------------------------------------
+    // PACK-BASED AVAILABILITY
+    // ---------------------------------------------------------------
+
+    /**
+     * Get available packs that contain a specific material
+     * Exclude packs yang sudah fully assigned ke SPK Coil aktif (non-Rejected/Cancelled)
+     *
+     * @param string $id_material ID material
+     * @param string $spk_no      SPK number (untuk context)
+     * @return array Array of pack rows dengan roll_count, total_nw, total_gw, assigned info
+     */
+    public function get_available_packs_by_material($id_material, $spk_no)
+    {
+        $sql = "
+            SELECT
+                wp.id AS id_pack,
+                wp.pack_code,
+                wp.kd_gudang,
+                COUNT(wsc.id) AS roll_count,
+                SUM(wsc.net_weight) AS total_nw,
+                SUM(wsc.gross_weight) AS total_gw,
+                (
+                    SELECT GROUP_CONCAT(DISTINCT wrh.spk_coil_no SEPARATOR ', ')
+                    FROM tr_warehouse_request_coil_detail wrcd
+                    JOIN tr_warehouse_request_header wrh ON wrh.id = wrcd.request_id
+                    WHERE wrcd.pack_code = wp.pack_code
+                      AND wrh.status NOT IN ('Rejected', 'Cancelled')
+                    LIMIT 1
+                ) AS assigned_spkc,
+                (
+                    SELECT MAX(wrcd2.scan_status)
+                    FROM tr_warehouse_request_coil_detail wrcd2
+                    JOIN tr_warehouse_request_header wrh2 ON wrh2.id = wrcd2.request_id
+                    WHERE wrcd2.pack_code = wp.pack_code
+                      AND wrh2.status NOT IN ('Rejected', 'Cancelled')
+                ) AS scan_status,
+                (
+                    SELECT wrcd3.request_id
+                    FROM tr_warehouse_request_coil_detail wrcd3
+                    JOIN tr_warehouse_request_header wrh3 ON wrh3.id = wrcd3.request_id
+                    WHERE wrcd3.pack_code = wp.pack_code
+                      AND wrh3.status NOT IN ('Rejected', 'Cancelled')
+                    LIMIT 1
+                ) AS assigned_request_id
+            FROM warehouse_pack wp
+            JOIN warehouse_stock_coil wsc ON wsc.id_pack = wp.id
+                AND wsc.id_material = ?
+                AND wsc.status = 1
+                AND (wsc.is_baby_coil = 1 OR (wsc.is_baby_coil = 0 AND wsc.qty_roll <= 1))
+            WHERE wp.status = 1
+            GROUP BY wp.id
+            ORDER BY wp.pack_code ASC
+        ";
+
+        return $this->db->query($sql, [$id_material])->result_array();
+    }
+
+    /**
+     * Get all coils inside a specific pack for a given material
+     *
+     * @param int    $id_pack     ID pack
+     * @param string $id_material ID material (optional filter, null = all materials in pack)
+     * @return array Array of coil rows
+     */
+    public function get_coils_in_pack($id_pack, $id_material = null)
+    {
+        $where_material = '';
+        $params = [$id_pack];
+        if ($id_material) {
+            $where_material = ' AND wsc.id_material = ?';
+            $params[] = $id_material;
+        }
+
+        $sql = "
+            SELECT wsc.id, wsc.id_material, wsc.nm_material, wsc.trade_name,
+                   wsc.no_coil, wsc.kode_internal, wsc.net_weight, wsc.gross_weight,
+                   wsc.length, wsc.id_gudang, wsc.kd_gudang, wsc.id_pack,
+                   wsc.is_baby_coil, wsc.qty_roll,
+                   wp.pack_code
+            FROM warehouse_stock_coil wsc
+            JOIN warehouse_pack wp ON wp.id = wsc.id_pack
+            WHERE wsc.id_pack = ?
+              AND wsc.status = 1
+              AND (wsc.is_baby_coil = 1 OR (wsc.is_baby_coil = 0 AND wsc.qty_roll <= 1))
+              {$where_material}
+            ORDER BY wsc.nm_material ASC, wsc.no_coil ASC
+        ";
+
+        return $this->db->query($sql, $params)->result_array();
+    }
+
     /**
      * Get total coil count per material per gudang
      *

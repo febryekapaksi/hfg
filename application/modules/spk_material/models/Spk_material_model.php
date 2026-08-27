@@ -166,21 +166,34 @@ class Spk_material_model extends BF_Model
      */
     public function get_produk_fg_list($search = null)
     {
-        $this->db->select('p.code_lv4, p.nama');
-        $this->db->from('product_lvl_4 p');
-        $this->db->join('ms_bom_header bh', 'bh.id_produk = p.code_lv4');
-        $this->db->where('bh.is_delete', 0);
-        $this->db->where('p.status', 1);
-        $this->db->where('p.deleted_date IS NULL', null, false);
+        // Hanya tampilkan produk yang:
+        // 1. Punya BOM aktif
+        // 2. Minimal 1 material BOM-nya tersedia di warehouse_stock_coil yang punya id_pack
+        $where_search = '';
         if (!empty($search)) {
-            $this->db->group_start();
-            $this->db->like('p.nama', $search);
-            $this->db->or_like('p.code_lv4', $search);
-            $this->db->group_end();
+            $s = $this->db->escape_like_str($search);
+            $where_search = " AND (p.nama LIKE '%{$s}%' OR p.code_lv4 LIKE '%{$s}%')";
         }
-        $this->db->group_by('p.code_lv4, p.nama');
-        $this->db->limit(50);
-        return $this->db->get()->result_array();
+
+        $sql = "
+            SELECT DISTINCT p.code_lv4, p.nama
+            FROM product_lvl_4 p
+            JOIN ms_bom_header bh ON bh.id_produk = p.code_lv4 AND bh.is_delete = 0
+            JOIN ms_bom_detail bd ON bd.id_bom = bh.id AND bd.is_delete = 0
+            WHERE p.status = 1
+              AND p.deleted_date IS NULL
+              AND EXISTS (
+                  SELECT 1 FROM warehouse_stock_coil wsc
+                  WHERE wsc.id_material = bd.id_material
+                    AND wsc.id_pack IS NOT NULL
+                    AND wsc.status = 1
+              )
+              {$where_search}
+            ORDER BY p.nama ASC
+            LIMIT 50
+        ";
+
+        return $this->db->query($sql)->result_array();
     }
 
     /**
@@ -220,7 +233,8 @@ class Spk_material_model extends BF_Model
             bd.id_unit,
             bd.nm_unit,
             COALESCE((SELECT SUM(ws.qty_stock) FROM warehouse_stock ws WHERE ws.code_lv4 = bd.id_material AND ws.kd_gudang = 'WIP'), 0) as stok_wip,
-            COALESCE((SELECT SUM(ws2.qty_stock) FROM warehouse_stock ws2 WHERE ws2.code_lv4 = bd.id_material AND ws2.kd_gudang = 'PRO'), 0) as stok_produksi
+            COALESCE((SELECT SUM(ws2.qty_stock) FROM warehouse_stock ws2 WHERE ws2.code_lv4 = bd.id_material AND ws2.kd_gudang = 'PRO'), 0) as stok_produksi,
+            (SELECT COUNT(DISTINCT wsc.id_pack) FROM warehouse_stock_coil wsc WHERE wsc.id_material = bd.id_material AND wsc.id_pack IS NOT NULL AND wsc.status = 1) as pack_count
         FROM ms_bom_header bh
         JOIN ms_bom_detail bd ON bd.id_bom = bh.id
         WHERE bh.id_produk = ? AND bh.is_delete = 0 AND bd.is_delete = 0

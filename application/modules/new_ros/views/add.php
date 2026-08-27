@@ -161,7 +161,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                             <option value="">-- Select Supplier first --</option>
                             <?php if ($is_edit) : ?>
                                 <?php foreach ($list_po_data as $po) : ?>
-                                    <option value="<?= $po['no_po'] ?>" <?= ($no_po_val == $po['no_po']) ? 'selected' : '' ?>>
+                                    <option value="<?= $po['no_po'] ?>" data-loi="<?= $po['loi'] ?? 'Import' ?>" <?= ($no_po_val == $po['no_po']) ? 'selected' : '' ?>>
                                         <?= $po['no_surat'] ?: $po['no_po'] ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -234,6 +234,8 @@ $list_po_data = isset($list_po) ? $list_po : [];
             </div>
 
 
+            <!-- F&C Estimation + Step 2-4 (Hidden for Lokal PO) -->
+            <div id="section_import_only">
             <!-- F&C Estimation -->
             <h6 class="fw-bold mt-3">F&C Estimation</h6>
             <div class="row mb-3">
@@ -409,6 +411,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                     </table>
                 </div>
             </div>
+            </div><!-- /#section_import_only -->
         </div>
 
         <!-- DATA PO & KALKULASI -->
@@ -605,6 +608,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
     var materialsData = <?= json_encode($materials_data) ?>;
     var FORWARDING_RATE = <?= isset($forwarding_rate) ? $forwarding_rate : 0 ?>;
     var poLoadingActive = false;
+    var isLokal = false; // Flag untuk PO Lokal
 
     $(document).ready(function() {
         var isInit = true;
@@ -653,6 +657,89 @@ $list_po_data = isset($list_po) ? $list_po : [];
             $('.auto_num').each(function() {
                 if (!$(this).data('autoNumeric')) $(this).autoNumeric('init');
             });
+        }
+
+
+        // ── Lokal/Import PO Mode ──
+        function applyLokalMode(totalPoValue) {
+            isLokal = true;
+
+            // PIB Exchange Rate = 1 dan disabled
+            var $kurs = $('#kurs_pib');
+            if ($kurs.data('autoNumeric')) {
+                $kurs.autoNumeric('set', '1');
+            } else {
+                $kurs.val('1');
+            }
+            $kurs.prop('readonly', true).addClass('readonly-field');
+
+            // PO Value auto-fill dari total PO dan disabled
+            var $poUsd = $('#nilai_po_usd');
+            if ($poUsd.data('autoNumeric')) {
+                $poUsd.autoNumeric('set', totalPoValue.toFixed(2));
+            } else {
+                $poUsd.val(totalPoValue);
+            }
+            $poUsd.prop('readonly', true).addClass('readonly-field');
+
+            // Hide F&C Estimation + Step 2-4
+            $('#section_import_only').slideUp(300);
+
+            // Reset F&C values to 0
+            $('.fc-cost').each(function() {
+                if ($(this).data('autoNumeric')) {
+                    $(this).autoNumeric('set', '0');
+                } else {
+                    $(this).val('0');
+                }
+            });
+
+            // Reset LS, Insurance values to 0
+            var fieldsToZero = ['#biaya_ls', '#ppn_ls', '#pph_ls', '#insurance'];
+            $.each(fieldsToZero, function(i, sel) {
+                var $f = $(sel);
+                if ($f.data('autoNumeric')) {
+                    $f.autoNumeric('set', '0');
+                } else {
+                    $f.val('0');
+                }
+            });
+
+            // Recalculate
+            calcNilaiPibRp();
+        }
+
+        function resetLokalMode() {
+            isLokal = false;
+
+            // Re-enable PIB Exchange Rate dan clear value
+            var $kurs = $('#kurs_pib');
+            $kurs.prop('readonly', false).removeClass('readonly-field');
+            if ($kurs.data('autoNumeric')) {
+                $kurs.autoNumeric('set', '0');
+            } else {
+                $kurs.val('');
+            }
+
+            // Re-enable PO Value dan clear value
+            var $poUsd = $('#nilai_po_usd');
+            $poUsd.prop('readonly', false).removeClass('readonly-field');
+            if ($poUsd.data('autoNumeric')) {
+                $poUsd.autoNumeric('set', '0');
+            } else {
+                $poUsd.val('');
+            }
+
+            // Clear PO PIB Value (Rp)
+            var $poRp = $('#nilai_po_pib_rp');
+            if ($poRp.data('autoNumeric')) {
+                $poRp.autoNumeric('set', '0');
+            } else {
+                $poRp.val('');
+            }
+
+            // Show F&C Estimation + Step 2-4
+            $('#section_import_only').slideDown(300);
         }
 
 
@@ -707,7 +794,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
                     if (res.status == 1 && res.data.length > 0) {
                         $.each(res.data, function(i, po) {
                             var label = po.no_surat ? po.no_surat : po.no_po;
-                            $selectPo.append('<option value="' + po.no_po + '">' + label + '</option>');
+                            $selectPo.append('<option value="' + po.no_po + '" data-loi="' + (po.loi || 'Import') + '">' + label + '</option>');
                         });
                     }
                     $selectPo.trigger('change');
@@ -731,12 +818,62 @@ $list_po_data = isset($list_po) ? $list_po : [];
                 renderProrateLS();
                 renderDataPO();
                 recalculate();
+                resetLokalMode();
                 return;
             }
             var clean_surat = no_surat.split(' (')[0];
             $('#no_surat').val(clean_surat);
 
-            loadPOMaterials(no_po);
+            // Validasi DP sebelum load materials
+            Swal.fire({
+                title: '<i class="fas fa-spinner fa-spin"></i> Memeriksa Status PO...',
+                html: 'Sedang memeriksa status pembayaran DP untuk PO ini.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: function() {
+                    Swal.showLoading();
+                }
+            });
+
+            $.ajax({
+                url: siteurl + 'new_ros/check_dp_status',
+                type: 'POST',
+                data: { no_po: no_po },
+                dataType: 'json',
+                success: function(res) {
+                    Swal.close();
+                    if (res.status == 1 && res.dp_required) {
+                        // DP belum dibayar — block dan tampilkan warning
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'DP Belum Dibayar',
+                            html: '<p>' + res.message + '</p>' +
+                                  '<a href="' + res.link + '" class="btn btn-primary btn-sm mt-2" target="_blank">' +
+                                  '<i class="fas fa-external-link-alt"></i> Buka Menu Payment DP</a>',
+                            confirmButtonText: 'Mengerti',
+                            confirmButtonColor: '#6c757d'
+                        });
+
+                        // Reset PO selection
+                        $('#select_po').val('').trigger('change.select2');
+                        $('#no_po').val('');
+                        $('#no_surat').val('');
+                        materialsData = [];
+                        renderProrateLS();
+                        renderDataPO();
+                        recalculate();
+                    } else {
+                        // Validasi passed — lanjut load materials
+                        loadPOMaterials(no_po);
+                    }
+                },
+                error: function() {
+                    Swal.close();
+                    // Jika gagal cek, tetap lanjut load (fail-open)
+                    loadPOMaterials(no_po);
+                }
+            });
         });
 
         // ── Load PO Materials (dipanggil otomatis saat PO dipilih) ──
@@ -776,6 +913,13 @@ $list_po_data = isset($list_po) ? $list_po : [];
                         renderDataPO();
                         calcProrateLS();
                         recalculate();
+
+                        // Handle Lokal/Import mode
+                        if (res.loi && res.loi === 'Lokal') {
+                            applyLokalMode(res.total_po_value || 0);
+                        } else {
+                            resetLokalMode();
+                        }
                     } else {
                         Swal.fire('Info', 'No materials found for this PO.', 'info');
                         materialsData = [];
@@ -1649,6 +1793,16 @@ $list_po_data = isset($list_po) ? $list_po : [];
             <?php endif; ?>
         }
         isInit = false;
+
+        // ── Check Lokal mode on page load (edit mode) ──
+        var $selectedPo = $('#select_po option:selected');
+        if ($selectedPo.val() && $selectedPo.data('loi') === 'Lokal') {
+            var totalPoUsd = 0;
+            $.each(materialsData, function(i, m) {
+                totalPoUsd += parseFloat(m.total_value_usd) || 0;
+            });
+            applyLokalMode(totalPoUsd);
+        }
 
         function loadCoilDataEdit() {
             var id_ros = $('#id_ros').val();

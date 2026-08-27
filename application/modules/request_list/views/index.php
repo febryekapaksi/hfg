@@ -235,9 +235,9 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                             <thead class="bg-light">
                                 <tr>
                                     <th width="5%" class="text-center">No</th>
-                                    <th>Kode Internal</th>
-                                    <th>No Coil</th>
-                                    <th>Material</th>
+                                    <th>Pack Code</th>
+                                    <th class="text-center">Roll</th>
+                                    <th>Materials</th>
                                     <th class="text-center" width="20%">Status Scan</th>
                                 </tr>
                             </thead>
@@ -500,41 +500,57 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
                 dataType: 'json',
                 success: function(res) {
                     if (res.status == 1) {
-                        var html = '';
-                        totalCoils = res.data.length;
+                        // Group coils by pack_code
+                        var packMap = {};
+                        totalCoils = 0;
                         scannedCoils = 0;
 
-                        if (totalCoils === 0) {
-                            $('#tbody-coil-detail').html('<tr><td colspan="5" class="text-center">Tidak ada coil</td></tr>');
+                        $.each(res.data, function(i, c) {
+                            var pk = c.pack_code || 'no-pack';
+                            if (!packMap[pk]) {
+                                packMap[pk] = { pack_code: pk, coils: [], materials: {}, all_scanned: true };
+                            }
+                            packMap[pk].coils.push(c);
+                            if (c.nm_material) packMap[pk].materials[c.nm_material] = true;
+                            if (parseInt(c.scan_status) === 0) packMap[pk].all_scanned = false;
+                            totalCoils++;
+                            if (parseInt(c.scan_status) === 1) scannedCoils++;
+                        });
+
+                        var packs = Object.values(packMap);
+                        var totalPacks = packs.length;
+                        var scannedPacks = packs.filter(function(p) { return p.all_scanned; }).length;
+
+                        if (totalPacks === 0) {
+                            $('#tbody-coil-detail').html('<tr><td colspan="5" class="text-center">Tidak ada pack</td></tr>');
                             return;
                         }
 
-                        $.each(res.data, function(i, c) {
+                        var html = '';
+                        packs.forEach(function(p, idx) {
                             var statusHtml = '';
-                            var isWip = (c.id_gudang_sumber == 4 || c.id_gudang_sumber == '4');
-
-                            if (c.scan_status == 1 && isWip) {
-                                scannedCoils++;
-                                statusHtml = '<div class="status-pill auto-wip" id="status-pill-' + c.id + '"><i class="fa fa-bolt"></i> <span>Auto (WIP)</span></div>';
-                            } else if (c.scan_status == 1) {
-                                scannedCoils++;
-                                statusHtml = '<div class="status-pill scanned" id="status-pill-' + c.id + '"><i class="fa fa-check-circle"></i> <span>Sudah</span></div>';
+                            if (p.all_scanned) {
+                                statusHtml = '<div class="status-pill scanned" id="status-pack-' + idx + '"><i class="fa fa-check-circle"></i> <span>Scanned</span></div>';
                             } else {
-                                statusHtml = '<div class="status-pill not-scanned" id="status-pill-' + c.id + '"><i class="fa fa-exclamation-triangle"></i> <span>Belum</span></div>';
+                                statusHtml = '<div class="status-pill not-scanned" id="status-pack-' + idx + '"><i class="fa fa-exclamation-triangle"></i> <span>Belum</span></div>';
                             }
-
-                            html += '<tr id="row-coil-' + c.id + '">' +
-                                '<td class="text-center">' + (i + 1) + '</td>' +
-                                '<td>' + (c.kode_internal || '-') + '</td>' +
-                                '<td>' + (c.no_coil || '-') + '</td>' +
-                                '<td>' + (c.nm_material || c.id_material || '-') + '</td>' +
+                            var matList = Object.keys(p.materials).join(', ');
+                            html += '<tr id="row-pack-' + idx + '" data-pack-code="' + p.pack_code + '">' +
+                                '<td class="text-center">' + (idx + 1) + '</td>' +
+                                '<td><span class="badge bg-primary">' + p.pack_code + '</span></td>' +
+                                '<td class="text-center">' + p.coils.length + '</td>' +
+                                '<td><small>' + matList + '</small></td>' +
                                 '<td class="text-center">' + statusHtml + '</td>' +
                                 '</tr>';
                         });
 
                         $('#tbody-coil-detail').html(html);
-                        $('#total-count').text(totalCoils);
-                        $('#scanned-count').text(scannedCoils);
+                        $('#total-count').text(totalPacks);
+                        $('#scanned-count').text(scannedPacks);
+
+                        // Override counts for submit button check
+                        totalCoils = totalPacks;
+                        scannedCoils = scannedPacks;
                         checkSubmitBtn();
                     }
                 }
@@ -562,23 +578,25 @@ $ENABLE_MANAGE = has_permission('Request_List.Manage');
             isProcessingScan = true;
 
             $.ajax({
-                url: BASE_URL + '/scan_coil',
+                url: BASE_URL + '/scan_pack',
                 type: 'POST',
                 data: {
-                    kode_internal: kodeStr,
+                    pack_code: kodeStr,
                     request_id: activeRequestId
                 },
                 dataType: 'json',
                 success: function(res) {
                     if (res.status == 1) {
-                        var $pill = $('#status-pill-' + res.detail_id);
-                        if ($pill.hasClass('not-scanned')) {
-                            $pill.removeClass('not-scanned').addClass('scanned')
-                                .html('<i class="fa fa-check-circle"></i> <span>Sudah</span>');
-                            scannedCoils++;
-                            $('#scanned-count').text(scannedCoils);
-                            checkSubmitBtn();
-                        }
+                        // Find the pack row and update status
+                        $('#tbody-coil-detail tr').each(function() {
+                            if ($(this).data('pack-code') === res.pack_code) {
+                                $(this).find('.status-pill').removeClass('not-scanned').addClass('scanned')
+                                    .html('<i class="fa fa-check-circle"></i> <span>Scanned</span>');
+                            }
+                        });
+                        scannedCoils++;
+                        $('#scanned-count').text(scannedCoils);
+                        checkSubmitBtn();
                         playBeep();
 
                         Swal.fire({

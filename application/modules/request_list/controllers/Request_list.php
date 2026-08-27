@@ -376,6 +376,46 @@ class Request_list extends Admin_Controller
     }
 
     // ---------------------------------------------------------------
+    // AJAX: GET AVAILABLE PACKS BY MATERIAL (pack-based)
+    // ---------------------------------------------------------------
+
+    public function get_available_packs($id_material = null)
+    {
+        $this->auth->restrict($this->viewPermission);
+
+        if (!$id_material) {
+            return $this->_json(array('status' => 0, 'message' => 'ID Material tidak valid.'));
+        }
+
+        $spk_no = $this->input->get('spk_no', TRUE);
+        if (empty($spk_no)) {
+            return $this->_json(array('status' => 0, 'message' => 'SPK No tidak valid.'));
+        }
+
+        $packs = $this->Request_list_model->get_available_packs_by_material($id_material, $spk_no);
+
+        return $this->_json(array('status' => 1, 'data' => $packs));
+    }
+
+    // ---------------------------------------------------------------
+    // AJAX: GET COILS IN PACK (for detail modal)
+    // ---------------------------------------------------------------
+
+    public function get_pack_coils_detail($id_pack = null)
+    {
+        $this->auth->restrict($this->viewPermission);
+
+        if (!$id_pack) {
+            return $this->_json(array('status' => 0, 'message' => 'ID Pack tidak valid.'));
+        }
+
+        $id_material = $this->input->get('id_material', TRUE);
+        $coils = $this->Request_list_model->get_coils_in_pack((int) $id_pack, $id_material ?: null);
+
+        return $this->_json(array('status' => 1, 'data' => $coils));
+    }
+
+    // ---------------------------------------------------------------
     // SAVE SPK COIL
     // ---------------------------------------------------------------
 
@@ -384,15 +424,15 @@ class Request_list extends Admin_Controller
         $this->auth->restrict($this->managePermission);
 
         $spk_no = $this->input->post('spk_no');
-        $coils  = $this->input->post('coils');
+        $packs  = $this->input->post('packs'); // Array of { id_pack, pack_code, id_material, assigned_request_id }
 
         // Basic validation
         if (empty($spk_no)) {
             return $this->_json(array('status' => 0, 'message' => 'SPK No wajib diisi.'));
         }
 
-        if (empty($coils) || !is_array($coils)) {
-            return $this->_json(array('status' => 0, 'message' => 'Minimal 1 coil harus dipilih.'));
+        if (empty($packs) || !is_array($packs)) {
+            return $this->_json(array('status' => 0, 'message' => 'Minimal 1 pack harus dipilih.'));
         }
 
         // Validate SPK exists and status allows coil creation
@@ -406,27 +446,58 @@ class Request_list extends Admin_Controller
             return $this->_json(array('status' => 0, 'message' => 'SPK tidak dapat dibuatkan SPK Coil karena status: ' . $spk_data['header']['status']));
         }
 
-        // Server-side validation per material group
-        $unavailable_coils = array();
+        // Load all coils from selected packs
+        $all_coils = array();
+        $old_requests_to_check = array();
 
-        foreach ($coils as $coil) {
-            $id_coil       = isset($coil['id_coil']) ? $coil['id_coil'] : '';
+        foreach ($packs as $pack) {
+            $id_pack     = isset($pack['id_pack']) ? (int) $pack['id_pack'] : 0;
+            $pack_code   = isset($pack['pack_code']) ? $pack['pack_code'] : '';
+            $id_material = isset($pack['id_material']) ? $pack['id_material'] : null;
+            $assigned_req_id = isset($pack['assigned_request_id']) ? $pack['assigned_request_id'] : '';
 
-            // Check coil still available
-            $id_gudang_sumber = isset($coil['id_gudang_sumber']) ? (int) $coil['id_gudang_sumber'] : 0;
-            $coil_data = $this->Request_list_model->check_coil_available($id_coil, $id_gudang_sumber);
-            if (!$coil_data) {
-                $coil_label = isset($coil['no_coil']) ? $coil['no_coil'] : $id_coil;
-                $unavailable_coils[] = $coil_label;
-                continue;
+            if (!$id_pack) continue;
+
+            // Get coils in this pack for this material
+            $coils = $this->Request_list_model->get_coils_in_pack($id_pack, $id_material);
+
+            foreach ($coils as $coil) {
+                $all_coils[] = array(
+                    'id_coil'        => $coil['id'],
+                    'id_pack'        => $id_pack,
+                    'pack_code'      => $pack_code,
+                    'id_material'    => $coil['id_material'],
+                    'nm_material'    => $coil['nm_material'],
+                    'kode_internal'  => $coil['kode_internal'],
+                    'no_coil'        => $coil['no_coil'],
+                    'id_gudang'      => $coil['id_gudang'],
+                    'kd_gudang'      => $coil['kd_gudang'],
+                );
+            }
+
+            // Track reassignment if pack was previously assigned
+            if (!empty($assigned_req_id)) {
+                $old_requests_to_check[] = $assigned_req_id;
             }
         }
 
-        // Return error if any coil is unavailable
-        if (!empty($unavailable_coils)) {
+        if (empty($all_coils)) {
+            return $this->_json(array('status' => 0, 'message' => 'Tidak ada coil tersedia dari pack yang dipilih.'));
+        }
+
+        // Server-side validation: check coils still available
+        $unavailable = array();
+        foreach ($all_coils as $c) {
+            $coil_data = $this->Request_list_model->check_coil_available($c['id_coil']);
+            if (!$coil_data) {
+                $unavailable[] = $c['no_coil'];
+            }
+        }
+
+        if (!empty($unavailable)) {
             return $this->_json(array(
                 'status'  => 0,
-                'message' => 'Coil berikut sudah tidak tersedia: ' . implode(', ', $unavailable_coils)
+                'message' => 'Coil berikut sudah tidak tersedia: ' . implode(', ', array_slice($unavailable, 0, 5))
             ));
         }
 
@@ -447,29 +518,34 @@ class Request_list extends Admin_Controller
         );
         $request_id = $this->Request_list_model->insert_request_header($header_data);
 
-        // Insert coil details and handle reassignment
-        $detail_records = array();
-        $old_requests_to_check = array();
-
-        foreach ($coils as $coil) {
-            $assigned_req_id = isset($coil['assigned_request_id']) ? $coil['assigned_request_id'] : '';
-            if (!empty($assigned_req_id)) {
-                $this->Request_list_model->remove_coil_from_spkc($assigned_req_id, $coil['id_coil']);
-                $old_requests_to_check[] = $assigned_req_id;
+        // Handle reassignment from old SPK Coils
+        if (!empty($old_requests_to_check)) {
+            foreach ($packs as $pack) {
+                if (!empty($pack['assigned_request_id'])) {
+                    // Remove all coils of this pack from old request
+                    $this->db->where('request_id', (int) $pack['assigned_request_id']);
+                    $this->db->where('pack_code', $pack['pack_code']);
+                    $this->db->delete('tr_warehouse_request_coil_detail');
+                }
             }
+        }
 
-            $id_gudang_sumber = isset($coil['id_gudang_sumber']) ? (int) $coil['id_gudang_sumber'] : 0;
+        // Insert coil details with pack info
+        $detail_records = array();
+        foreach ($all_coils as $c) {
+            $id_gudang_sumber = (int) $c['id_gudang'];
 
             $detail_records[] = array(
-                'request_id'     => $request_id,
-                'id_coil'        => isset($coil['id_coil']) ? $coil['id_coil'] : 0,
-                'id_material'    => isset($coil['id_material']) ? $coil['id_material'] : '',
-                'nm_material'    => isset($coil['nm_material']) ? $coil['nm_material'] : '',
-                'kode_internal'  => isset($coil['kode_internal']) ? $coil['kode_internal'] : '',
-                'no_coil'        => isset($coil['no_coil']) ? $coil['no_coil'] : '',
+                'request_id'       => $request_id,
+                'id_pack'          => $c['id_pack'],
+                'pack_code'        => $c['pack_code'],
+                'id_coil'          => $c['id_coil'],
+                'id_material'      => $c['id_material'],
+                'nm_material'      => $c['nm_material'],
+                'kode_internal'    => $c['kode_internal'],
+                'no_coil'          => $c['no_coil'],
                 'id_gudang_sumber' => $id_gudang_sumber,
-                // Coil dari WIP (id_gudang_sumber=4) auto scan, tidak perlu scan manual
-                'scan_status'    => ($id_gudang_sumber == 4) ? 1 : 0,
+                'scan_status'      => 0, // Will be updated when pack is scanned
             );
         }
 
@@ -477,6 +553,7 @@ class Request_list extends Admin_Controller
             $this->Request_list_model->insert_coil_details($detail_records);
         }
 
+        // Check and cancel empty old SPK Coils
         if (!empty($old_requests_to_check)) {
             $old_requests_to_check = array_unique($old_requests_to_check);
             foreach ($old_requests_to_check as $req_id) {
@@ -673,6 +750,156 @@ class Request_list extends Admin_Controller
             'message'     => 'Coil berhasil di-scan.',
             'detail_id'   => $coil['id'],
             'all_scanned' => $all_scanned,
+        ));
+    }
+
+    // ---------------------------------------------------------------
+    // SCAN PACK (scan pack_code → update all coils in pack)
+    // ---------------------------------------------------------------
+
+    public function remove_pack_from_spkc()
+    {
+        $this->auth->restrict($this->managePermission);
+
+        $request_id = (int) $this->input->post('request_id');
+        $pack_code  = trim($this->input->post('pack_code'));
+
+        if (!$request_id || !$pack_code) {
+            return $this->_json(array('status' => 0, 'message' => 'Request ID dan Pack Code wajib diisi.'));
+        }
+
+        // Delete coils with this pack_code from request
+        $this->db->where('request_id', $request_id);
+        $this->db->where('pack_code', $pack_code);
+        $this->db->delete('tr_warehouse_request_coil_detail');
+
+        // Check if request now empty → hapus header SPK Pack
+        $remaining = $this->db->where('request_id', $request_id)->count_all_results('tr_warehouse_request_coil_detail');
+        $spk_deleted = false;
+        if ($remaining === 0) {
+            $this->db->delete('tr_warehouse_request_header', ['id' => $request_id]);
+            $spk_deleted = true;
+        }
+
+        return $this->_json(array(
+            'status' => 1,
+            'message' => 'Pack ' . $pack_code . ' berhasil dihapus.' . ($spk_deleted ? ' SPK Pack dihapus karena tidak ada pack tersisa.' : ''),
+            'spk_deleted' => $spk_deleted
+        ));
+    }
+
+    public function add_packs_to_spkc()
+    {
+        $this->auth->restrict($this->managePermission);
+
+        $request_id = (int) $this->input->post('request_id');
+        $packs      = $this->input->post('packs');
+
+        if (!$request_id || empty($packs)) {
+            return $this->_json(array('status' => 0, 'message' => 'Request ID dan packs wajib diisi.'));
+        }
+
+        // Validate request exists and not confirmed/scanned
+        $header = $this->db->where('id', $request_id)->get('tr_warehouse_request_header')->row_array();
+        if (!$header || in_array($header['status'], array('Material Confirmed', 'Confirmed'))) {
+            return $this->_json(array('status' => 0, 'message' => 'SPK Pack sudah dikonfirmasi, tidak bisa ditambah.'));
+        }
+
+        $inserted = 0;
+        foreach ($packs as $pack) {
+            $id_pack     = isset($pack['id_pack']) ? (int) $pack['id_pack'] : 0;
+            $pack_code   = isset($pack['pack_code']) ? $pack['pack_code'] : '';
+            $id_material = isset($pack['id_material']) ? $pack['id_material'] : null;
+
+            if (!$id_pack) continue;
+
+            // Remove from other unscanned SPK Packs if assigned
+            $this->db->where('pack_code', $pack_code);
+            $this->db->where('scan_status', 0);
+            $this->db->where('request_id !=', $request_id);
+            $this->db->delete('tr_warehouse_request_coil_detail');
+
+            // Get coils in this pack
+            $coils = $this->Request_list_model->get_coils_in_pack($id_pack, $id_material);
+
+            foreach ($coils as $coil) {
+                // Check not already in this request
+                $exists = $this->db->where('request_id', $request_id)
+                    ->where('id_coil', $coil['id'])
+                    ->count_all_results('tr_warehouse_request_coil_detail');
+
+                if ($exists > 0) continue;
+
+                $this->db->insert('tr_warehouse_request_coil_detail', array(
+                    'request_id'       => $request_id,
+                    'id_pack'          => $id_pack,
+                    'pack_code'        => $pack_code,
+                    'id_coil'          => $coil['id'],
+                    'id_material'      => $coil['id_material'],
+                    'nm_material'      => $coil['nm_material'],
+                    'kode_internal'    => $coil['kode_internal'],
+                    'no_coil'          => $coil['no_coil'],
+                    'id_gudang_sumber' => (int) $coil['id_gudang'],
+                    'scan_status'      => 0,
+                ));
+                $inserted++;
+            }
+        }
+
+        return $this->_json(array('status' => 1, 'message' => $inserted . ' coils dari ' . count($packs) . ' pack berhasil ditambahkan.'));
+    }
+
+    public function scan_pack()
+    {
+        $this->auth->restrict($this->managePermission);
+
+        $pack_code  = trim($this->input->post('pack_code'));
+        $request_id = (int) $this->input->post('request_id');
+
+        if (empty($pack_code) || empty($request_id)) {
+            return $this->_json(array('status' => 0, 'message' => 'Pack code dan request ID wajib diisi.'));
+        }
+
+        // Cari coils dengan pack_code ini di request tersebut
+        $coils_in_pack = $this->db->get_where('tr_warehouse_request_coil_detail', [
+            'request_id' => $request_id,
+            'pack_code'  => $pack_code,
+        ])->result_array();
+
+        if (empty($coils_in_pack)) {
+            return $this->_json(array('status' => 0, 'message' => 'Pack "' . $pack_code . '" tidak ditemukan dalam SPK Coil ini.'));
+        }
+
+        // Check apakah sudah semua scanned
+        $already_scanned = true;
+        foreach ($coils_in_pack as $c) {
+            if ((int) $c['scan_status'] === 0) {
+                $already_scanned = false;
+                break;
+            }
+        }
+
+        if ($already_scanned) {
+            return $this->_json(array('status' => 2, 'message' => 'Pack "' . $pack_code . '" sudah di-scan sebelumnya.'));
+        }
+
+        // Update semua coils dalam pack ini
+        $this->db->where('request_id', $request_id);
+        $this->db->where('pack_code', $pack_code);
+        $this->db->update('tr_warehouse_request_coil_detail', [
+            'scan_status' => 1,
+            'scanned_at'  => $this->datetime,
+            'scanned_by'  => $this->id_user,
+        ]);
+
+        $updated_count = $this->db->affected_rows();
+        $all_scanned = $this->Request_list_model->all_coils_scanned($request_id);
+
+        return $this->_json(array(
+            'status'       => 1,
+            'message'      => 'Pack "' . $pack_code . '" berhasil di-scan (' . $updated_count . ' coils).',
+            'pack_code'    => $pack_code,
+            'all_scanned'  => $all_scanned,
         ));
     }
 
