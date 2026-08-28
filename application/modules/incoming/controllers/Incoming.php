@@ -84,7 +84,7 @@ class Incoming extends Admin_Controller
             if (empty($status) || $status === 'open') {
                 $sts_badge = '<span class="badge rounded-pill bg-warning text-dark">Open</span>';
             } else {
-                $sts_badge = '<span class="badge rounded-pill bg-primary text-white">Saved</span>';
+                $sts_badge = '<span class="badge rounded-pill bg-danger text-white">Revise</span>';
             }
 
             // Tombol aksi

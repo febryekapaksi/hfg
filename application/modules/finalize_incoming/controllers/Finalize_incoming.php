@@ -398,40 +398,40 @@ class Finalize_incoming extends Admin_Controller
 
         // Ambil semua coil
         $coils = $this->db->query("
-            SELECT
-                c.id                    AS id_ros_material_coil,
-                c.no_coil,
-                c.kode_internal,
-                c.berat_kotor,
-                c.berat_bersih,
-                c.panjang,
-                c.bpm,
-                c.id_gudang_ke,
-                c.kd_gudang_ke,
-                c.status_qc,
-                c.price_per_coil,
-                c.is_baby_coil,
-                c.qty_roll,
-                c.parent_coil_id,
-                c.id_ros_pack,
-                m.id                    AS id_ros_material,
-                m.id_barang             AS id_material,
-                m.nm_erp                AS nm_material,
-                m.nm_alias              AS trade_name,
-                m.cost_book,
-                m.total_nilai_inventory,
-                m.id_po_detail,
-                h.no_po,
-                h.id_supplier,
-                h.kurs_pib,
-                p.pack_code
-            FROM tr_ros_material_coil c
-            JOIN tr_ros_material m ON m.id = c.id_ros_material
-            JOIN tr_ros_header h   ON h.id = m.id_ros
-            LEFT JOIN tr_ros_pack p ON p.id = c.id_ros_pack
-            WHERE m.id_ros = ?
-            ORDER BY m.id_barang, c.no_coil ASC
-        ", [$no_ros])->result_array();
+        SELECT
+            c.id                    AS id_ros_material_coil,
+            c.no_coil,
+            c.kode_internal,
+            c.berat_kotor,
+            c.berat_bersih,
+            c.panjang,
+            c.bpm,
+            c.id_gudang_ke,
+            c.kd_gudang_ke,
+            c.status_qc,
+            c.price_per_coil,
+            c.is_baby_coil,
+            c.qty_roll,
+            c.parent_coil_id,
+            c.id_ros_pack,
+            m.id                    AS id_ros_material,
+            m.id_barang             AS id_material,
+            m.nm_erp                AS nm_material,
+            m.nm_alias              AS trade_name,
+            m.cost_book,
+            m.total_nilai_inventory,
+            m.id_po_detail,
+            h.no_po,
+            h.id_supplier,
+            h.kurs_pib,
+            p.pack_code
+        FROM tr_ros_material_coil c
+        JOIN tr_ros_material m ON m.id = c.id_ros_material
+        JOIN tr_ros_header h   ON h.id = m.id_ros
+        LEFT JOIN tr_ros_pack p ON p.id = c.id_ros_pack
+        WHERE m.id_ros = ?
+        ORDER BY m.id_barang, c.no_coil ASC
+    ", [$no_ros])->result_array();
 
         if (empty($coils)) {
             echo json_encode(['status' => 0, 'pesan' => 'No coil data available!']);
@@ -456,12 +456,51 @@ class Finalize_incoming extends Admin_Controller
         }
         unset($c);
 
-        // Validasi COA
-        $coa_map = ['produksi' => '1105-01-01', 'slitting' => '1105-01-02', 'intransit' => '1105-01-03'];
-        $coa_check = $this->_validate_and_get_coa_names($coa_map);
-        if (!$coa_check['valid']) {
-            echo json_encode(['status' => 3, 'pesan' => 'COA not registered: ' . implode(', ', $coa_check['not_found'])]);
-            return;
+        // Validasi template jurnal — harus sudah dikonfigurasi sebelum proses
+        $po_row   = $this->db->get_where('tr_purchase_order', ['no_po' => $ros_header->no_po])->row();
+        $is_lokal = ($po_row && strtolower($po_row->loi) === 'lokal');
+        $action_key = $is_lokal ? 'finalize_lokal' : 'finalize_import';
+        $tipe_label = $is_lokal ? 'Lokal' : 'Import';
+
+        $jurnal_mapping = $this->db->get_where('ms_jurnal_mapping', [
+            'menu'   => 'finalize_incoming',
+            'action' => $action_key
+        ])->row();
+
+        if (!$jurnal_mapping) {
+            ob_clean();
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status' => 0,
+                'pesan'  => "Template jurnal untuk Incoming {$tipe_label} belum dibuat. Silakan konfigurasi di Master Jurnal Mapping (menu: finalize_incoming, action: {$action_key})."
+            ]);
+            exit;
+        }
+
+        // ── TAMBAHAN: Validasi header & detail template jurnal juga sudah lengkap ──
+        // ms_jurnal_mapping hanya menyimpan pointer (kode_master_jurnal);
+        // isi template sesungguhnya ada di master_oto_jurnal_header / master_oto_jurnal_detail
+        // di database 'accounting'. Kalau belum lengkap, proses harus diblok DI SINI,
+        // sebelum trans_begin(), supaya stok/warehouse tidak ikut ter-commit
+        // sementara jurnal tidak bisa dibuat.
+        $db_acc = $this->load->database('accounting', TRUE);
+
+        $tpl_header = $db_acc->get_where('master_oto_jurnal_header', [
+            'kode_master_jurnal' => $jurnal_mapping->kode_master_jurnal
+        ])->row();
+
+        $tpl_detail_count = $db_acc
+            ->where('kode_master_jurnal', $jurnal_mapping->kode_master_jurnal)
+            ->count_all_results('master_oto_jurnal_detail');
+
+        if (!$tpl_header || $tpl_detail_count === 0) {
+            ob_clean();
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status' => 0,
+                'pesan'  => "Template jurnal '{$jurnal_mapping->kode_master_jurnal}' untuk Incoming {$tipe_label} belum lengkap (header/detail belum dikonfigurasi). Silakan lengkapi di menu Master Jurnal Template sebelum finalize."
+            ]);
+            exit;
         }
 
         $this->db->trans_begin();
@@ -565,7 +604,6 @@ class Finalize_incoming extends Admin_Controller
         }
 
         // ── Susun summary per material per gudang ────────────────────────────────
-        // $details_to_insert sudah terisi lengkap dari loop di atas
         $summary_map = [];
         foreach ($details_to_insert as $d) {
             if ((float)$d['berat_bersih'] <= 0) continue;
@@ -573,23 +611,19 @@ class Finalize_incoming extends Admin_Controller
             $key = $d['id_material'] . '_' . $d['id_gudang_ke'];
 
             if (!isset($summary_map[$key])) {
-                // Ambil snapshot qty_awal & saldo_awal dari warehouse_history
-                // (data terakhir sebelum transaksi ini — ambil dari _update_stock_and_history yang sudah jalan)
-                // Kita ambil row pertama coil material ini dari warehouse_history
                 $first_hist = $this->db->query("
-            SELECT saldo_awal, qty_stock_awal, harga_lama
-            FROM warehouse_history
-            WHERE no_ipp = ? AND id_material = ? AND id_gudang = ?
-            ORDER BY id ASC LIMIT 1
-            ", [$kode_incoming, $d['id_material'], $d['id_gudang_ke']])->row();
+        SELECT saldo_awal, qty_stock_awal, harga_lama
+        FROM warehouse_history
+        WHERE no_ipp = ? AND id_material = ? AND id_gudang = ?
+        ORDER BY id ASC LIMIT 1
+        ", [$kode_incoming, $d['id_material'], $d['id_gudang_ke']])->row();
 
-                // Ambil saldo_akhir & qty_akhir dari row terakhir
                 $last_hist = $this->db->query("
-            SELECT saldo_akhir, qty_stock_akhir, harga_baru
-            FROM warehouse_history
-            WHERE no_ipp = ? AND id_material = ? AND id_gudang = ?
-            ORDER BY id DESC LIMIT 1
-            ", [$kode_incoming, $d['id_material'], $d['id_gudang_ke']])->row();
+        SELECT saldo_akhir, qty_stock_akhir, harga_baru
+        FROM warehouse_history
+        WHERE no_ipp = ? AND id_material = ? AND id_gudang = ?
+        ORDER BY id DESC LIMIT 1
+        ", [$kode_incoming, $d['id_material'], $d['id_gudang_ke']])->row();
 
                 $summary_map[$key] = [
                     'kode_trans'    => $kode_incoming,
@@ -645,6 +679,18 @@ class Finalize_incoming extends Admin_Controller
         $supplier_row = $this->db->get_where('new_supplier', ['kode_supplier' => $ros_header->id_supplier])->row();
         $nm_supplier  = $supplier_row ? $supplier_row->nama : '';
 
+        // Hitung value_inc_pro dan value_inc_sli dari price_per_coil per gudang
+        $value_inc_pro = 0;
+        $value_inc_sli = 0;
+        foreach ($details_to_insert as $d) {
+            $kd = strtoupper(trim($d['kd_gudang_ke']));
+            if ($kd === 'SLI') {
+                $value_inc_sli += (float) $d['price_per_coil'];
+            } else {
+                $value_inc_pro += (float) $d['price_per_coil'];
+            }
+        }
+
         $this->db->insert('tr_incoming_header', [
             'kode_trans'         => $kode_incoming,
             'no_ros'             => $no_ros,
@@ -655,6 +701,8 @@ class Finalize_incoming extends Admin_Controller
             'tanggal'            => $tanggal,
             'total_berat_bersih' => $total_berat,
             'total_nilai'        => $total_nilai_inc,
+            'value_inc_pro'      => $value_inc_pro,
+            'value_inc_sli'      => $value_inc_sli,
             'file_dokumen'       => $ros_header->file_hash   ?? '',
             'file_original'      => $ros_header->file_original ?? '',
             'status'             => 'finalized',
@@ -709,29 +757,6 @@ class Finalize_incoming extends Admin_Controller
             echo json_encode(['status' => 1, 'pesan' => 'Finalize successful! Stock and journal have been processed.']);
         }
         exit;
-    }
-
-    // PRIVATE HELPERS
-    public function _validate_and_get_coa_names(array $coa_list)
-    {
-        $db_acc    = $this->load->database(DBACC, TRUE);
-        $not_found = [];
-        $names     = [];
-
-        foreach ($coa_list as $key => $no_perkiraan) {
-            $row = $db_acc->get_where('coa_master', ['no_perkiraan' => $no_perkiraan])->row();
-            if (!$row) {
-                $not_found[] = $no_perkiraan;
-            } else {
-                $names[$key] = $row->nama;
-            }
-        }
-
-        return [
-            'valid'     => empty($not_found),
-            'names'     => $names,
-            'not_found' => $not_found,
-        ];
     }
 
     public function _update_stock_and_history(
@@ -1013,129 +1038,94 @@ class Finalize_incoming extends Admin_Controller
 
     public function _generate_jurnal_incoming($kode_trans, $no_po, $no_surat, $id_supplier, $no_ros, array $details)
     {
-        $tgl        = date('Y-m-d');
-        $created_on = date('Y-m-d H:i:s');
-        $user_id    = $this->auth->user_id();
-
-        $coa_map   = ['produksi' => '1105-01-01', 'slitting' => '1105-01-02', 'intransit' => '1105-01-03'];
-        $coa_check = $this->_validate_and_get_coa_names($coa_map);
-        if (!$coa_check['valid']) {
-            throw new Exception('COA not found: ' . implode(', ', $coa_check['not_found']));
-        }
-        $coa_names = $coa_check['names'];
-
-        $supplier      = $this->db->get_where('new_supplier', ['kode_supplier' => $id_supplier])->row();
-        $supplier_name = $supplier ? $supplier->nama : '-';
-        $keterangan    = "Incoming Material: {$no_surat} | ROS: {$no_ros} | No Incoming: {$kode_trans}";
-        $nomor_jv      = $this->_generate_nomor_jv();
-
-        // Hitung DEBET per gudang & KREDIT — keduanya dari price_per_coil
-        $debet_per_gudang = [];
-        $total_kredit     = 0;
+        // Hitung value per gudang dari details
+        $value_inc_pro = 0;
+        $value_inc_sli = 0;
+        $total_kredit  = 0;
 
         foreach ($details as $d) {
             if ($d['status_qc'] !== 'OK') continue;
 
-            $kd         = strtoupper(trim($d['kd_gudang_ke']));
-            $coa_gudang = ($kd === 'SLI') ? $coa_map['slitting'] : $coa_map['produksi'];
-
-            if (!isset($debet_per_gudang[$coa_gudang])) {
-                $debet_per_gudang[$coa_gudang] = [
-                    'coa'    => $coa_gudang,
-                    'nm_coa' => ($kd === 'SLI') ? $coa_names['slitting'] : $coa_names['produksi'],
-                    'total'  => 0.0,
-                ];
+            $kd = strtoupper(trim($d['kd_gudang_ke']));
+            if ($kd === 'SLI') {
+                $value_inc_sli += (float) $d['price_per_coil'];
+            } else {
+                $value_inc_pro += (float) $d['price_per_coil'];
             }
-
-            // Hapus (int) round() — simpan as is
-            $debet_per_gudang[$coa_gudang]['total'] += (float) $d['price_per_coil'];
-            $total_kredit                           += (float) $d['price_per_coil'];
+            $total_kredit += (float) $d['price_per_coil'];
         }
 
-        if ($total_kredit <= 0) return;
-
-        // Insert header GL Interface
-        $this->db->insert('gl_interface', [
-            'nomor'           => $nomor_jv,
-            'tgl'             => $tgl,
-            'bulan'           => date('m'),
-            'tahun'           => date('Y'),
-            'kdcab'           => '101',
-            'jenis'           => 'JV',
-            'keterangan'      => $keterangan,
-            'jenis_transaksi' => 'incoming',
-            'status'          => 'pending',
-            'user_id'         => $user_id,
-            'memo'            => json_encode([
-                'id_supplier'   => $id_supplier,
-                'nama_supplier' => $supplier_name,
-                'no_reff'       => $no_surat,
-                'no_request'    => $kode_trans,
-                'no_ros'        => $no_ros,
-            ]),
-        ]);
-        $id_gl = $this->db->insert_id();
-
-        $ins = function ($coa, $ket, $debet, $kredit)
-        use ($id_gl, $tgl, $no_surat, $kode_trans, $created_on, $nomor_jv) {
-            if ($debet == 0 && $kredit == 0) return;
-            $this->db->insert('gl_interface_detail', [
-                'id_gl_interface' => $id_gl,
-                'no_batch'        => $nomor_jv,
-                'tipe'            => 'JV',
-                'tanggal'         => $tgl,
-                'no_perkiraan'    => $coa,
-                'id_material'     => null,
-                'nm_material'     => null,
-                'id_gudang'       => null,
-                'no_coil'         => null,
-                'keterangan'      => $ket,
-                'no_reff'         => $no_surat,
-                'no_request'      => $kode_trans,
-                'debet'           => (float) $debet,    // hapus (int)
-                'kredit'          => (float) $kredit,   // hapus (int)
-                'created_at'      => $created_on,
-            ]);
-        };
-
-        // DEBET: Persediaan per gudang (1 baris per COA gudang)
-        foreach ($debet_per_gudang as $entry) {
-            $ins(
-                $entry['coa'],
-                $entry['nm_coa'] . " | {$keterangan}",
-                $entry['total'],
-                0
-            );
+        if ($total_kredit <= 0) {
+            // Tidak ada nilai yang perlu dijurnal (semua reject / nilai 0).
+            // Ini bukan kegagalan sistem, jadi tidak perlu throw — cukup log info.
+            log_message('info', "Skip generate jurnal incoming {$kode_trans}: total_kredit = 0 (kemungkinan semua coil status_qc != OK).");
+            return;
         }
 
-        // KREDIT: Persediaan In-Transit (balik jurnal ROS)
-        $ins(
-            $coa_map['intransit'],
-            $coa_names['intransit'] . " | Balik {$keterangan}",
-            0,
-            $total_kredit
-        );
-    }
+        // Tentukan tipe PO: Lokal atau Import
+        $po_row   = $this->db->get_where('tr_purchase_order', ['no_po' => $no_po])->row();
+        $is_lokal = ($po_row && strtolower($po_row->loi) === 'lokal');
 
-    public function _generate_nomor_jv()
-    {
-        $cabang = $this->db->query(
-            "SELECT nomorJC FROM " . DBACC . ".pastibisa_tb_cabang WHERE nocab = '101' LIMIT 1 FOR UPDATE"
-        )->row();
+        // Lookup mapping berdasarkan tipe (action berbeda untuk lokal/import)
+        $action_key = $is_lokal ? 'finalize_lokal' : 'finalize_import';
+        $mapping = $this->db->get_where('ms_jurnal_mapping', [
+            'menu'   => 'finalize_incoming',
+            'action' => $action_key
+        ])->row();
 
-        if (empty($cabang)) {
-            throw new Exception('Branch data not found for generating JV number!');
+        $tipe_label = $is_lokal ? 'Lokal' : 'Import';
+
+        if (!$mapping) {
+            // Template jurnal belum dikonfigurasi — block proses
+            throw new Exception("Template jurnal untuk Incoming {$tipe_label} belum dibuat. Silakan konfigurasi di ms_jurnal_mapping (menu: finalize_incoming, action: {$action_key}).");
         }
 
-        $nomor_urut = (int) $cabang->nomorJC + 1;
+        // ── Validasi tambahan: pastikan header & detail template jurnal juga sudah lengkap ──
+        // (ms_jurnal_mapping hanya menyimpan pointer kode_master_jurnal;
+        //  isi template sebenarnya ada di master_oto_jurnal_header/_detail)
+        $db_acc = $this->load->database('accounting', TRUE);
 
-        // Hasil: 101-AJV2606779
-        $nomor_jv = '101-AJV' . date('ym') . $nomor_urut;
+        $tpl_header = $db_acc->get_where('master_oto_jurnal_header', [
+            'kode_master_jurnal' => $mapping->kode_master_jurnal
+        ])->row();
 
-        $this->db->query(
-            "UPDATE " . DBACC . ".pastibisa_tb_cabang SET nomorJC = nomorJC + 1 WHERE nocab = '101'"
-        );
+        $tpl_detail_count = $db_acc
+            ->where('kode_master_jurnal', $mapping->kode_master_jurnal)
+            ->count_all_results('master_oto_jurnal_detail');
 
-        return $nomor_jv;
+        if (!$tpl_header || $tpl_detail_count === 0) {
+            throw new Exception("Template jurnal '{$mapping->kode_master_jurnal}' untuk Incoming {$tipe_label} belum lengkap (header/detail belum dikonfigurasi). Silakan lengkapi di menu Master Jurnal Template.");
+        }
+
+        // ── Gunakan generate_jurnal_dari_template ──
+        $this->load->model('gl_interface/Gl_interface_model');
+
+        $supplier      = $this->db->get_where('new_supplier', ['kode_supplier' => $id_supplier])->row();
+        $supplier_name = $supplier ? $supplier->nama : '-';
+
+        $data_source = [
+            'tanggal'        => date('Y-m-d'),
+            'no_po'          => $no_po,
+            'no_surat'       => $no_surat,
+            'id_supplier'    => $id_supplier,
+            'nm_supplier'    => $supplier_name,
+            'no_ros'         => $no_ros,
+            'no_request'     => $kode_trans,
+            'no_doc'         => $no_po,
+            'value_inc_pro'  => $value_inc_pro,
+            'value_inc_sli'  => $value_inc_sli,
+            'gl_persediaan_intransit' => $total_kredit,
+            'loi'            => $tipe_label,
+        ];
+
+        $kode_jurnal = $mapping->kode_master_jurnal;
+        $id_gl = $this->Gl_interface_model->generate_jurnal_dari_template($kode_jurnal, $data_source);
+
+        // Safety net: kalau meski sudah divalidasi di atas, generate_jurnal_dari_template
+        // tetap return false (misal race condition template dihapus di tengah proses),
+        // jangan biarkan finalize() melaporkan sukses.
+        if ($id_gl === false) {
+            throw new Exception("Gagal generate jurnal dari template '{$kode_jurnal}' untuk Incoming {$tipe_label}.");
+        }
     }
 }
