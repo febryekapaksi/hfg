@@ -363,401 +363,415 @@ class Finalize_incoming extends Admin_Controller
     }
 
     // FINALIZE — Proses stok + jurnal + close
-    public function finalize()
-    {
-        ob_start();
-        $this->auth->restrict($this->managePermission);
-        $no_ros  = $this->input->post('no_ros');
-        $tanggal = $this->input->post('tanggal') ?: date('Y-m-d');
-        $qc_json = $this->input->post('qc_data') ?: '[]';
+    // public function finalize()
+    // {
+    //     ob_start();
+    //     $this->auth->restrict($this->managePermission);
+    //     $no_ros  = $this->input->post('no_ros');
+    //     $tanggal = $this->input->post('tanggal') ?: date('Y-m-d');
+    //     $qc_json = $this->input->post('qc_data') ?: '[]';
 
-        if (empty($no_ros)) {
-            echo json_encode(['status' => 0, 'pesan' => 'ROS number is required!']);
-            return;
-        }
+    //     if (empty($no_ros)) {
+    //         echo json_encode(['status' => 0, 'pesan' => 'ROS number is required!']);
+    //         return;
+    //     }
 
-        // Decode QC data dari modal finalize
-        $qc_data = json_decode($qc_json, true);
-        $qc_map  = [];
-        if (!empty($qc_data) && is_array($qc_data)) {
-            foreach ($qc_data as $qc) {
-                $qc_map[$qc['no_coil']] = $qc['status_qc'] ?? 'OK';
-            }
-        }
+    //     // Decode QC data dari modal finalize
+    //     $qc_data = json_decode($qc_json, true);
+    //     $qc_map  = [];
+    //     if (!empty($qc_data) && is_array($qc_data)) {
+    //         foreach ($qc_data as $qc) {
+    //             $qc_map[$qc['no_coil']] = $qc['status_qc'] ?? 'OK';
+    //         }
+    //     }
 
-        $ros_header = $this->db->get_where('tr_ros_header', [
-            'id'              => $no_ros,
-            'status'          => '1',
-            'status_incoming' => 'submitted',
-        ])->row();
+    //     $ros_header = $this->db->get_where('tr_ros_header', [
+    //         'id'              => $no_ros,
+    //         'status'          => '1',
+    //         'status_incoming' => 'submitted',
+    //     ])->row();
 
-        if (empty($ros_header)) {
-            echo json_encode(['status' => 0, 'pesan' => 'Draft data not found!']);
-            return;
-        }
+    //     if (empty($ros_header)) {
+    //         echo json_encode(['status' => 0, 'pesan' => 'Draft data not found!']);
+    //         return;
+    //     }
 
-        // Ambil semua coil
-        $coils = $this->db->query("
-        SELECT
-            c.id                    AS id_ros_material_coil,
-            c.no_coil,
-            c.kode_internal,
-            c.berat_kotor,
-            c.berat_bersih,
-            c.panjang,
-            c.bpm,
-            c.id_gudang_ke,
-            c.kd_gudang_ke,
-            c.status_qc,
-            c.price_per_coil,
-            c.is_baby_coil,
-            c.qty_roll,
-            c.parent_coil_id,
-            c.id_ros_pack,
-            m.id                    AS id_ros_material,
-            m.id_barang             AS id_material,
-            m.nm_erp                AS nm_material,
-            m.nm_alias              AS trade_name,
-            m.cost_book,
-            m.total_nilai_inventory,
-            m.id_po_detail,
-            h.no_po,
-            h.id_supplier,
-            h.kurs_pib,
-            p.pack_code
-        FROM tr_ros_material_coil c
-        JOIN tr_ros_material m ON m.id = c.id_ros_material
-        JOIN tr_ros_header h   ON h.id = m.id_ros
-        LEFT JOIN tr_ros_pack p ON p.id = c.id_ros_pack
-        WHERE m.id_ros = ?
-        ORDER BY m.id_barang, c.no_coil ASC
-    ", [$no_ros])->result_array();
+    //     // Ambil semua coil
+    //     $coils = $this->db->query("
+    //     SELECT
+    //         c.id                    AS id_ros_material_coil,
+    //         c.no_coil,
+    //         c.kode_internal,
+    //         c.berat_kotor,
+    //         c.berat_bersih,
+    //         c.panjang,
+    //         c.bpm,
+    //         c.id_gudang_ke,
+    //         c.kd_gudang_ke,
+    //         c.status_qc,
+    //         c.price_per_coil,
+    //         c.is_baby_coil,
+    //         c.qty_roll,
+    //         c.parent_coil_id,
+    //         c.id_ros_pack,
+    //         m.id                    AS id_ros_material,
+    //         m.id_barang             AS id_material,
+    //         m.nm_erp                AS nm_material,
+    //         m.nm_alias              AS trade_name,
+    //         m.cost_book,
+    //         m.total_nilai_inventory,
+    //         m.id_po_detail,
+    //         h.no_po,
+    //         h.id_supplier,
+    //         h.kurs_pib,
+    //         p.pack_code
+    //     FROM tr_ros_material_coil c
+    //     JOIN tr_ros_material m ON m.id = c.id_ros_material
+    //     JOIN tr_ros_header h   ON h.id = m.id_ros
+    //     LEFT JOIN tr_ros_pack p ON p.id = c.id_ros_pack
+    //     WHERE m.id_ros = ?
+    //     ORDER BY m.id_barang, c.no_coil ASC
+    //     ", [$no_ros])->result_array();
 
-        if (empty($coils)) {
-            echo json_encode(['status' => 0, 'pesan' => 'No coil data available!']);
-            return;
-        }
+    //     if (empty($coils)) {
+    //         echo json_encode(['status' => 0, 'pesan' => 'No coil data available!']);
+    //         return;
+    //     }
 
-        foreach ($coils as $c) {
-            if (empty($c['id_gudang_ke'])) {
-                echo json_encode(['status' => 0, 'pesan' => 'Some coils have not been assigned a warehouse!']);
-                return;
-            }
-        }
+    //     foreach ($coils as $c) {
+    //         if (empty($c['id_gudang_ke'])) {
+    //             echo json_encode(['status' => 0, 'pesan' => 'Some coils have not been assigned a warehouse!']);
+    //             return;
+    //         }
+    //     }
 
-        // Update status_qc dari modal finalize (hanya penanda)
-        foreach ($coils as &$c) {
-            if (isset($qc_map[$c['no_coil']])) {
-                $c['status_qc'] = $qc_map[$c['no_coil']];
-                $this->db->update('tr_ros_material_coil', [
-                    'status_qc' => $c['status_qc'],
-                ], ['id' => (int) $c['id_ros_material_coil']]);
-            }
-        }
-        unset($c);
+    //     // Update status_qc dari modal finalize (hanya penanda)
+    //     foreach ($coils as &$c) {
+    //         if (isset($qc_map[$c['no_coil']])) {
+    //             $c['status_qc'] = $qc_map[$c['no_coil']];
+    //             $this->db->update('tr_ros_material_coil', [
+    //                 'status_qc' => $c['status_qc'],
+    //             ], ['id' => (int) $c['id_ros_material_coil']]);
+    //         }
+    //     }
+    //     unset($c);
 
-        // Validasi template jurnal — harus sudah dikonfigurasi sebelum proses
-        $po_row   = $this->db->get_where('tr_purchase_order', ['no_po' => $ros_header->no_po])->row();
-        $is_lokal = ($po_row && strtolower($po_row->loi) === 'lokal');
-        $action_key = $is_lokal ? 'finalize_lokal' : 'finalize_import';
-        $tipe_label = $is_lokal ? 'Lokal' : 'Import';
+    //     // Validasi template jurnal — harus sudah dikonfigurasi sebelum proses
+    //     $po_row   = $this->db->get_where('tr_purchase_order', ['no_po' => $ros_header->no_po])->row();
+    //     $is_lokal = ($po_row && strtolower($po_row->loi) === 'lokal');
+    //     $action_key = $is_lokal ? 'finalize_lokal' : 'finalize_import';
+    //     $tipe_label = $is_lokal ? 'Lokal' : 'Import';
 
-        $jurnal_mapping = $this->db->get_where('ms_jurnal_mapping', [
-            'menu'   => 'finalize_incoming',
-            'action' => $action_key
-        ])->row();
+    //     $jurnal_mapping = $this->db->get_where('ms_jurnal_mapping', [
+    //         'menu'   => 'finalize_incoming',
+    //         'action' => $action_key
+    //     ])->row();
 
-        if (!$jurnal_mapping) {
-            ob_clean();
-            header('Content-Type: application/json');
-            echo json_encode([
-                'status' => 0,
-                'pesan'  => "Template jurnal untuk Incoming {$tipe_label} belum dibuat. Silakan konfigurasi di Master Jurnal Mapping (menu: finalize_incoming, action: {$action_key})."
-            ]);
-            exit;
-        }
+    //     if (!$jurnal_mapping) {
+    //         ob_clean();
+    //         header('Content-Type: application/json');
+    //         echo json_encode([
+    //             'status' => 0,
+    //             'pesan'  => "Template jurnal untuk Incoming {$tipe_label} belum dibuat. Silakan konfigurasi di Master Jurnal Mapping (menu: finalize_incoming, action: {$action_key})."
+    //         ]);
+    //         exit;
+    //     }
 
-        // ── TAMBAHAN: Validasi header & detail template jurnal juga sudah lengkap ──
-        // ms_jurnal_mapping hanya menyimpan pointer (kode_master_jurnal);
-        // isi template sesungguhnya ada di master_oto_jurnal_header / master_oto_jurnal_detail
-        // di database 'accounting'. Kalau belum lengkap, proses harus diblok DI SINI,
-        // sebelum trans_begin(), supaya stok/warehouse tidak ikut ter-commit
-        // sementara jurnal tidak bisa dibuat.
-        $db_acc = $this->load->database('accounting', TRUE);
+    //     // ── TAMBAHAN: Validasi header & detail template jurnal juga sudah lengkap ──
+    //     // ms_jurnal_mapping hanya menyimpan pointer (kode_master_jurnal);
+    //     // isi template sesungguhnya ada di master_oto_jurnal_header / master_oto_jurnal_detail
+    //     // di database 'accounting'. Kalau belum lengkap, proses harus diblok DI SINI,
+    //     // sebelum trans_begin(), supaya stok/warehouse tidak ikut ter-commit
+    //     // sementara jurnal tidak bisa dibuat.
+    //     $db_acc = $this->load->database('accounting', TRUE);
 
-        $tpl_header = $db_acc->get_where('master_oto_jurnal_header', [
-            'kode_master_jurnal' => $jurnal_mapping->kode_master_jurnal
-        ])->row();
+    //     $tpl_header = $db_acc->get_where('master_oto_jurnal_header', [
+    //         'kode_master_jurnal' => $jurnal_mapping->kode_master_jurnal
+    //     ])->row();
 
-        $tpl_detail_count = $db_acc
-            ->where('kode_master_jurnal', $jurnal_mapping->kode_master_jurnal)
-            ->count_all_results('master_oto_jurnal_detail');
+    //     $tpl_detail_count = $db_acc
+    //         ->where('kode_master_jurnal', $jurnal_mapping->kode_master_jurnal)
+    //         ->count_all_results('master_oto_jurnal_detail');
 
-        if (!$tpl_header || $tpl_detail_count === 0) {
-            ob_clean();
-            header('Content-Type: application/json');
-            echo json_encode([
-                'status' => 0,
-                'pesan'  => "Template jurnal '{$jurnal_mapping->kode_master_jurnal}' untuk Incoming {$tipe_label} belum lengkap (header/detail belum dikonfigurasi). Silakan lengkapi di menu Master Jurnal Template sebelum finalize."
-            ]);
-            exit;
-        }
+    //     if (!$tpl_header || $tpl_detail_count === 0) {
+    //         ob_clean();
+    //         header('Content-Type: application/json');
+    //         echo json_encode([
+    //             'status' => 0,
+    //             'pesan'  => "Template jurnal '{$jurnal_mapping->kode_master_jurnal}' untuk Incoming {$tipe_label} belum lengkap (header/detail belum dikonfigurasi). Silakan lengkapi di menu Master Jurnal Template sebelum finalize."
+    //         ]);
+    //         exit;
+    //     }
 
-        $this->db->trans_begin();
+    //     $this->db->trans_begin();
 
-        $kode_incoming      = $this->Finalize_incoming_model->generate_id_incoming();
-        $total_berat        = 0;
-        $total_nilai_inc    = 0;
-        $details_to_insert  = [];
-        $pack_codes_inserted = []; // Track pack_code yang sudah di-insert ke warehouse_pack
+    //     $kode_incoming      = $this->Finalize_incoming_model->generate_id_incoming();
+    //     $total_berat        = 0;
+    //     $total_nilai_inc    = 0;
+    //     $details_to_insert  = [];
+    //     $pack_codes_inserted = []; // Track pack_code yang sudah di-insert ke warehouse_pack
 
-        foreach ($coils as $c) {
-            if ((float) $c['berat_bersih'] <= 0) continue;
+    //     foreach ($coils as $c) {
+    //         if ((float) $c['berat_bersih'] <= 0) continue;
 
-            // Skip mother coil yang punya baby (bukan unit fisik)
-            $is_mother_with_baby = ((int) $c['is_baby_coil'] === 0 && (int) $c['qty_roll'] > 1);
-            if ($is_mother_with_baby) continue;
+    //         // Skip mother coil yang punya baby (bukan unit fisik)
+    //         $is_mother_with_baby = ((int) $c['is_baby_coil'] === 0 && (int) $c['qty_roll'] > 1);
+    //         if ($is_mother_with_baby) continue;
 
-            $berat_bersih    = (float) $c['berat_bersih'];
-            $cost_book       = (float) $c['cost_book'];
-            $price_per_coil  = (float) $c['price_per_coil'];
-            $nilai_inventory = (float) $c['price_per_coil'];
+    //         $berat_bersih    = (float) $c['berat_bersih'];
+    //         $cost_book       = (float) $c['cost_book'];
+    //         $price_per_coil  = (float) $c['price_per_coil'];
+    //         $nilai_inventory = (float) $c['price_per_coil'];
 
-            // Resolve parent no_coil untuk baby coil
-            $parent_no_coil = null;
-            if ((int) $c['is_baby_coil'] === 1 && !empty($c['parent_coil_id'])) {
-                $parent_row = $this->db->get_where('tr_ros_material_coil', ['id' => (int) $c['parent_coil_id']])->row();
-                $parent_no_coil = $parent_row ? $parent_row->no_coil : null;
-            }
+    //         // Resolve parent no_coil untuk baby coil
+    //         $parent_no_coil = null;
+    //         if ((int) $c['is_baby_coil'] === 1 && !empty($c['parent_coil_id'])) {
+    //             $parent_row = $this->db->get_where('tr_ros_material_coil', ['id' => (int) $c['parent_coil_id']])->row();
+    //             $parent_no_coil = $parent_row ? $parent_row->no_coil : null;
+    //         }
 
-            $details_to_insert[] = [
-                'kode_trans'           => $kode_incoming,
-                'id_ros_material_coil' => $c['id_ros_material_coil'],
-                'id_ros_material'      => $c['id_ros_material'],
-                'id_material'          => $c['id_material'],
-                'nm_material'          => $c['nm_material'],
-                'trade_name'           => $c['trade_name'],
-                'no_coil'              => $c['no_coil'],
-                'parent_no_coil'       => $parent_no_coil,
-                'kode_internal'        => $c['kode_internal'],
-                'berat_kotor'          => $c['berat_kotor'],
-                'berat_bersih'         => $berat_bersih,
-                'panjang'              => $c['panjang'],
-                'bpm'                  => $c['bpm'],
-                'id_gudang_ke'         => $c['id_gudang_ke'],
-                'kd_gudang_ke'         => $c['kd_gudang_ke'],
-                'status_qc'            => $c['status_qc'] ?? 'OK',
-                'price_per_coil'       => $price_per_coil,
-                'cost_book'            => $cost_book,
-                'nilai_inventory'      => $nilai_inventory,
-                'is_baby_coil'         => (int) $c['is_baby_coil'],
-                'qty_roll'             => (int) $c['qty_roll'],
-                'parent_coil_id'       => $c['parent_coil_id'],
-                'pack_code'            => $c['pack_code'],
-                'id_ros_pack'          => $c['id_ros_pack'],
-            ];
+    //         $details_to_insert[] = [
+    //             'kode_trans'           => $kode_incoming,
+    //             'id_ros_material_coil' => $c['id_ros_material_coil'],
+    //             'id_ros_material'      => $c['id_ros_material'],
+    //             'id_material'          => $c['id_material'],
+    //             'nm_material'          => $c['nm_material'],
+    //             'trade_name'           => $c['trade_name'],
+    //             'no_coil'              => $c['no_coil'],
+    //             'parent_no_coil'       => $parent_no_coil,
+    //             'kode_internal'        => $c['kode_internal'],
+    //             'berat_kotor'          => $c['berat_kotor'],
+    //             'berat_bersih'         => $berat_bersih,
+    //             'panjang'              => $c['panjang'],
+    //             'bpm'                  => $c['bpm'],
+    //             'id_gudang_ke'         => $c['id_gudang_ke'],
+    //             'kd_gudang_ke'         => $c['kd_gudang_ke'],
+    //             'status_qc'            => $c['status_qc'] ?? 'OK',
+    //             'price_per_coil'       => $price_per_coil,
+    //             'cost_book'            => $cost_book,
+    //             'nilai_inventory'      => $nilai_inventory,
+    //             'is_baby_coil'         => (int) $c['is_baby_coil'],
+    //             'qty_roll'             => (int) $c['qty_roll'],
+    //             'parent_coil_id'       => $c['parent_coil_id'],
+    //             'pack_code'            => $c['pack_code'],
+    //             'id_ros_pack'          => $c['id_ros_pack'],
+    //         ];
 
-            // Semua coil fisik masuk stok
-            $total_berat     += $berat_bersih;
-            $total_nilai_inc += $price_per_coil;
+    //         // Semua coil fisik masuk stok
+    //         $total_berat     += $berat_bersih;
+    //         $total_nilai_inc += $price_per_coil;
 
-            // Insert warehouse_pack (sekali per pack_code unik)
-            $pack_code = $c['pack_code'];
-            if (!empty($pack_code) && !isset($pack_codes_inserted[$pack_code])) {
-                $this->db->insert('warehouse_pack', [
-                    'pack_code'  => $pack_code,
-                    'ref_number' => $kode_incoming,
-                    'no_po'      => $ros_header->no_po,
-                    'id_gudang'  => (int) $c['id_gudang_ke'],
-                    'kd_gudang'  => $c['kd_gudang_ke'],
-                    'status'     => 1,
-                    'created_by' => $this->auth->user_id(),
-                    'created_on' => date('Y-m-d H:i:s'),
-                ]);
-                $pack_codes_inserted[$pack_code] = $this->db->insert_id();
-            }
+    //         // Insert warehouse_pack (sekali per pack_code unik)
+    //         $pack_code = $c['pack_code'];
+    //         if (!empty($pack_code) && !isset($pack_codes_inserted[$pack_code])) {
+    //             $this->db->insert('warehouse_pack', [
+    //                 'pack_code'  => $pack_code,
+    //                 'ref_number' => $kode_incoming,
+    //                 'no_po'      => $ros_header->no_po,
+    //                 'id_gudang'  => (int) $c['id_gudang_ke'],
+    //                 'kd_gudang'  => $c['kd_gudang_ke'],
+    //                 'status'     => 1,
+    //                 'created_by' => $this->auth->user_id(),
+    //                 'created_on' => date('Y-m-d H:i:s'),
+    //             ]);
+    //             $pack_codes_inserted[$pack_code] = $this->db->insert_id();
+    //         }
 
-            // Update warehouse stock
-            $this->_update_stock_and_history(
-                $c['id_material'],
-                $c['nm_material'],
-                $berat_bersih,
-                $cost_book,
-                $kode_incoming,
-                $ros_header->no_po,
-                $c['no_coil'],
-                (int) $c['id_gudang_ke'],
-                $c['kd_gudang_ke'],
-                $no_ros,
-                [
-                    'id_pack'        => isset($pack_codes_inserted[$c['pack_code']]) ? $pack_codes_inserted[$c['pack_code']] : null,
-                    'qty_roll'       => (int) $c['qty_roll'],
-                    'is_baby_coil'   => (int) $c['is_baby_coil'],
-                    'parent_coil_id' => $c['parent_coil_id'],
-                ]
-            );
+    //         // Update warehouse stock
+    //         $this->_update_stock_and_history(
+    //             $c['id_material'],
+    //             $c['nm_material'],
+    //             $berat_bersih,
+    //             $cost_book,
+    //             $kode_incoming,
+    //             $ros_header->no_po,
+    //             $c['no_coil'],
+    //             (int) $c['id_gudang_ke'],
+    //             $c['kd_gudang_ke'],
+    //             $no_ros,
+    //             [
+    //                 'id_pack'        => isset($pack_codes_inserted[$c['pack_code']]) ? $pack_codes_inserted[$c['pack_code']] : null,
+    //                 'qty_roll'       => (int) $c['qty_roll'],
+    //                 'is_baby_coil'   => (int) $c['is_baby_coil'],
+    //                 'parent_coil_id' => $c['parent_coil_id'],
+    //             ]
+    //         );
 
-            // Update qty_in di dt_trans_po
-            $this->db->set('qty_in', 'qty_in + ' . $berat_bersih, FALSE);
-            $this->db->where('id', $c['id_po_detail']);
-            $this->db->update('dt_trans_po');
-        }
+    //         // Update qty_in di dt_trans_po
+    //         $this->db->set('qty_in', 'qty_in + ' . $berat_bersih, FALSE);
+    //         $this->db->where('id', $c['id_po_detail']);
+    //         $this->db->update('dt_trans_po');
+    //     }
 
-        // ── Susun summary per material per gudang ────────────────────────────────
-        $summary_map = [];
-        foreach ($details_to_insert as $d) {
-            if ((float)$d['berat_bersih'] <= 0) continue;
+    //     // ── Susun summary per material per gudang ────────────────────────────────
+    //     $summary_map = [];
+    //     foreach ($details_to_insert as $d) {
+    //         if ((float)$d['berat_bersih'] <= 0) continue;
 
-            $key = $d['id_material'] . '_' . $d['id_gudang_ke'];
+    //         $key = $d['id_material'] . '_' . $d['id_gudang_ke'];
 
-            if (!isset($summary_map[$key])) {
-                $first_hist = $this->db->query("
-        SELECT saldo_awal, qty_stock_awal, harga_lama
-        FROM warehouse_history
-        WHERE no_ipp = ? AND id_material = ? AND id_gudang = ?
-        ORDER BY id ASC LIMIT 1
-        ", [$kode_incoming, $d['id_material'], $d['id_gudang_ke']])->row();
+    //         if (!isset($summary_map[$key])) {
+    //             $first_hist = $this->db->query("
+    //     SELECT saldo_awal, qty_stock_awal, harga_lama
+    //     FROM warehouse_history
+    //     WHERE no_ipp = ? AND id_material = ? AND id_gudang = ?
+    //     ORDER BY id ASC LIMIT 1
+    //     ", [$kode_incoming, $d['id_material'], $d['id_gudang_ke']])->row();
 
-                $last_hist = $this->db->query("
-        SELECT saldo_akhir, qty_stock_akhir, harga_baru
-        FROM warehouse_history
-        WHERE no_ipp = ? AND id_material = ? AND id_gudang = ?
-        ORDER BY id DESC LIMIT 1
-        ", [$kode_incoming, $d['id_material'], $d['id_gudang_ke']])->row();
+    //             $last_hist = $this->db->query("
+    //     SELECT saldo_akhir, qty_stock_akhir, harga_baru
+    //     FROM warehouse_history
+    //     WHERE no_ipp = ? AND id_material = ? AND id_gudang = ?
+    //     ORDER BY id DESC LIMIT 1
+    //     ", [$kode_incoming, $d['id_material'], $d['id_gudang_ke']])->row();
 
-                $summary_map[$key] = [
-                    'kode_trans'    => $kode_incoming,
-                    'id_material'   => $d['id_material'],
-                    'nm_material'   => $d['nm_material'],
-                    'id_gudang'     => $d['id_gudang_ke'],
-                    'kd_gudang'     => $d['kd_gudang_ke'],
-                    'tanggal'       => $tanggal,
-                    'jumlah_coil'   => 0,
-                    'qty_awal'      => $first_hist ? (float)$first_hist->qty_stock_awal : 0,
-                    'qty_transaksi' => 0,
-                    'qty_akhir'     => $last_hist  ? (float)$last_hist->qty_stock_akhir : 0,
-                    'costbook'      => $last_hist  ? (float)$last_hist->harga_baru      : 0,
-                    'total_harga'   => 0,
-                    'saldo_awal'    => $first_hist ? (int)$first_hist->saldo_awal       : 0,
-                    'saldo_akhir'   => $last_hist  ? (int)$last_hist->saldo_akhir       : 0,
-                    'harga_lama'    => $first_hist ? (float)$first_hist->harga_lama     : 0,
-                    'created_by'    => $this->auth->user_id(),
-                    'created_at'    => date('Y-m-d H:i:s'),
-                ];
-            }
+    //             $summary_map[$key] = [
+    //                 'kode_trans'    => $kode_incoming,
+    //                 'id_material'   => $d['id_material'],
+    //                 'nm_material'   => $d['nm_material'],
+    //                 'id_gudang'     => $d['id_gudang_ke'],
+    //                 'kd_gudang'     => $d['kd_gudang_ke'],
+    //                 'tanggal'       => $tanggal,
+    //                 'jumlah_coil'   => 0,
+    //                 'qty_awal'      => $first_hist ? (float)$first_hist->qty_stock_awal : 0,
+    //                 'qty_transaksi' => 0,
+    //                 'qty_akhir'     => $last_hist  ? (float)$last_hist->qty_stock_akhir : 0,
+    //                 'costbook'      => $last_hist  ? (float)$last_hist->harga_baru      : 0,
+    //                 'total_harga'   => 0,
+    //                 'saldo_awal'    => $first_hist ? (int)$first_hist->saldo_awal       : 0,
+    //                 'saldo_akhir'   => $last_hist  ? (int)$last_hist->saldo_akhir       : 0,
+    //                 'harga_lama'    => $first_hist ? (float)$first_hist->harga_lama     : 0,
+    //                 'created_by'    => $this->auth->user_id(),
+    //                 'created_at'    => date('Y-m-d H:i:s'),
+    //             ];
+    //         }
 
-            $summary_map[$key]['jumlah_coil']++;
-            $summary_map[$key]['qty_transaksi'] += (float)$d['berat_bersih'];
-            $summary_map[$key]['total_harga']   += (float)$d['price_per_coil'];
+    //         $summary_map[$key]['jumlah_coil']++;
+    //         $summary_map[$key]['qty_transaksi'] += (float)$d['berat_bersih'];
+    //         $summary_map[$key]['total_harga']   += (float)$d['price_per_coil'];
 
-            // Insert detail snapshot coil
-            $this->db->insert('warehouse_stock_transaction_detail', [
-                'kode_trans'     => $kode_incoming,
-                'id_material'    => $d['id_material'],
-                'nm_material'    => $d['nm_material'],
-                'id_gudang'      => $d['id_gudang_ke'],
-                'kd_gudang'      => $d['kd_gudang_ke'],
-                'no_coil'        => $d['no_coil'],
-                'parent_no_coil' => $d['parent_no_coil'] ?? null,
-                'kode_internal'  => $d['kode_internal'],
-                'gross_weight'   => $d['berat_kotor'],
-                'net_weight'     => $d['berat_bersih'],
-                'length'         => $d['panjang'],
-                'price_per_coil' => $d['price_per_coil'],
-                'cost_book'      => $d['cost_book'],
-                'status_qc'      => 'IN',
-                'created_at'     => date('Y-m-d H:i:s'),
-            ]);
-        }
+    //         // Insert detail snapshot coil
+    //         $this->db->insert('warehouse_stock_transaction_detail', [
+    //             'kode_trans'     => $kode_incoming,
+    //             'id_material'    => $d['id_material'],
+    //             'nm_material'    => $d['nm_material'],
+    //             'id_gudang'      => $d['id_gudang_ke'],
+    //             'kd_gudang'      => $d['kd_gudang_ke'],
+    //             'no_coil'        => $d['no_coil'],
+    //             'parent_no_coil' => $d['parent_no_coil'] ?? null,
+    //             'kode_internal'  => $d['kode_internal'],
+    //             'gross_weight'   => $d['berat_kotor'],
+    //             'net_weight'     => $d['berat_bersih'],
+    //             'length'         => $d['panjang'],
+    //             'price_per_coil' => $d['price_per_coil'],
+    //             'cost_book'      => $d['cost_book'],
+    //             'status_qc'      => 'IN',
+    //             'created_at'     => date('Y-m-d H:i:s'),
+    //         ]);
+    //     }
 
-        // Insert summary per material
-        foreach ($summary_map as $s) {
-            $this->db->insert('warehouse_stock_transaction_summary', $s);
-        }
+    //     // Insert summary per material
+    //     foreach ($summary_map as $s) {
+    //         $this->db->insert('warehouse_stock_transaction_summary', $s);
+    //     }
 
-        // Insert header incoming
-        $supplier_row = $this->db->get_where('new_supplier', ['kode_supplier' => $ros_header->id_supplier])->row();
-        $nm_supplier  = $supplier_row ? $supplier_row->nama : '';
+    //     // Insert header incoming
+    //     $supplier_row = $this->db->get_where('new_supplier', ['kode_supplier' => $ros_header->id_supplier])->row();
+    //     $nm_supplier  = $supplier_row ? $supplier_row->nama : '';
 
-        // Hitung value_inc_pro dan value_inc_sli dari price_per_coil per gudang
-        $value_inc_pro = 0;
-        $value_inc_sli = 0;
-        foreach ($details_to_insert as $d) {
-            $kd = strtoupper(trim($d['kd_gudang_ke']));
-            if ($kd === 'SLI') {
-                $value_inc_sli += (float) $d['price_per_coil'];
-            } else {
-                $value_inc_pro += (float) $d['price_per_coil'];
-            }
-        }
+    //     // Hitung value_inc_pro dan value_inc_sli dari price_per_coil per gudang
+    //     // Hitung value_inc_pro dan value_inc_sli dari price_per_coil per gudang
+    //     $value_inc_pro = 0;
+    //     $value_inc_sli = 0;
+    //     foreach ($details_to_insert as $d) {
+    //         $kd = strtoupper(trim($d['kd_gudang_ke']));
+    //         if ($kd === 'SLI') {
+    //             $value_inc_sli += (float) $d['price_per_coil'];
+    //         } else {
+    //             $value_inc_pro += (float) $d['price_per_coil'];
+    //         }
+    //     }
 
-        $this->db->insert('tr_incoming_header', [
-            'kode_trans'         => $kode_incoming,
-            'no_ros'             => $no_ros,
-            'no_po'              => $ros_header->no_po,
-            'no_surat'           => $ros_header->no_surat,
-            'id_supplier'        => $ros_header->id_supplier,
-            'nm_supplier'        => $nm_supplier,
-            'tanggal'            => $tanggal,
-            'total_berat_bersih' => $total_berat,
-            'total_nilai'        => $total_nilai_inc,
-            'value_inc_pro'      => $value_inc_pro,
-            'value_inc_sli'      => $value_inc_sli,
-            'file_dokumen'       => $ros_header->file_hash   ?? '',
-            'file_original'      => $ros_header->file_original ?? '',
-            'status'             => 'finalized',
-            'created_by'         => $this->auth->user_id(),
-            'created_at'         => date('Y-m-d H:i:s'),
-            'finalized_by'       => $this->auth->user_id(),
-            'finalized_at'       => date('Y-m-d H:i:s'),
-        ]);
+    //     // Round setelah akumulasi, supaya tidak ada error pembulatan bertumpuk
+    //     $value_inc_pro = round($value_inc_pro, 2);
+    //     $value_inc_sli = round($value_inc_sli, 2);
 
-        // Insert detail incoming
-        foreach ($details_to_insert as $d) {
-            $this->db->insert('tr_incoming_detail', $d);
-        }
+    //     $this->db->insert('tr_incoming_header', [
+    //         'kode_trans'         => $kode_incoming,
+    //         'no_ros'             => $no_ros,
+    //         'no_po'              => $ros_header->no_po,
+    //         'no_surat'           => $ros_header->no_surat,
+    //         'id_supplier'        => $ros_header->id_supplier,
+    //         'nm_supplier'        => $nm_supplier,
+    //         'tanggal'            => $tanggal,
+    //         'total_berat_bersih' => $total_berat,
+    //         'total_nilai'        => $total_nilai_inc,
+    //         'value_inc_pro'      => $value_inc_pro,
+    //         'value_inc_sli'      => $value_inc_sli,
 
-        // Close ROS
-        $this->db->update('tr_ros_header', [
-            'status_incoming' => 'closed',
-        ], ['id' => $no_ros]);
+    //         // ── Field GL baru, di-copy dari ROS ──
+    //         'gl_advance_purchase_from_ros'      => round((float) ($ros_header->gl_advance_purchase ?? 0), 2),
+    //         'gl_persediaan_intransit_from_ros'  => round((float) ($ros_header->gl_persediaan_intransit ?? 0), 2),
+    //         'gl_unbill_from_ros'                => round((float) ($ros_header->gl_unbill ?? 0), 2),
 
-        if ($this->db->trans_status() === FALSE) {
-            $this->db->trans_rollback();
-            ob_clean();
-            echo json_encode(['status' => 0, 'pesan' => 'Failed to process finalize!']);
-            return;
-        }
-        $this->db->trans_commit();
+    //         'file_dokumen'       => $ros_header->file_hash   ?? '',
+    //         'file_original'      => $ros_header->file_original ?? '',
+    //         'status'             => 'finalized',
+    //         'created_by'         => $this->auth->user_id(),
+    //         'created_at'         => date('Y-m-d H:i:s'),
+    //         'finalized_by'       => $this->auth->user_id(),
+    //         'finalized_at'       => date('Y-m-d H:i:s'),
+    //     ]);
 
-        // Generate jurnal
-        $jurnal_error = null;
-        if ($total_nilai_inc > 0) {
-            try {
-                $this->_generate_jurnal_incoming(
-                    $kode_incoming,
-                    $ros_header->no_po,
-                    $ros_header->no_surat ?? '',
-                    $ros_header->id_supplier,
-                    $no_ros,
-                    $details_to_insert
-                );
-            } catch (Exception $e) {
-                $jurnal_error = $e->getMessage();
-                log_message('error', 'GL error finalize_incoming ' . $kode_incoming . ': ' . $jurnal_error);
-            }
-        }
+    //     // Insert detail incoming
+    //     foreach ($details_to_insert as $d) {
+    //         $this->db->insert('tr_incoming_detail', $d);
+    //     }
 
-        ob_clean();
-        header('Content-Type: application/json');
+    //     // Close ROS
+    //     $this->db->update('tr_ros_header', [
+    //         'status_incoming' => 'closed',
+    //     ], ['id' => $no_ros]);
 
-        if ($jurnal_error) {
-            echo json_encode(['status' => 2, 'pesan' => 'Finalize successful, but GL Interface failed: ' . $jurnal_error]);
-        } else {
-            echo json_encode(['status' => 1, 'pesan' => 'Finalize successful! Stock and journal have been processed.']);
-        }
-        exit;
-    }
+    //     if ($this->db->trans_status() === FALSE) {
+    //         $this->db->trans_rollback();
+    //         ob_clean();
+    //         echo json_encode(['status' => 0, 'pesan' => 'Failed to process finalize!']);
+    //         return;
+    //     }
+    //     $this->db->trans_commit();
+
+    //     // Generate jurnal
+    //     $jurnal_error = null;
+    //     if ($total_nilai_inc > 0) {
+    //         try {
+    //             $this->_generate_jurnal_incoming(
+    //                 $kode_incoming,
+    //                 $ros_header->no_po,
+    //                 $ros_header->no_surat ?? '',
+    //                 $ros_header->id_supplier,
+    //                 $no_ros,
+    //                 $details_to_insert,
+    //                 round((float) ($ros_header->gl_advance_purchase ?? 0), 2),
+    //                 round((float) ($ros_header->gl_persediaan_intransit ?? 0), 2),
+    //                 round((float) ($ros_header->gl_unbill ?? 0), 2)
+    //             );
+    //         } catch (Exception $e) {
+    //             $jurnal_error = $e->getMessage();
+    //             log_message('error', 'GL error finalize_incoming ' . $kode_incoming . ': ' . $jurnal_error);
+    //         }
+    //     }
+
+    //     ob_clean();
+    //     header('Content-Type: application/json');
+
+    //     if ($jurnal_error) {
+    //         echo json_encode(['status' => 2, 'pesan' => 'Finalize successful, but GL Interface failed: ' . $jurnal_error]);
+    //     } else {
+    //         echo json_encode(['status' => 1, 'pesan' => 'Finalize successful! Stock and journal have been processed.']);
+    //     }
+    //     exit;
+    // }
 
     public function _update_stock_and_history(
         $id_material,
@@ -1036,28 +1050,585 @@ class Finalize_incoming extends Admin_Controller
         ]);
     }
 
-    public function _generate_jurnal_incoming($kode_trans, $no_po, $no_surat, $id_supplier, $no_ros, array $details)
+    private function _allocate_value_by_pack(array $coils_by_material)
     {
-        // Hitung value per gudang dari details
-        $value_inc_pro = 0;
-        $value_inc_sli = 0;
-        $total_kredit  = 0;
+        $pack_values = [];
 
-        foreach ($details as $d) {
-            if ($d['status_qc'] !== 'OK') continue;
-
-            $kd = strtoupper(trim($d['kd_gudang_ke']));
-            if ($kd === 'SLI') {
-                $value_inc_sli += (float) $d['price_per_coil'];
-            } else {
-                $value_inc_pro += (float) $d['price_per_coil'];
+        foreach ($coils_by_material as $id_material => $coils) {
+            if (empty($coils)) {
+                continue;
             }
-            $total_kredit += (float) $d['price_per_coil'];
+
+            // total_nilai_inventory sama untuk semua coil dalam 1 material
+            $total_nilai = (float) $coils[0]['total_nilai_inventory'];
+
+            if ($total_nilai == 0) {
+                continue;
+            }
+
+            // Kelompokkan coil per pack dalam material ini
+            $by_pack = [];
+            foreach ($coils as $c) {
+                $pack_id = $c['id_ros_pack'];
+                if (empty($pack_id)) {
+                    continue; // coil tanpa pack (seharusnya tidak terjadi, tapi jaga-jaga)
+                }
+                $by_pack[$pack_id][] = $c;
+            }
+
+            if (empty($by_pack)) {
+                continue;
+            }
+
+            $total_berat = 0;
+            foreach ($coils as $c) {
+                $total_berat += (float) $c['berat_bersih'];
+            }
+
+            if ($total_berat <= 0) {
+                // Fallback: kalau berat 0 semua, bagi rata per pack
+                $n = count($by_pack);
+                $equal = round($total_nilai / $n, 2);
+                $i = 0;
+                $sisa = $total_nilai;
+                foreach ($by_pack as $pack_id => $pack_coils) {
+                    $i++;
+                    $val = ($i === $n) ? round($sisa, 2) : $equal; // baris terakhir ambil sisa
+                    $pack_values[$pack_id] = ($pack_values[$pack_id] ?? 0) + $val;
+                    $sisa -= $val;
+                }
+                continue;
+            }
+
+            // ── Largest remainder method ──
+            $floor_sum  = 0.0;
+            $exacts     = [];
+            $floors     = [];
+            $remainders = [];
+
+            foreach ($by_pack as $pack_id => $pack_coils) {
+                $berat_pack   = 0;
+                foreach ($pack_coils as $pc) {
+                    $berat_pack += (float) $pc['berat_bersih'];
+                }
+                $exact = $total_nilai * ($berat_pack / $total_berat);
+                $floor = floor($exact * 100) / 100;
+
+                $exacts[$pack_id]     = $exact;
+                $floors[$pack_id]     = $floor;
+                $remainders[$pack_id] = $exact - $floor;
+                $floor_sum           += $floor;
+            }
+
+            // Sisa dalam satuan sen (integer), didistribusikan ke pack dengan
+            // remainder terbesar terlebih dahulu.
+            $sisa_sen = (int) round(($total_nilai - $floor_sum) * 100);
+
+            arsort($remainders); // urutkan dari remainder terbesar
+
+            foreach ($remainders as $pack_id => $r) {
+                if ($sisa_sen <= 0) {
+                    break;
+                }
+                $floors[$pack_id] += 0.01;
+                $sisa_sen--;
+            }
+
+            // Jika sisa_sen masih > 0 (kasus ekstrem/pembulatan ganda),
+            // lempar semua ke pack pertama supaya total tetap presisi.
+            if ($sisa_sen > 0) {
+                $first_pack_id = array_key_first($floors);
+                $floors[$first_pack_id] += $sisa_sen / 100;
+            }
+
+            foreach ($floors as $pack_id => $val) {
+                $pack_values[$pack_id] = ($pack_values[$pack_id] ?? 0) + round($val, 2);
+            }
         }
 
+        return $pack_values;
+    }
+
+
+    /* ============================================================================
+ * B. MODUL INCOMING — GANTI FUNGSI finalize() SECARA UTUH
+ * ========================================================================= */
+
+    public function finalize()
+    {
+        ob_start();
+        $this->auth->restrict($this->managePermission);
+        $no_ros  = $this->input->post('no_ros');
+        $tanggal = $this->input->post('tanggal') ?: date('Y-m-d');
+        $qc_json = $this->input->post('qc_data') ?: '[]';
+
+        if (empty($no_ros)) {
+            echo json_encode(['status' => 0, 'pesan' => 'ROS number is required!']);
+            return;
+        }
+
+        // Decode QC data dari modal finalize
+        $qc_data = json_decode($qc_json, true);
+        $qc_map  = [];
+        if (!empty($qc_data) && is_array($qc_data)) {
+            foreach ($qc_data as $qc) {
+                $qc_map[$qc['no_coil']] = $qc['status_qc'] ?? 'OK';
+            }
+        }
+
+        $ros_header = $this->db->get_where('tr_ros_header', [
+            'id'              => $no_ros,
+            'status'          => '1',
+            'status_incoming' => 'submitted',
+        ])->row();
+
+        if (empty($ros_header)) {
+            echo json_encode(['status' => 0, 'pesan' => 'Draft data not found!']);
+            return;
+        }
+
+        // Ambil semua coil
+        $coils = $this->db->query("
+        SELECT
+            c.id                    AS id_ros_material_coil,
+            c.no_coil,
+            c.kode_internal,
+            c.berat_kotor,
+            c.berat_bersih,
+            c.panjang,
+            c.bpm,
+            c.id_gudang_ke,
+            c.kd_gudang_ke,
+            c.status_qc,
+            c.price_per_coil,
+            c.is_baby_coil,
+            c.qty_roll,
+            c.parent_coil_id,
+            c.id_ros_pack,
+            m.id                    AS id_ros_material,
+            m.id_barang             AS id_material,
+            m.nm_erp                AS nm_material,
+            m.nm_alias              AS trade_name,
+            m.cost_book,
+            m.total_nilai_inventory,
+            m.id_po_detail,
+            h.no_po,
+            h.id_supplier,
+            h.kurs_pib,
+            p.pack_code
+        FROM tr_ros_material_coil c
+        JOIN tr_ros_material m ON m.id = c.id_ros_material
+        JOIN tr_ros_header h   ON h.id = m.id_ros
+        LEFT JOIN tr_ros_pack p ON p.id = c.id_ros_pack
+        WHERE m.id_ros = ?
+        ORDER BY m.id_barang, c.no_coil ASC
+        ", [$no_ros])->result_array();
+
+        if (empty($coils)) {
+            echo json_encode(['status' => 0, 'pesan' => 'No coil data available!']);
+            return;
+        }
+
+        foreach ($coils as $c) {
+            if (empty($c['id_gudang_ke'])) {
+                echo json_encode(['status' => 0, 'pesan' => 'Some coils have not been assigned a warehouse!']);
+                return;
+            }
+        }
+
+        // Update status_qc dari modal finalize (hanya penanda)
+        foreach ($coils as &$c) {
+            if (isset($qc_map[$c['no_coil']])) {
+                $c['status_qc'] = $qc_map[$c['no_coil']];
+                $this->db->update('tr_ros_material_coil', [
+                    'status_qc' => $c['status_qc'],
+                ], ['id' => (int) $c['id_ros_material_coil']]);
+            }
+        }
+        unset($c);
+
+        // Validasi template jurnal — harus sudah dikonfigurasi sebelum proses
+        $po_row   = $this->db->get_where('tr_purchase_order', ['no_po' => $ros_header->no_po])->row();
+        $is_lokal = ($po_row && strtolower($po_row->loi) === 'lokal');
+        $action_key = $is_lokal ? 'finalize_lokal' : 'finalize_import';
+        $tipe_label = $is_lokal ? 'Lokal' : 'Import';
+
+        $jurnal_mapping = $this->db->get_where('ms_jurnal_mapping', [
+            'menu'   => 'finalize_incoming',
+            'action' => $action_key
+        ])->row();
+
+        if (!$jurnal_mapping) {
+            ob_clean();
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status' => 0,
+                'pesan'  => "Template jurnal untuk Incoming {$tipe_label} belum dibuat. Silakan konfigurasi di Master Jurnal Mapping (menu: finalize_incoming, action: {$action_key})."
+            ]);
+            exit;
+        }
+
+        // ── Validasi header & detail template jurnal juga sudah lengkap ──
+        $db_acc = $this->load->database('accounting', TRUE);
+
+        $tpl_header = $db_acc->get_where('master_oto_jurnal_header', [
+            'kode_master_jurnal' => $jurnal_mapping->kode_master_jurnal
+        ])->row();
+
+        $tpl_detail_count = $db_acc
+            ->where('kode_master_jurnal', $jurnal_mapping->kode_master_jurnal)
+            ->count_all_results('master_oto_jurnal_detail');
+
+        if (!$tpl_header || $tpl_detail_count === 0) {
+            ob_clean();
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status' => 0,
+                'pesan'  => "Template jurnal '{$jurnal_mapping->kode_master_jurnal}' untuk Incoming {$tipe_label} belum lengkap (header/detail belum dikonfigurasi). Silakan lengkapi di menu Master Jurnal Template sebelum finalize."
+            ]);
+            exit;
+        }
+
+        $this->db->trans_begin();
+
+        $kode_incoming      = $this->Finalize_incoming_model->generate_id_incoming();
+        $total_berat        = 0;
+        $total_nilai_inc    = 0;
+        $details_to_insert  = [];
+        $pack_codes_inserted = []; // Track pack_code yang sudah di-insert ke warehouse_pack
+
+        // ★ BARU: kumpulkan coil per material (utk alokasi pack) & pack->gudang map
+        $coils_by_material_for_alloc = [];
+        $pack_gudang_map             = []; // id_ros_pack => kd_gudang_ke
+
+        foreach ($coils as $c) {
+            if ((float) $c['berat_bersih'] <= 0) continue;
+
+            // Skip mother coil yang punya baby (bukan unit fisik)
+            $is_mother_with_baby = ((int) $c['is_baby_coil'] === 0 && (int) $c['qty_roll'] > 1);
+            if ($is_mother_with_baby) continue;
+
+            $berat_bersih    = (float) $c['berat_bersih'];
+            $cost_book       = (float) $c['cost_book'];
+            $price_per_coil  = (float) $c['price_per_coil'];
+            $nilai_inventory = (float) $c['price_per_coil'];
+
+            // Resolve parent no_coil untuk baby coil
+            $parent_no_coil = null;
+            if ((int) $c['is_baby_coil'] === 1 && !empty($c['parent_coil_id'])) {
+                $parent_row = $this->db->get_where('tr_ros_material_coil', ['id' => (int) $c['parent_coil_id']])->row();
+                $parent_no_coil = $parent_row ? $parent_row->no_coil : null;
+            }
+
+            $details_to_insert[] = [
+                'kode_trans'           => $kode_incoming,
+                'id_ros_material_coil' => $c['id_ros_material_coil'],
+                'id_ros_material'      => $c['id_ros_material'],
+                'id_material'          => $c['id_material'],
+                'nm_material'          => $c['nm_material'],
+                'trade_name'           => $c['trade_name'],
+                'no_coil'              => $c['no_coil'],
+                'parent_no_coil'       => $parent_no_coil,
+                'kode_internal'        => $c['kode_internal'],
+                'berat_kotor'          => $c['berat_kotor'],
+                'berat_bersih'         => $berat_bersih,
+                'panjang'              => $c['panjang'],
+                'bpm'                  => $c['bpm'],
+                'id_gudang_ke'         => $c['id_gudang_ke'],
+                'kd_gudang_ke'         => $c['kd_gudang_ke'],
+                'status_qc'            => $c['status_qc'] ?? 'OK',
+                'price_per_coil'       => $price_per_coil,
+                'cost_book'            => $cost_book,
+                'nilai_inventory'      => $nilai_inventory,
+                'is_baby_coil'         => (int) $c['is_baby_coil'],
+                'qty_roll'             => (int) $c['qty_roll'],
+                'parent_coil_id'       => $c['parent_coil_id'],
+                'pack_code'            => $c['pack_code'],
+                'id_ros_pack'          => $c['id_ros_pack'],
+            ];
+
+            // Semua coil fisik masuk stok
+            $total_berat     += $berat_bersih;
+            $total_nilai_inc += $price_per_coil;
+
+            // ★ BARU: kumpulkan data untuk alokasi nilai per pack
+            $coils_by_material_for_alloc[$c['id_ros_material']][] = [
+                'id_ros_pack'            => $c['id_ros_pack'],
+                'berat_bersih'           => $berat_bersih,
+                'total_nilai_inventory'  => (float) $c['total_nilai_inventory'],
+            ];
+            if (!empty($c['id_ros_pack'])) {
+                $pack_gudang_map[$c['id_ros_pack']] = strtoupper(trim($c['kd_gudang_ke']));
+            }
+
+            // Insert warehouse_pack (sekali per pack_code unik)
+            $pack_code = $c['pack_code'];
+            if (!empty($pack_code) && !isset($pack_codes_inserted[$pack_code])) {
+                $this->db->insert('warehouse_pack', [
+                    'pack_code'  => $pack_code,
+                    'ref_number' => $kode_incoming,
+                    'no_po'      => $ros_header->no_po,
+                    'id_gudang'  => (int) $c['id_gudang_ke'],
+                    'kd_gudang'  => $c['kd_gudang_ke'],
+                    'status'     => 1,
+                    'created_by' => $this->auth->user_id(),
+                    'created_on' => date('Y-m-d H:i:s'),
+                ]);
+                $pack_codes_inserted[$pack_code] = $this->db->insert_id();
+            }
+
+            // Update warehouse stock
+            $this->_update_stock_and_history(
+                $c['id_material'],
+                $c['nm_material'],
+                $berat_bersih,
+                $cost_book,
+                $kode_incoming,
+                $ros_header->no_po,
+                $c['no_coil'],
+                (int) $c['id_gudang_ke'],
+                $c['kd_gudang_ke'],
+                $no_ros,
+                [
+                    'id_pack'        => isset($pack_codes_inserted[$c['pack_code']]) ? $pack_codes_inserted[$c['pack_code']] : null,
+                    'qty_roll'       => (int) $c['qty_roll'],
+                    'is_baby_coil'   => (int) $c['is_baby_coil'],
+                    'parent_coil_id' => $c['parent_coil_id'],
+                ]
+            );
+
+            // Update qty_in di dt_trans_po
+            $this->db->set('qty_in', 'qty_in + ' . $berat_bersih, FALSE);
+            $this->db->where('id', $c['id_po_detail']);
+            $this->db->update('dt_trans_po');
+        }
+
+        // ── Susun summary per material per gudang ────────────────────────────────
+        $summary_map = [];
+        foreach ($details_to_insert as $d) {
+            if ((float)$d['berat_bersih'] <= 0) continue;
+
+            $key = $d['id_material'] . '_' . $d['id_gudang_ke'];
+
+            if (!isset($summary_map[$key])) {
+                $first_hist = $this->db->query("
+        SELECT saldo_awal, qty_stock_awal, harga_lama
+        FROM warehouse_history
+        WHERE no_ipp = ? AND id_material = ? AND id_gudang = ?
+        ORDER BY id ASC LIMIT 1
+        ", [$kode_incoming, $d['id_material'], $d['id_gudang_ke']])->row();
+
+                $last_hist = $this->db->query("
+        SELECT saldo_akhir, qty_stock_akhir, harga_baru
+        FROM warehouse_history
+        WHERE no_ipp = ? AND id_material = ? AND id_gudang = ?
+        ORDER BY id DESC LIMIT 1
+        ", [$kode_incoming, $d['id_material'], $d['id_gudang_ke']])->row();
+
+                $summary_map[$key] = [
+                    'kode_trans'    => $kode_incoming,
+                    'id_material'   => $d['id_material'],
+                    'nm_material'   => $d['nm_material'],
+                    'id_gudang'     => $d['id_gudang_ke'],
+                    'kd_gudang'     => $d['kd_gudang_ke'],
+                    'tanggal'       => $tanggal,
+                    'jumlah_coil'   => 0,
+                    'qty_awal'      => $first_hist ? (float)$first_hist->qty_stock_awal : 0,
+                    'qty_transaksi' => 0,
+                    'qty_akhir'     => $last_hist  ? (float)$last_hist->qty_stock_akhir : 0,
+                    'costbook'      => $last_hist  ? (float)$last_hist->harga_baru      : 0,
+                    'total_harga'   => 0,
+                    'saldo_awal'    => $first_hist ? (int)$first_hist->saldo_awal       : 0,
+                    'saldo_akhir'   => $last_hist  ? (int)$last_hist->saldo_akhir       : 0,
+                    'harga_lama'    => $first_hist ? (float)$first_hist->harga_lama     : 0,
+                    'created_by'    => $this->auth->user_id(),
+                    'created_at'    => date('Y-m-d H:i:s'),
+                ];
+            }
+
+            $summary_map[$key]['jumlah_coil']++;
+            $summary_map[$key]['qty_transaksi'] += (float)$d['berat_bersih'];
+            $summary_map[$key]['total_harga']   += (float)$d['price_per_coil'];
+
+            // Insert detail snapshot coil
+            $this->db->insert('warehouse_stock_transaction_detail', [
+                'kode_trans'     => $kode_incoming,
+                'id_material'    => $d['id_material'],
+                'nm_material'    => $d['nm_material'],
+                'id_gudang'      => $d['id_gudang_ke'],
+                'kd_gudang'      => $d['kd_gudang_ke'],
+                'no_coil'        => $d['no_coil'],
+                'parent_no_coil' => $d['parent_no_coil'] ?? null,
+                'kode_internal'  => $d['kode_internal'],
+                'gross_weight'   => $d['berat_kotor'],
+                'net_weight'     => $d['berat_bersih'],
+                'length'         => $d['panjang'],
+                'price_per_coil' => $d['price_per_coil'],
+                'cost_book'      => $d['cost_book'],
+                'status_qc'      => 'IN',
+                'created_at'     => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        // Insert summary per material
+        foreach ($summary_map as $s) {
+            $this->db->insert('warehouse_stock_transaction_summary', $s);
+        }
+
+        // Insert header incoming
+        $supplier_row = $this->db->get_where('new_supplier', ['kode_supplier' => $ros_header->id_supplier])->row();
+        $nm_supplier  = $supplier_row ? $supplier_row->nama : '';
+
+        // ★★★ PERUBAHAN UTAMA ★★★
+        // value_inc_pro / value_inc_sli TIDAK LAGI dijumlah dari SUM(price_per_coil)
+        // per coil (yang rawan rounding error karena banyak baris). Sebagai
+        // gantinya, dialokasikan per PACK memakai largest-remainder, sehingga
+        // SUM(value_inc_pro + value_inc_sli) presisi 100% = SUM(total_nilai_inventory).
+        $pack_values = $this->_allocate_value_by_pack($coils_by_material_for_alloc);
+
+        $value_inc_pro = 0;
+        $value_inc_sli = 0;
+        foreach ($pack_values as $pack_id => $val) {
+            $kd = $pack_gudang_map[$pack_id] ?? '';
+            if ($kd === 'SLI') {
+                $value_inc_sli += $val;
+            } else {
+                $value_inc_pro += $val;
+            }
+        }
+
+        $value_inc_pro = round($value_inc_pro, 2);
+        $value_inc_sli = round($value_inc_sli, 2);
+
+        $this->db->insert('tr_incoming_header', [
+            'kode_trans'         => $kode_incoming,
+            'no_ros'             => $no_ros,
+            'no_po'              => $ros_header->no_po,
+            'no_surat'           => $ros_header->no_surat,
+            'id_supplier'        => $ros_header->id_supplier,
+            'nm_supplier'        => $nm_supplier,
+            'tanggal'            => $tanggal,
+            'total_berat_bersih' => $total_berat,
+            'total_nilai'        => $total_nilai_inc,
+            'value_inc_pro'      => $value_inc_pro,
+            'value_inc_sli'      => $value_inc_sli,
+
+            // ── Field GL, di-copy dari ROS ──
+            'gl_advance_purchase_from_ros'      => round((float) ($ros_header->gl_advance_purchase ?? 0), 2),
+            'gl_persediaan_intransit_from_ros'  => round((float) ($ros_header->gl_persediaan_intransit ?? 0), 2),
+            'gl_unbill_from_ros'                => round((float) ($ros_header->gl_unbill ?? 0), 2),
+            // 'gl_pembulatan_from_ros'            => round((float) ($ros_header->gl_pembulatan ?? 0), 2), // ★ BARU
+
+            'file_dokumen'       => $ros_header->file_hash   ?? '',
+            'file_original'      => $ros_header->file_original ?? '',
+            'status'             => 'finalized',
+            'created_by'         => $this->auth->user_id(),
+            'created_at'         => date('Y-m-d H:i:s'),
+            'finalized_by'       => $this->auth->user_id(),
+            'finalized_at'       => date('Y-m-d H:i:s'),
+        ]);
+
+        // Insert detail incoming
+        foreach ($details_to_insert as $d) {
+            $this->db->insert('tr_incoming_detail', $d);
+        }
+
+        // Close ROS
+        $this->db->update('tr_ros_header', [
+            'status_incoming' => 'closed',
+        ], ['id' => $no_ros]);
+
+        if ($this->db->trans_status() === FALSE) {
+            $this->db->trans_rollback();
+            ob_clean();
+            echo json_encode(['status' => 0, 'pesan' => 'Failed to process finalize!']);
+            return;
+        }
+        $this->db->trans_commit();
+
+        // Generate jurnal
+        $jurnal_error = null;
+        if ($total_nilai_inc > 0) {
+            try {
+                $this->_generate_jurnal_incoming(
+                    $kode_incoming,
+                    $ros_header->no_po,
+                    $ros_header->no_surat ?? '',
+                    $ros_header->id_supplier,
+                    $no_ros,
+                    $details_to_insert,
+                    round((float) ($ros_header->gl_advance_purchase ?? 0), 2),
+                    round((float) ($ros_header->gl_persediaan_intransit ?? 0), 2),
+                    round((float) ($ros_header->gl_unbill ?? 0), 2),
+                    round((float) ($ros_header->gl_pembulatan ?? 0), 2), // ★ BARU
+                    $value_inc_pro,   // ★ BARU: dikirim langsung, bukan dihitung ulang
+                    $value_inc_sli    // ★ BARU
+                );
+            } catch (Exception $e) {
+                $jurnal_error = $e->getMessage();
+                log_message('error', 'GL error finalize_incoming ' . $kode_incoming . ': ' . $jurnal_error);
+            }
+        }
+
+        ob_clean();
+        header('Content-Type: application/json');
+
+        if ($jurnal_error) {
+            echo json_encode(['status' => 2, 'pesan' => 'Finalize successful, but GL Interface failed: ' . $jurnal_error]);
+        } else {
+            echo json_encode(['status' => 1, 'pesan' => 'Finalize successful! Stock and journal have been processed.']);
+        }
+        exit;
+    }
+
+
+    /* ============================================================================
+ * B. MODUL INCOMING — GANTI FUNGSI _generate_jurnal_incoming() SECARA UTUH
+ * ========================================================================= */
+
+    public function _generate_jurnal_incoming(
+        $kode_trans,
+        $no_po,
+        $no_surat,
+        $id_supplier,
+        $no_ros,
+        array $details,
+        $gl_advance_purchase = 0,
+        $gl_persediaan_intransit = 0,
+        $gl_unbill = 0,
+        $gl_pembulatan = 0,     // ★ BARU
+        $value_inc_pro = null,  // ★ BARU: kalau null, fallback hitung dari $details (backward compatible)
+        $value_inc_sli = null   // ★ BARU
+    ) {
+        // ★ PERUBAHAN: value_inc_pro/sli sebaiknya dikirim langsung dari finalize()
+        // (hasil alokasi per-pack yang presisi). Kalau caller lama belum
+        // mengirimkannya (null), fallback ke cara lama (SUM per coil) supaya
+        // fungsi ini tetap backward-compatible jika dipanggil dari tempat lain.
+        if ($value_inc_pro === null || $value_inc_sli === null) {
+            $value_inc_pro = 0;
+            $value_inc_sli = 0;
+            foreach ($details as $d) {
+                if ($d['status_qc'] !== 'OK') continue;
+                $kd = strtoupper(trim($d['kd_gudang_ke']));
+                if ($kd === 'SLI') {
+                    $value_inc_sli += (float) $d['price_per_coil'];
+                } else {
+                    $value_inc_pro += (float) $d['price_per_coil'];
+                }
+            }
+            $value_inc_pro = round($value_inc_pro, 2);
+            $value_inc_sli = round($value_inc_sli, 2);
+        }
+
+        $total_kredit = round($value_inc_pro + $value_inc_sli, 2);
+
+        // Round nilai GL dari ROS (jaga-jaga kalau caller belum round)
+        $gl_advance_purchase     = round((float) $gl_advance_purchase, 2);
+        $gl_persediaan_intransit = round((float) $gl_persediaan_intransit, 2);
+        $gl_unbill               = round((float) $gl_unbill, 2);
+        $gl_pembulatan           = round((float) $gl_pembulatan, 2); // ★ BARU
+
         if ($total_kredit <= 0) {
-            // Tidak ada nilai yang perlu dijurnal (semua reject / nilai 0).
-            // Ini bukan kegagalan sistem, jadi tidak perlu throw — cukup log info.
             log_message('info', "Skip generate jurnal incoming {$kode_trans}: total_kredit = 0 (kemungkinan semua coil status_qc != OK).");
             return;
         }
@@ -1066,7 +1637,6 @@ class Finalize_incoming extends Admin_Controller
         $po_row   = $this->db->get_where('tr_purchase_order', ['no_po' => $no_po])->row();
         $is_lokal = ($po_row && strtolower($po_row->loi) === 'lokal');
 
-        // Lookup mapping berdasarkan tipe (action berbeda untuk lokal/import)
         $action_key = $is_lokal ? 'finalize_lokal' : 'finalize_import';
         $mapping = $this->db->get_where('ms_jurnal_mapping', [
             'menu'   => 'finalize_incoming',
@@ -1076,13 +1646,9 @@ class Finalize_incoming extends Admin_Controller
         $tipe_label = $is_lokal ? 'Lokal' : 'Import';
 
         if (!$mapping) {
-            // Template jurnal belum dikonfigurasi — block proses
             throw new Exception("Template jurnal untuk Incoming {$tipe_label} belum dibuat. Silakan konfigurasi di ms_jurnal_mapping (menu: finalize_incoming, action: {$action_key}).");
         }
 
-        // ── Validasi tambahan: pastikan header & detail template jurnal juga sudah lengkap ──
-        // (ms_jurnal_mapping hanya menyimpan pointer kode_master_jurnal;
-        //  isi template sebenarnya ada di master_oto_jurnal_header/_detail)
         $db_acc = $this->load->database('accounting', TRUE);
 
         $tpl_header = $db_acc->get_where('master_oto_jurnal_header', [
@@ -1097,11 +1663,18 @@ class Finalize_incoming extends Admin_Controller
             throw new Exception("Template jurnal '{$mapping->kode_master_jurnal}' untuk Incoming {$tipe_label} belum lengkap (header/detail belum dikonfigurasi). Silakan lengkapi di menu Master Jurnal Template.");
         }
 
-        // ── Gunakan generate_jurnal_dari_template ──
         $this->load->model('gl_interface/Gl_interface_model');
 
         $supplier      = $this->db->get_where('new_supplier', ['kode_supplier' => $id_supplier])->row();
         $supplier_name = $supplier ? $supplier->nama : '-';
+
+        $value_inc_pro_gl = (int) round($value_inc_pro, 0);
+        $value_inc_sli_gl = (int) round($value_inc_sli, 0);
+
+        $gl_advance_purchase     = (int) round($gl_advance_purchase, 0);
+        $gl_persediaan_intransit = (int) round($gl_persediaan_intransit, 0);
+        $gl_unbill               = (int) round($gl_unbill, 0);
+        $gl_pembulatan           = (int) round($gl_pembulatan, 0);
 
         $data_source = [
             'tanggal'        => date('Y-m-d'),
@@ -1110,20 +1683,22 @@ class Finalize_incoming extends Admin_Controller
             'id_supplier'    => $id_supplier,
             'nm_supplier'    => $supplier_name,
             'no_ros'         => $no_ros,
+            'kode_trans'     => $kode_trans,
             'no_request'     => $kode_trans,
             'no_doc'         => $no_po,
-            'value_inc_pro'  => $value_inc_pro,
-            'value_inc_sli'  => $value_inc_sli,
-            'gl_persediaan_intransit' => $total_kredit,
+            'value_inc_pro'  => $value_inc_pro_gl,
+            'value_inc_sli'  => $value_inc_sli_gl,
+
+            'gl_advance_purchase_from_ros'     => $gl_advance_purchase,
+            'gl_persediaan_intransit_from_ros' => $gl_persediaan_intransit,
+            'gl_unbill_from_ros'               => $gl_unbill,
+
             'loi'            => $tipe_label,
         ];
 
         $kode_jurnal = $mapping->kode_master_jurnal;
         $id_gl = $this->Gl_interface_model->generate_jurnal_dari_template($kode_jurnal, $data_source);
 
-        // Safety net: kalau meski sudah divalidasi di atas, generate_jurnal_dari_template
-        // tetap return false (misal race condition template dihapus di tengah proses),
-        // jangan biarkan finalize() melaporkan sukses.
         if ($id_gl === false) {
             throw new Exception("Gagal generate jurnal dari template '{$kode_jurnal}' untuk Incoming {$tipe_label}.");
         }

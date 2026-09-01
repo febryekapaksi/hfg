@@ -39,8 +39,14 @@ if ($is_view) {
     $id_incoming_val = $id_incoming ?? '';
     $sisa_tagihan_val = $sisa_tagihan ?? 0;
     $total_dp_rupiah_val = $total_dp_rupiah ?? 0;
-    $jumlah_rupiah_val   = 0;
-    $kurs        = 0;
+    // Local selalu IDR: kurs dikunci ke 1 dan Jumlah Invoice (IDR) langsung terisi
+    if ($tipe === 'local') {
+        $kurs = 1;
+        $jumlah_rupiah_val = $sisa_tagihan_val * 1;
+    } else {
+        $kurs = 0;
+        $jumlah_rupiah_val = 0;
+    }
     $nomor_invoice = '';
     $invoice_date = '';
     $invoice_date_real = '';
@@ -97,15 +103,16 @@ if ($is_view) {
             value="<?= number_format($total_dp_rupiah_val, 2) ?>" readonly tabindex="-1">
     </div>
 
+    <?php $is_local = ($tipe === 'local'); ?>
     <div class="col-md-6">
         <label class="form-label fw-semibold">
-            Kurs <?php if (!$is_view): ?><span class="text-danger">*</span><?php endif; ?>
+            Kurs <?php if (!$is_view && !$is_local): ?><span class="text-danger">*</span><?php endif; ?>
         </label>
         <input type="text" name="kurs" id="input_kurs_il"
-            class="form-control form-control-sm text-end <?= !$is_view ? 'auto_num' : '' ?>"
-            value="<?= $kurs > 0 ? number_format($kurs, 2) : '' ?>"
-            placeholder="<?= !$is_view ? 'Masukkan kurs' : '' ?>"
-            <?= $ro ?>>
+            class="form-control form-control-sm text-end <?= (!$is_view && !$is_local) ? 'auto_num' : 'bg-light' ?>"
+            value="<?= $is_local ? '1' : ($kurs > 0 ? number_format($kurs, 2) : '') ?>"
+            placeholder="<?= (!$is_view && !$is_local) ? 'Masukkan kurs' : '' ?>"
+            <?= ($is_view || $is_local) ? 'readonly tabindex="-1"' : '' ?>>
     </div>
 
     <div class="col-md-6">

@@ -48,13 +48,14 @@ class Purchase_order_payment extends Admin_Controller
 		$this->template->title('Receive Invoice');
 		$this->template->render('index');
 	}
-	
-	public function check_menus() {
-	    echo "<pre>";
-	    print_r($this->db->query("SHOW COLUMNS FROM payment_approve_details")->result());
-	    echo "================\n";
-	    print_r($this->db->query("SHOW COLUMNS FROM payment_approve")->result());
-	    exit;
+
+	public function check_menus()
+	{
+		echo "<pre>";
+		print_r($this->db->query("SHOW COLUMNS FROM payment_approve_details")->result());
+		echo "================\n";
+		print_r($this->db->query("SHOW COLUMNS FROM payment_approve")->result());
+		exit;
 	}
 
 	public function checkbx()
@@ -117,25 +118,26 @@ class Purchase_order_payment extends Admin_Controller
 			$this->template->render('list_import');
 		} elseif ($tipe == 'local') {
 			$this->db->select('
-				a.no_po, a.no_surat, a.id_suplier, a.tanggal, a.loi,
+				a.no_po, a.no_surat, a.id_suplier, a.loi,
 				c.nama as nm_supplier,
 				e.id as id_top, e.progress, e.nilai, e.keterangan as keterangan_top,
-				ril.id as id_receive_il, ril.status as status_receive_il,
-				rid.id as id_dp, rid.value_dp as nilai_dp,
-				pa.id_payment as no_payment
+				ih.id as id_incoming, ih.kode_trans, ih.no_ros, ih.tanggal, ih.gl_unbill_from_ros,
+				ril.id as id_receive_il, ril.nomor_invoice, ril.status as status_receive_il,
+				(SELECT COALESCE(SUM(dp.jumlah_rupiah), 0) FROM tr_receive_invoice dp WHERE dp.no_po = a.no_po AND dp.tipe = \'dp\') as total_dp_rupiah,
+				rp.id as id_request_payment, rp.status as status_request,
+				pa.no_doc as no_payment
 			');
-			$this->db->from('tr_purchase_order a');
+			$this->db->from('tr_incoming_header ih');
+			$this->db->join('tr_purchase_order a', 'a.no_po = ih.no_po');
 			$this->db->join('new_supplier c', 'c.kode_supplier = a.id_suplier', 'left');
-			$this->db->join('tr_top_po e', 'e.no_po = a.no_po');
-			$this->db->join('tr_incoming_header ih', 'ih.no_po = a.no_po');
-			$this->db->join('tr_receive_invoice ril', "ril.id_top = e.id AND ril.tipe = 'local'", 'left');
-			$this->db->join('tr_receive_invoice rid', "rid.no_po = a.no_po AND rid.tipe = 'dp'", 'left');
-			$this->db->join('payment_approve pa', 'pa.no_doc = ril.id', 'left');
+			$this->db->join('tr_top_po e', 'e.no_po = a.no_po AND e.group_top = 101', 'left');
+			$this->db->join('tr_receive_invoice ril', "ril.id_incoming = ih.kode_trans AND ril.tipe = 'local'", 'left');
+			$this->db->join('request_payment rp', "rp.no_doc = ril.id AND rp.tipe = 'invoice_local'", 'left');
+			$this->db->join('payment_approve pa', "pa.id_payment = ril.no_po AND pa.tipe = 'invoice_local'", 'left');
 			$this->db->where('a.loi', 'Lokal');
-			$this->db->where('e.group_top', 101);
 			$this->db->where('ih.status', 'finalized');
-			$this->db->group_by('e.id');
-			$this->db->order_by('a.created_on', 'desc');
+			$this->db->group_by('ih.id');
+			$this->db->order_by('ih.created_at', 'desc');
 			$list_po = $this->db->get()->result_array();
 
 			$this->template->set('list_po', $list_po);
@@ -212,11 +214,12 @@ class Purchase_order_payment extends Admin_Controller
 
 	public function form_il()
 	{
-		$id_top = $this->input->post('id_top');
-		$no_po  = $this->input->post('no_po');
-		$tipe   = $this->input->post('tipe');   // 'import' atau 'dp'
-		$id_dp  = $this->input->post('id_dp');  // nullable
-		$id_ros = $this->input->post('id_ros'); // ID ROS untuk import
+		$id_top      = $this->input->post('id_top');
+		$no_po       = $this->input->post('no_po');
+		$tipe        = $this->input->post('tipe');        // 'import', 'local', atau 'dp'
+		$id_dp       = $this->input->post('id_dp');       // nullable
+		$id_ros      = $this->input->post('id_ros');      // ID ROS untuk import
+		$id_incoming = $this->input->post('id_incoming'); // kode_trans incoming untuk local
 
 		if (empty($no_po) || empty($tipe)) {
 			echo "<div class='alert alert-warning'>Data tidak valid.</div>";
@@ -246,7 +249,18 @@ class Purchase_order_payment extends Admin_Controller
 			$data_ros = $this->db->get_where('tr_ros_header', ['id' => $id_ros])->row_array();
 		}
 
-		$sisa_tagihan = (float)($data_ros['gl_unbill_kurs'] ?? 0);
+		// Data incoming header untuk local
+		$data_incoming = null;
+		if ($tipe === 'local' && !empty($id_incoming)) {
+			$data_incoming = $this->db->get_where('tr_incoming_header', ['kode_trans' => $id_incoming])->row_array();
+		}
+
+		// Sisa tagihan: import dari ROS (gl_unbill_kurs), local dari incoming (gl_unbill_from_ros)
+		if ($tipe === 'local') {
+			$sisa_tagihan = (float)($data_incoming['gl_unbill_from_ros'] ?? 0);
+		} else {
+			$sisa_tagihan = (float)($data_ros['gl_unbill_kurs'] ?? 0);
+		}
 
 		// Persentase DP diambil dari tr_top_po.progress
 		$persen_dp = (float)($data_top['progress'] ?? 0);
@@ -272,6 +286,7 @@ class Purchase_order_payment extends Admin_Controller
 		$this->template->set('id_top',          $id_top);
 		$this->template->set('id_dp',           $id_dp);
 		$this->template->set('id_ros',          $id_ros);
+		$this->template->set('id_incoming',     $id_incoming);
 		$this->template->set('sisa_tagihan',    $sisa_tagihan);
 		$this->template->set('persen_dp',       $persen_dp);
 		$this->template->set('total_dp_rupiah', $total_dp_rupiah);
@@ -592,15 +607,18 @@ class Purchase_order_payment extends Admin_Controller
 		$no_po    = $this->input->post('no_po');
 		$no_surat = $this->input->post('no_surat');
 		$id_dp    = $this->input->post('id_dp') ?: null;
+		$id_incoming = $this->input->post('id_incoming') ?: null;
 
-		// Cek duplikat
-		$cek = $this->db->get_where('tr_receive_invoice', [
-			'id_top' => $id_top,
-			'tipe'   => 'local'
-		])->row();
-		if ($cek) {
-			echo json_encode(['status' => 0, 'message' => 'Invoice Local untuk PO ini sudah pernah dibuat.']);
-			return;
+		// Cek duplikat per incoming
+		if (!empty($id_incoming)) {
+			$cek = $this->db->get_where('tr_receive_invoice', [
+				'id_incoming' => $id_incoming,
+				'tipe'        => 'local'
+			])->row();
+			if ($cek) {
+				echo json_encode(['status' => 0, 'message' => 'Invoice Local untuk Incoming ini sudah pernah dibuat.']);
+				return;
+			}
 		}
 
 		// Validasi kurs
@@ -617,14 +635,23 @@ class Purchase_order_payment extends Admin_Controller
 		$file_invoice = null;
 		if (!empty($_FILES['upload_invoice']['name'])) {
 			$upload_path = FCPATH . 'uploads/invoice_il/';
-			if (!is_dir($upload_path)) mkdir($upload_path, 0755, true);
 
-			$this->load->library('upload', [
+			if (!is_dir($upload_path)) {
+				mkdir($upload_path, 0777, true);
+			}
+
+			$config = [
 				'upload_path'   => $upload_path,
 				'allowed_types' => 'pdf|jpg|jpeg|png',
 				'max_size'      => 5120,
 				'file_name'     => 'inv_local_' . $id_top . '_' . time()
-			]);
+			];
+
+			// FIX: selalu load lalu selalu initialize, sama seperti save_import().
+			// load->library() no-op kalau sudah pernah di-load (misal via autoload),
+			// tapi initialize() memaksa config (termasuk upload_path) ter-set ulang.
+			$this->load->library('upload', $config);
+			$this->upload->initialize($config);
 
 			if ($this->upload->do_upload('upload_invoice')) {
 				$file_invoice = $this->upload->data('file_name');
@@ -640,6 +667,19 @@ class Purchase_order_payment extends Admin_Controller
 
 		$sisa_nilai = $clean($this->input->post('sisa_nilai'));
 		$jumlah_rupiah = $sisa_nilai * $kurs;
+		$gl_hutang_dagang = round($jumlah_rupiah);
+
+		// Hitung unbill dan selisih kurs dari incoming header (gl_unbill_from_ros)
+		$nominal_unbill = 0;
+		$selisih = 0;
+
+		if (!empty($id_incoming)) {
+			$incoming_header = $this->db->get_where('tr_incoming_header', ['kode_trans' => $id_incoming])->row();
+			if ($incoming_header) {
+				$nominal_unbill = (float) $incoming_header->gl_unbill_from_ros;
+				$selisih = $gl_hutang_dagang - round($nominal_unbill);
+			}
+		}
 
 		// Ambil tipe_top (group_top) dari tr_top_po
 		$top_row  = $this->db->get_where('tr_top_po', ['id' => $id_top])->row_array();
@@ -651,13 +691,17 @@ class Purchase_order_payment extends Admin_Controller
 			'id_top'               => $id_top,
 			'tipe_top'             => $tipe_top,
 			'tipe'                 => 'local',
-			'id_incoming'          => $this->input->post('id_incoming') ?: null,
+			'id_incoming'          => $id_incoming,
 			'nomor_invoice'        => $this->input->post('nomor_invoice'),
 			'invoice_date'         => $this->input->post('invoice_date'),
 			'invoice_date_real'    => $this->input->post('invoice_date_real') ?: null,
 			'nilai_invoice'        => $sisa_nilai,
 			'nilai_ppn'            => $clean($this->input->post('nilai_ppn')),
 			'jumlah_rupiah'        => $jumlah_rupiah,
+			'value_ros_by_po'      => $nominal_unbill,
+			'gl_unbill'            => $nominal_unbill,
+			'gl_selisih'           => $selisih,
+			'gl_hutang_dagang'     => $gl_hutang_dagang,
 			'currency'             => $currency,
 			'kurs'                 => $kurs,
 			'nomor_faktur_pajak'   => $this->input->post('nomor_faktur_pajak') ?: null,
@@ -674,8 +718,26 @@ class Purchase_order_payment extends Admin_Controller
 		$this->db->insert('tr_receive_invoice', $data_insert);
 
 		if ($this->db->affected_rows() > 0) {
+			$id_receive = $this->db->insert_id();
+
+			try {
+				$this->load->model('gl_interface/Gl_interface_model');
+				$data_source = $data_insert;
+				$data_source['tanggal'] = date('Y-m-d');
+				$data_source['id'] = $id_receive;
+				$mapping = $this->db->get_where('ms_jurnal_mapping', ['menu' => 'Purchase Order Payment', 'action' => 'save_local'])->row();
+				$kode_jurnal = $mapping ? $mapping->kode_master_jurnal : 'JV009'; // fallback
+				$this->Gl_interface_model->generate_jurnal_dari_template($kode_jurnal, $data_source);
+			} catch (Exception $e) {
+				log_message('error', 'Generate jurnal invoice local failed: ' . $e->getMessage());
+			}
+
+			if (ob_get_length()) ob_clean();
+			header('Content-Type: application/json');
 			echo json_encode(['status' => 1, 'message' => 'Invoice Local berhasil disimpan.']);
 		} else {
+			if (ob_get_length()) ob_clean();
+			header('Content-Type: application/json');
 			echo json_encode(['status' => 0, 'message' => 'Gagal menyimpan data.']);
 		}
 	}
@@ -749,6 +811,7 @@ class Purchase_order_payment extends Admin_Controller
             s.nama as nm_supplier,
             e.progress, e.nilai, e.keterangan as keterangan_top,
             rh.gl_advance_purchase as total_dp_rupiah_val,
+            ih.gl_unbill_from_ros as incoming_unbill, ih.no_ros as incoming_no_ros,
             pa.no_doc as no_payment, r.status as status_payment, pa.id_payment
         ')
 			->from('tr_receive_invoice r')
@@ -756,6 +819,7 @@ class Purchase_order_payment extends Admin_Controller
 			->join('new_supplier s', 's.kode_supplier = p.id_suplier', 'left')
 			->join('tr_top_po e', 'e.id = r.id_top', 'left')
 			->join('tr_ros_header rh', 'rh.id = r.id_ros', 'left')
+			->join('tr_incoming_header ih', 'ih.kode_trans = r.id_incoming', 'left')
 			->join('payment_approve pa', "pa.id_payment = r.no_po AND pa.tipe = CONCAT('invoice_', r.tipe)", 'left')
 			->where('r.id', $id)
 			->get()
@@ -841,29 +905,27 @@ class Purchase_order_payment extends Admin_Controller
 		$kode_supplier = $this->input->post('kode_supplier');
 
 		$this->db->select('
-        a.no_po, a.no_surat, a.id_suplier, a.tanggal, a.loi,
+        a.no_po, a.no_surat, a.id_suplier, a.loi,
         c.nama as nm_supplier,
         e.id as id_top, e.progress, e.nilai, e.keterangan as keterangan_top,
-        ril.id as id_receive_il,
-        ril.nomor_invoice,
-        rid.id as id_dp, rid.value_dp as nilai_dp,
+        ih.id as id_incoming, ih.kode_trans, ih.no_ros, ih.tanggal, ih.gl_unbill_from_ros,
+        ril.id as id_receive_il, ril.nomor_invoice, ril.status as status_receive_il,
+        (SELECT COALESCE(SUM(dp.jumlah_rupiah), 0) FROM tr_receive_invoice dp WHERE dp.no_po = a.no_po AND dp.tipe = \'dp\') as total_dp_rupiah,
         rp.id as id_request_payment, rp.status as status_request,
-        pa.id_payment as no_payment
+        pa.no_doc as no_payment
     ');
-		$this->db->from('tr_purchase_order a');
+		$this->db->from('tr_incoming_header ih');
+		$this->db->join('tr_purchase_order a', 'a.no_po = ih.no_po');
 		$this->db->join('new_supplier c', 'c.kode_supplier = a.id_suplier', 'left');
-		$this->db->join('tr_top_po e', 'e.no_po = a.no_po');
-		$this->db->join('tr_incoming_header ih', 'ih.no_po = a.no_po');
-		$this->db->join('tr_receive_invoice ril', "ril.id_top = e.id AND ril.tipe = 'local'", 'left');
-		$this->db->join('tr_receive_invoice rid', "rid.no_po = a.no_po AND rid.tipe = 'dp'", 'left');
+		$this->db->join('tr_top_po e', 'e.no_po = a.no_po AND e.group_top = 101', 'left');
+		$this->db->join('tr_receive_invoice ril', "ril.id_incoming = ih.kode_trans AND ril.tipe = 'local'", 'left');
 		$this->db->join('request_payment rp', "rp.no_doc = ril.id AND rp.tipe = 'invoice_local'", 'left');
-		$this->db->join('payment_approve pa', 'pa.no_doc = ril.id', 'left');
+		$this->db->join('payment_approve pa', "pa.id_payment = ril.no_po AND pa.tipe = 'invoice_local'", 'left');
 		$this->db->where('a.loi', 'Lokal');
-		$this->db->where('e.group_top', 101);
 		$this->db->where('ih.status', 'finalized');
 		$this->db->where('a.id_suplier', $kode_supplier);
-		$this->db->group_by('e.id');
-		$this->db->order_by('a.created_on', 'desc');
+		$this->db->group_by('ih.id');
+		$this->db->order_by('ih.created_at', 'desc');
 		$list_po = $this->db->get()->result_array();
 
 		$this->template->set('list_po', $list_po);
@@ -3139,11 +3201,11 @@ class Purchase_order_payment extends Admin_Controller
 			'no_doc' => $data['no_po'],
 			'tipe'   => $tipe_rp
 		];
-		
+
 		if ($tipe === 'import' && !empty($data['id_ros'])) {
 			$cek_rp_cond['id_ros'] = $data['id_ros'];
 		}
-		
+
 		$cek_rp = $this->db->get_where('request_payment', $cek_rp_cond)->row();
 		if ($cek_rp) {
 			echo json_encode(['status' => 0, 'message' => 'Request payment untuk invoice ini sudah pernah dibuat.']);

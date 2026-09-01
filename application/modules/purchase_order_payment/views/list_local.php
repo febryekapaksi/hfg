@@ -34,19 +34,20 @@ $url_search = 'search_local';
                 <tr>
                     <th class="text-center">No</th>
                     <th class="text-center">No. PO</th>
+                    <th class="text-center">No. Incoming</th>
                     <th class="text-center">No. Invoice</th>
                     <th class="text-center">No. Payment</th>
                     <th class="text-center">Nama Supplier</th>
-                    <th class="text-center">Tanggal PO</th>
-                    <th class="text-center">DP Sebelumnya</th>
-                    <th class="text-center">Keterangan</th>
+                    <th class="text-center">Tanggal Incoming</th>
+                    <th class="text-center">DP Sebelumnya (IDR)</th>
                     <th class="text-center">Status</th>
                     <th class="text-center">Action</th>
                 </tr>
             </thead>
             <tbody>
-                <?php $no = 1; foreach ($list_po as $item): ?>
-                <?php
+                <?php $no = 1;
+                foreach ($list_po as $item): ?>
+                    <?php
                     if (empty($item['id_receive_il'])) {
                         $badge = '<span class="badge bg-secondary">Belum Receive</span>';
                     } else {
@@ -62,44 +63,59 @@ $url_search = 'search_local';
                         }
                     }
 
-                    $dp_info = !empty($item['id_dp'])
-                        ? '<span class="badge bg-info text-dark">Ada DP: ' . number_format($item['nilai_dp'], 2) . '</span>'
-                        : '<span class="badge bg-light text-dark">Tidak Ada DP</span>';
+                    $dp_info = ((float)($item['total_dp_rupiah'] ?? 0) > 0)
+                        ? '<span class="badge bg-info text-dark">Rp ' . number_format($item['total_dp_rupiah'], 0) . '</span>'
+                        : '<span class="badge bg-light text-dark border">Tidak Ada DP</span>';
+
+                    $buttons = '';
 
                     if (empty($item['id_receive_il'])) {
-                        $action_btn = '
-                            <button type="button"
-                                class="btn btn-sm btn-primary btn-req-il"
-                                data-id_top="' . $item['id_top'] . '"
-                                data-no_po="'  . $item['no_po']  . '"
-                                data-tipe="'   . $tipe_btn       . '"
-                                data-id_dp="'  . ($item['id_dp'] ?? '') . '"
-                                title="Receive Invoice">
-                                <i class="fa fa-plus"></i>
-                            </button>';
+                        $buttons .= '
+                <button type="button"
+                    class="btn btn-sm btn-primary btn-req-il"
+                    data-id_top="' . ($item['id_top'] ?? '') . '"
+                    data-no_po="'  . $item['no_po']  . '"
+                    data-tipe="'   . $tipe_btn       . '"
+                    data-id_dp=""
+                    data-id_incoming="' . ($item['kode_trans'] ?? '') . '"
+                    title="Receive Invoice Local">
+                    <i class="fa fa-plus"></i>
+                </button>';
                     } else {
-                        $action_btn = '
-                            <button type="button"
-                                class="btn btn-sm btn-info btn-view-il"
-                                data-id="'   . $item['id_receive_il'] . '"
-                                data-tipe="' . $tipe_btn              . '"
-                                title="Lihat Invoice">
-                                <i class="fa fa-eye"></i>
+                        $buttons .= '
+                <button type="button"
+                    class="btn btn-sm btn-info btn-view-il text-white"
+                    data-id="'   . $item['id_receive_il'] . '"
+                    data-tipe="' . $tipe_btn              . '"
+                    title="Lihat Invoice">
+                    <i class="fa fa-eye"></i>
+                </button>';
+
+                        if ($status_enum === 'draft') {
+                            $buttons .= '
+                            <button type="button" class="btn btn-sm btn-warning btn-req-payment"
+                                data-id_receive="' . $item['id_receive_il'] . '"
+                                data-tipe="local"
+                                title="Request Payment">
+                                <i class="fa fa-paper-plane"></i>
                             </button>';
+                        }
                     }
-                ?>
-                <tr>
-                    <td class="text-center"><?= $no++ ?></td>
-                    <td class="text-center"><?= $item['no_surat'] ?></td>
-                    <td class="text-center"><?= $item['nomor_invoice'] ?? '-' ?></td>
-                    <td class="text-center"><?= $item['no_payment'] ?? '-' ?></td>
-                    <td><?= $item['nm_supplier'] ?></td>
-                    <td class="text-center"><?= date('d F Y', strtotime($item['tanggal'])) ?></td>
-                    <td class="text-center"><?= $dp_info ?></td>
-                    <td><?= $item['keterangan_top'] ?? '-' ?></td>
-                    <td class="text-center"><?= $badge ?></td>
-                    <td class="text-center"><?= $action_btn ?></td>
-                </tr>
+
+                    $action_btn = '<div class="d-inline-flex align-items-center justify-content-center gap-2">' . $buttons . '</div>';
+                    ?>
+                    <tr>
+                        <td class="text-center align-middle"><?= $no++ ?></td>
+                        <td class="text-center align-middle"><?= $item['no_surat'] ?></td>
+                        <td class="text-center align-middle"><?= $item['kode_trans'] ?? '-' ?></td>
+                        <td class="text-center align-middle"><?= $item['nomor_invoice'] ?? '-' ?></td>
+                        <td class="text-center align-middle"><?= $item['no_payment'] ?? '-' ?></td>
+                        <td class="align-middle"><?= $item['nm_supplier'] ?></td>
+                        <td class="text-center align-middle"><?= !empty($item['tanggal']) ? date('d F Y', strtotime($item['tanggal'])) : '-' ?></td>
+                        <td class="text-center align-middle"><?= $dp_info ?></td>
+                        <td class="text-center align-middle"><?= $badge ?></td>
+                        <td class="text-center align-middle"><?= $action_btn ?></td>
+                    </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
@@ -111,5 +127,56 @@ $url_search = 'search_local';
     $(document).ready(function() {
         $('.<?= $cls_table ?>').DataTable();
         $('#<?= $id_select ?>').chosen();
+
+        // Bind handler for request payment
+        $(document).off('click', '.btn-req-payment').on('click', '.btn-req-payment', function() {
+            var id_receive = $(this).data('id_receive');
+            var tipe = $(this).data('tipe'); // 'dp', 'import', atau 'local'
+
+            Swal.fire({
+                title: 'Request Payment',
+                text: 'Ajukan request payment untuk invoice ini?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Ajukan',
+                cancelButtonText: 'Batal'
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: 'POST',
+                        url: siteurl + active_controller + 'req_payment_dp', // controller yg sama handle semua tipe
+                        data: {
+                            id_receive: id_receive,
+                            tipe: tipe
+                        },
+                        cache: false,
+                        success: function(res) {
+                            var response = typeof res === 'string' ? JSON.parse(res) : res;
+                            if (response.status == 1) {
+                                Swal.fire({
+                                    title: 'Berhasil!',
+                                    text: response.message,
+                                    icon: 'success',
+                                    timer: 1500,
+                                    showConfirmButton: false,
+                                }).then(function() {
+                                    var supplier = $('#<?= $id_select ?>').val();
+                                    if (supplier) {
+                                        $('.btn-search-il').trigger('click');
+                                    } else {
+                                        location.reload();
+                                    }
+                                });
+                            } else {
+                                Swal.fire('Gagal', response.message, 'error');
+                            }
+                        },
+                        error: function() {
+                            Swal.fire('Error!', 'Please try again later!', 'error');
+                        }
+                    });
+                }
+            });
+        });
     });
 </script>

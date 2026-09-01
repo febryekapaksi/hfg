@@ -252,7 +252,8 @@ $ENABLE_DELETE  = has_permission('Purchase_Order.Delete');
                 no_po: $(this).data('no_po'),
                 tipe: tipe,
                 id_dp: $(this).data('id_dp'),
-                id_ros: $(this).data('id_ros')
+                id_ros: $(this).data('id_ros'),
+                id_incoming: $(this).data('id_incoming')
             },
             cache: false,
             success: function(result) {

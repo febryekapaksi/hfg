@@ -1271,6 +1271,273 @@ class Pembayaran_material extends Admin_Controller
 	}
 
 	/**
+	 * Save Payment untuk tipe Invoice Local
+	 * Logika penyimpanan identik dengan save_payment_po,
+	 * hanya kode jurnal yang berbeda (BUK003).
+	 */
+	public function save_payment_local()
+	{
+		// Mulai buffer baru — supaya semua Notice/Warning/Deprecated yang mungkin
+		// muncul di tengah proses TERTANGKAP di buffer ini, bukan langsung ke output.
+		ob_start();
+
+		$post = $this->input->post();
+
+		$this->db->trans_begin();
+
+		try {
+			// id_payment dari form = ID request_payment (bisa lebih dari 1, dipisah koma)
+			$id_req_arr = [];
+			$raw_ids = explode(',', $post['id_payment']);
+			foreach ($raw_ids as $rid) {
+				$rid = trim($rid);
+				if (!empty($rid) && is_numeric($rid)) {
+					$id_req_arr[] = $rid;
+				}
+			}
+			// Fallback: ambil dari dt[n][id_payment]
+			if (empty($id_req_arr) && !empty($post['dt'])) {
+				foreach ($post['dt'] as $dt_item) {
+					if (!empty($dt_item['id_payment'])) {
+						$id_req_arr[] = $dt_item['id_payment'];
+					}
+				}
+			}
+			if (empty($id_req_arr)) {
+				throw new Exception('Data request payment tidak ditemukan.');
+			}
+
+			// Ambil data request_payment untuk referensi
+			$req_payment_rows = $this->db->where_in('id', $id_req_arr)->get('request_payment')->result();
+			if (empty($req_payment_rows)) {
+				throw new Exception('Data request payment tidak valid.');
+			}
+			$first_req = $req_payment_rows[0];
+			$tipe_payment = $first_req->tipe; // invoice_local
+
+			$tgl_bayar      = $post['tgl_bayar'];
+			$bank_coa       = $post['bank'];
+			$mata_uang      = $post['mata_uang'];
+			$kurs           = (float)str_replace(',', '', $post['kurs_payment'] ?? '1');
+			if ($kurs <= 0) $kurs = 1;
+			$payment_bank   = (float)str_replace(',', '', $post['payment_bank'] ?? '0'); // Nilai Bank (foreign currency)
+			$bank_charge    = (float)str_replace(',', '', $post['bank_charge'] ?? '0');
+			$keterangan     = $post['keterangan_pembayaran'] ?? '';
+			$id_supplier    = $post['supplier_input'] ?? '';
+			$nm_supplier    = $post['nm_supplier_input'] ?? '';
+
+			// Nilai Bank IDR = Nilai Bank × Kurs Payment
+			$nilai_bank_idr = $payment_bank * $kurs;
+
+			// Generate no_doc (ID payment_approve) dengan format BK-
+			$db_acc = $this->load->database('accounting', TRUE);
+			$kode_bank = '';
+			$no_doc_payment = $this->Pembayaran_material_model->generate_id_payment_paid($kode_bank, $tgl_bayar);
+
+			// Hitung total_pph, total_ppn, dan subtotal dari detail
+			$total_pph = 0;
+			$total_ppn = 0;
+			$subtotal = 0;
+			$tipe_pph_val = '';
+
+			if (!empty($post['dt'])) {
+				foreach ($post['dt'] as $detail) {
+					$det_pph = (float)str_replace(',', '', $detail['nilai_pph'] ?? '0');
+					$det_ppn = (float)str_replace(',', '', $detail['nilai_ppn'] ?? '0');
+
+					// Subtotal per baris = jumlah asli PO (dt[n][jumlah]) x kurs form
+					$det_jumlah_asli = (float)str_replace(',', '', $detail['jumlah'] ?? '0');
+					$det_jumlah_idr  = $det_jumlah_asli * $kurs;
+
+					$total_pph += $det_pph;
+					$total_ppn += $det_ppn;
+					$subtotal += $det_jumlah_idr;
+
+					if (!empty($detail['tipe_pph'])) {
+						$tipe_pph_val = ($detail['tipe_pph'] == 1) ? 'PPH 23' : 'PPH 22';
+					}
+				}
+			}
+
+			// Grand Total Payment = Subtotal + PPN - PPH + Bank Charge
+			$grand_total = $subtotal + $total_ppn - $total_pph + $bank_charge;
+
+			// Selisih Kurs: berdasarkan kurs_receive_invoice vs kurs_payment
+			$selisih_kurs_idr = 0;
+			$nominal_kurs_receive = 0; // jumlah_rupiah dari tr_receive_invoice (nilai IDR saat receive)
+			if (!empty($post['dt'])) {
+				foreach ($post['dt'] as $detail) {
+					$id_ri = $detail['ids'] ?? '';
+
+					if (!empty($id_ri)) {
+						$ri = $this->db->get_where('tr_receive_invoice', ['id' => $id_ri])->row();
+						if ($ri) {
+							$nominal_kurs_receive += (float)($ri->jumlah_rupiah ?? 0);
+						}
+					}
+				}
+				// Selisih Kurs = Nilai Bank IDR - Nominal dari tr_receive_invoice
+				$selisih_kurs_idr = $nilai_bank_idr - $nominal_kurs_receive;
+			}
+
+			// Nama COA Bank
+			$nm_coa_bank = '';
+			$row_bank = $db_acc->get_where('coa_master', ['no_perkiraan' => $bank_coa])->row();
+			if (!empty($row_bank)) $nm_coa_bank = $row_bank->nama;
+
+			// id_payment = no_doc dari request_payment (referensi ke PO)
+			$id_payment_val = $first_req->no_doc;
+
+			// INSERT ke payment_approve (header)
+			// NB: 'link_doc' di header TIDAK dipakai lagi — lampiran sekarang
+			// per baris PO, disimpan di payment_approve_details.link_doc
+			$this->db->insert('payment_approve', [
+				'no_doc'                => $no_doc_payment,
+				'tipe'                  => $tipe_payment,
+				'tgl_bayar'             => $tgl_bayar,
+				'tgl_doc'               => $tgl_bayar,
+				'pay_by'                => $this->auth->user_name(),
+				'pay_on'                => date('Y-m-d H:i:s'),
+				'created_by'            => $this->auth->user_name(),
+				'created_on'            => date('Y-m-d H:i:s'),
+				'supplier'              => $id_supplier,
+				'keterangan_pembayaran' => $keterangan,
+				'coa_bank'              => $bank_coa,
+				'nm_coa_bank'           => $nm_coa_bank,
+				'mata_uang'             => $mata_uang,
+				'currency'              => $mata_uang,
+				'kurs_payment'          => $kurs,
+				'payment_bank'          => $payment_bank,
+				'total_payment'         => $subtotal,
+				'total_pph'             => $total_pph,
+				'total_ppn'             => $total_ppn,
+				'grand_total_payment'   => $grand_total,
+				'tipe_pph'              => $tipe_pph_val,
+				'id_supplier'           => $id_supplier,
+				'nm_supplier'           => $nm_supplier,
+				'link_doc'              => '',
+				'bank_charge'           => $bank_charge,
+				'nominal_asli'          => $payment_bank,
+				'nominal_asli_idr'      => $nilai_bank_idr,
+				'tagihan_idr'           => $nominal_kurs_receive,
+				'dibayar_idr'           => (int)round($nilai_bank_idr),
+				'selisih_kurs_idr'      => $selisih_kurs_idr,
+				'selisih'               => 0,
+				'id_payment'            => $id_payment_val,
+				'gl_hutang_dagang'      => (int)round($nominal_kurs_receive),
+				'gl_selisih_kurs'       => (int)round($selisih_kurs_idr),
+			]);
+
+			// INSERT payment_approve_details per PO
+			if (!empty($post['dt'])) {
+				$total_bayar_kurs = $payment_bank; // sudah di-parse dari $post['payment_bank'] di atas
+				$total_bayar_idr  = (float)str_replace(',', '', $post['nilai_bank_idr'] ?? '0');
+
+				foreach ($post['dt'] as $detail) {
+					$det_ppn = (float)str_replace(',', '', $detail['nilai_ppn'] ?? '0');
+					$det_pph = (float)str_replace(',', '', $detail['nilai_pph'] ?? '0');
+					$det_kurs_invoice = (float)str_replace(',', '', $detail['kurs_invoice'] ?? '0');
+
+					// Ambil nilai_invoice & jumlah_rupiah dari tr_receive_invoice
+					$id_ri = $detail['ids'] ?? '';
+					$nilai_invoice_kurs = 0;
+					$nilai_invoice_idr  = 0;
+					if (!empty($id_ri)) {
+						$ri = $this->db->get_where('tr_receive_invoice', ['id' => $id_ri])->row();
+						if ($ri) {
+							$nilai_invoice_kurs = $ri->nilai_invoice ?? 0;
+							$nilai_invoice_idr  = $ri->jumlah_rupiah ?? 0;
+						}
+					}
+
+					// BARU: upload lampiran per baris (opsional), key = id_payment baris ini
+					$file_upload_row = $this->upload_doc_per_row($detail['id_payment'] ?? '');
+
+					$this->db->insert('payment_approve_details', [
+						'payment_id'         => $no_doc_payment,
+						'no_doc'             => $detail['no_surat'] ?? '',
+						'no_po'              => $detail['no_doc'] ?? '',
+						'deskripsi'          => 'Payment ' . ($detail['no_surat'] ?? $detail['no_doc'] ?? ''),
+
+						'nilai_invoice_kurs' => $nilai_invoice_kurs,
+						'nilai_invoice_idr'  => $nilai_invoice_idr,
+						'total_bayar_kurs'   => $total_bayar_kurs,
+						'total_bayar_idr'    => $total_bayar_idr,
+
+						'total'              => $nilai_invoice_idr,
+						'nilai_invoice'      => $nilai_invoice_idr,
+
+						'nilai_ppn'          => $det_ppn,
+						'nilai_pph'          => $det_pph,
+						'tipe_pph'           => (($detail['tipe_pph'] ?? null) == 1) ? 'PPH 23' : 'PPH 22',
+						'kurs_invoice'       => $det_kurs_invoice,
+						'id_receive_invoice' => $detail['ids'] ?? null,
+						'currency'           => $mata_uang,
+						'file_original_name' => $file_upload_row['file_original_name'],
+						'file_hash_name'     => $file_upload_row['file_hash_name'],
+						'created_by'         => $this->auth->user_name(),
+						'created_on'         => date('Y-m-d H:i:s'),
+					]);
+				}
+			}
+
+			// Update status tr_receive_invoice menjadi 'payment'
+			if (!empty($post['dt'])) {
+				foreach ($post['dt'] as $detail) {
+					if (!empty($detail['ids'])) {
+						$this->db->update('tr_receive_invoice', ['status' => 'payment'], ['id' => $detail['ids']]);
+					}
+				}
+			}
+
+			$this->db->where_in('id', $id_req_arr);
+			$this->db->update('request_payment', ['status' => 'finish']);
+
+			// Hapus tr_choosed_payment untuk item yang sudah diproses
+			$this->db->where('id_user', $this->auth->user_id());
+			$this->db->where_in('id_payment', $id_req_arr);
+			$this->db->delete('tr_choosed_payment');
+
+			$row_lengkap = $this->db->get_where('payment_approve', ['no_doc' => $no_doc_payment])->row_array();
+
+			if (empty($row_lengkap)) {
+				throw new Exception('Gagal mengambil data payment_approve yang baru disimpan (no_doc: ' . $no_doc_payment . ').');
+			}
+
+			$this->load->model('gl_interface/Gl_interface_model');
+
+			// Invoice Local menggunakan template jurnal BUK003
+			$mapping = $this->db->get_where('ms_jurnal_mapping', ['menu' => 'Pembayaran Material', 'action' => 'save_payment_local'])->row();
+			$kode_jurnal = $mapping ? $mapping->kode_master_jurnal : 'BUK003'; // fallback
+			$id_gl = $this->Gl_interface_model->generate_jurnal_dari_template($kode_jurnal, $row_lengkap);
+
+			if ($id_gl === false) {
+				throw new Exception('Gagal generate jurnal: template ' . $kode_jurnal . ' tidak ditemukan/kosong');
+			}
+
+			$this->db->trans_commit();
+
+			ob_end_clean();
+			header('Content-Type: application/json');
+			echo json_encode([
+				'status' => 1,
+				'pesan'  => 'Payment berhasil disimpan.'
+			]);
+			exit;
+		} catch (Exception $e) {
+			$this->db->trans_rollback();
+
+			ob_end_clean();
+			header('Content-Type: application/json');
+			echo json_encode([
+				'status' => 0,
+				'pesan'  => 'Gagal: ' . $e->getMessage()
+			]);
+			exit;
+		}
+	}
+
+	/**
 	 * Save Payment untuk tipe Invoice Import
 	 * - Insert ke tr_payment_paid
 	 * - Update payment_approve (status=2)

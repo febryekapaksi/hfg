@@ -442,12 +442,12 @@ $list_po_data = isset($list_po) ? $list_po : [];
                             <th class="text-center" width="8%">Unit Price (U$)</th>
                             <th class="text-center" width="8%">Total Value (U$)</th>
                             <th class="text-center" style="min-width:120px">Total Value (Rp)</th>
-                            <th class="text-center" width="5%">BM %</th>
-                            <th class="text-center" style="min-width:110px">BM (Rp)</th>
-                            <th class="text-center" style="min-width:110px">Prorate LS</th>
-                            <th class="text-center" style="min-width:110px">Forwarding Cost</th>
-                            <th class="text-center" style="min-width:110px">Pro Rate Insurance</th>
-                            <th class="text-center" style="min-width:110px">Pro Rate Other Costs</th>
+                            <th class="text-center col-bm" width="5%">BM %</th>
+                            <th class="text-center col-bm" style="min-width:110px">BM (Rp)</th>
+                            <th class="text-center col-ls" style="min-width:110px">Prorate LS</th>
+                            <th class="text-center col-forwarding" style="min-width:110px">Forwarding Cost</th>
+                            <th class="text-center col-insurance" style="min-width:110px">Pro Rate Insurance</th>
+                            <th class="text-center col-others" style="min-width:110px">Pro Rate Other Costs</th>
                             <th class="text-center" style="min-width:130px">Total Inventory Value</th>
                             <th class="text-center" style="min-width:100px">Cost Book</th>
                         </tr>
@@ -466,12 +466,12 @@ $list_po_data = isset($list_po) ? $list_po : [];
                             <td></td>
                             <td class="text-end" id="sum_total_value_usd">0</td>
                             <td class="text-end" id="sum_total_value_rp">0</td>
-                            <td></td>
-                            <td class="text-end" id="sum_bm_rp">0</td>
-                            <td class="text-end" id="sum_prorate_ls">0</td>
-                            <td class="text-end" id="sum_forwarding">0</td>
-                            <td class="text-end" id="sum_insurance">0</td>
-                            <td class="text-end" id="sum_others">0</td>
+                            <td class="col-bm"></td>
+                            <td class="text-end col-bm" id="sum_bm_rp">0</td>
+                            <td class="text-end col-ls" id="sum_prorate_ls">0</td>
+                            <td class="text-end col-forwarding" id="sum_forwarding">0</td>
+                            <td class="text-end col-insurance" id="sum_insurance">0</td>
+                            <td class="text-end col-others" id="sum_others">0</td>
                             <td class="text-end" id="sum_total_inventory">0</td>
                             <td></td>
                         </tr>
@@ -479,24 +479,24 @@ $list_po_data = isset($list_po) ? $list_po : [];
                             <td colspan="5" class="text-end">PIB Value (Rp)</td>
                             <td class="text-end" id="foot_nilai_pib_usd">-</td>
                             <td class="text-end" id="foot_nilai_pib_rp">0</td>
-                            <td></td>
-                            <td class="text-end" id="foot_bm_pib">0</td>
-                            <td class="text-end" id="foot_ls_pib">0</td>
-                            <td></td>
-                            <td class="text-end" id="foot_insurance_pib">0</td>
-                            <td class="text-end" id="foot_others_pib">0</td>
+                            <td class="col-bm"></td>
+                            <td class="text-end col-bm" id="foot_bm_pib">0</td>
+                            <td class="text-end col-ls" id="foot_ls_pib">0</td>
+                            <td class="col-forwarding"></td>
+                            <td class="text-end col-insurance" id="foot_insurance_pib">0</td>
+                            <td class="text-end col-others" id="foot_others_pib">0</td>
                             <td colspan="2"></td>
                         </tr>
                         <tr class="selisih-row">
                             <td colspan="5" class="text-end">Variance</td>
                             <td class="text-end" id="selisih_usd">0</td>
                             <td class="text-end" id="selisih_rp">0</td>
-                            <td></td>
-                            <td class="text-end" id="selisih_bm">0</td>
-                            <td class="text-end" id="selisih_ls">0</td>
-                            <td></td>
-                            <td class="text-end" id="selisih_insurance">0</td>
-                            <td class="text-end" id="selisih_others">0</td>
+                            <td class="col-bm"></td>
+                            <td class="text-end col-bm" id="selisih_bm">0</td>
+                            <td class="text-end col-ls" id="selisih_ls">0</td>
+                            <td class="col-forwarding"></td>
+                            <td class="text-end col-insurance" id="selisih_insurance">0</td>
+                            <td class="text-end col-others" id="selisih_others">0</td>
                             <td colspan="2"></td>
                         </tr>
                     </tfoot>
@@ -685,6 +685,9 @@ $list_po_data = isset($list_po) ? $list_po : [];
             // Hide F&C Estimation + Step 2-4
             $('#section_import_only').slideUp(300);
 
+            // Hide kolom BM, Prorate LS, Forwarding, Insurance, Others di tabel PO Data
+            $('#tbl_data_po .col-bm, #tbl_data_po .col-ls, #tbl_data_po .col-forwarding, #tbl_data_po .col-insurance, #tbl_data_po .col-others').hide();
+
             // Reset F&C values to 0
             $('.fc-cost').each(function() {
                 if ($(this).data('autoNumeric')) {
@@ -740,6 +743,9 @@ $list_po_data = isset($list_po) ? $list_po : [];
 
             // Show F&C Estimation + Step 2-4
             $('#section_import_only').slideDown(300);
+
+            // Show kolom BM, Prorate LS, Forwarding, Insurance, Others di tabel PO Data
+            $('#tbl_data_po .col-bm, #tbl_data_po .col-ls, #tbl_data_po .col-forwarding, #tbl_data_po .col-insurance, #tbl_data_po .col-others').show();
         }
 
 
@@ -1140,18 +1146,23 @@ $list_po_data = isset($list_po) ? $list_po : [];
                 html += '<td class="text-end mat-price">' + formatNum(m.unit_price_usd, 6) + '<input type="hidden" name="mat[' + i + '][unit_price_usd]" value="' + m.unit_price_usd + '"></td>';
                 html += '<td class="text-end mat-total-usd">' + formatNum(m.total_value_usd, 4) + '<input type="hidden" name="mat[' + i + '][total_value_usd]" value="' + m.total_value_usd + '"></td>';
                 html += '<td class="text-end mat-total-rp">0</td>';
-                html += '<td class="text-end mat-bm-persen">' + formatNum(m.bm_persen, 0) + '%<input type="hidden" name="mat[' + i + '][bm_persen]" value="' + m.bm_persen + '"></td>';
-                html += '<td class="text-end mat-bm-rp">0</td>';
-                html += '<td class="text-end mat-prorate-ls">0</td>';
-                html += '<td class="text-end mat-forwarding">0</td>';
-                html += '<td class="text-end mat-insurance">0</td>';
-                html += '<td class="text-end mat-others">0</td>';
+                html += '<td class="text-end mat-bm-persen col-bm">' + formatNum(m.bm_persen, 0) + '%<input type="hidden" name="mat[' + i + '][bm_persen]" value="' + m.bm_persen + '"></td>';
+                html += '<td class="text-end mat-bm-rp col-bm">0</td>';
+                html += '<td class="text-end mat-prorate-ls col-ls">0</td>';
+                html += '<td class="text-end mat-forwarding col-forwarding">0</td>';
+                html += '<td class="text-end mat-insurance col-insurance">0</td>';
+                html += '<td class="text-end mat-others col-others">0</td>';
                 html += '<td class="text-end mat-total-inv fw-bold">0</td>';
                 html += '<td class="text-end mat-cost-book fw-bold">0</td>';
                 html += '<input type="hidden" name="mat[' + i + '][ls_flag]" class="mat-ls-flag" value="' + (m.ls_flag || 'YA') + '">';
                 html += '</tr>';
             });
             $('#data_po_body').html(html);
+
+            // Jika mode Lokal, sembunyikan kolom biaya pada baris yang baru dirender
+            if (isLokal) {
+                $('#tbl_data_po .col-bm, #tbl_data_po .col-ls, #tbl_data_po .col-forwarding, #tbl_data_po .col-insurance, #tbl_data_po .col-others').hide();
+            }
         }
 
 
@@ -1318,6 +1329,15 @@ $list_po_data = isset($list_po) ? $list_po : [];
                 // Prorate Insurance & Others (basis: total_kg_bersih)
                 var pro_ins = (total_kg_bersih > 0) ? insurance * (kg / total_kg_bersih) : 0;
                 var pro_oth = (total_kg_bersih > 0) ? total_others * (kg / total_kg_bersih) : 0;
+
+                // PO Lokal: BM, Prorate LS, Forwarding, Insurance, Others tidak diperhitungkan
+                if (isLokal) {
+                    bm_rp = 0;
+                    prorate_ls = 0;
+                    forwarding = 0;
+                    pro_ins = 0;
+                    pro_oth = 0;
+                }
 
                 // Total Inventory & Cost Book
                 var total_inv = total_rp + bm_rp + prorate_ls + forwarding + pro_ins + pro_oth;

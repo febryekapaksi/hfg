@@ -1,6 +1,7 @@
 <?php
 $h = $header;
 $FORWARDING_RATE = 200;
+$is_lokal = (isset($loi) && strtolower($loi) === 'lokal');
 
 // Hitung total others
 $total_others_val = 0;
@@ -52,6 +53,16 @@ $total_fc = $h['cost_bm'] + $h['cost_bm_kite'] + $h['cost_bmt'] + $h['cost_cukai
         font-weight: bold;
         background-color: #f0f8ff;
     }
+    <?php if ($is_lokal) : ?>
+    /* PO Lokal: sembunyikan kolom biaya (BM, LS, Forwarding, Insurance, Others) di tabel PO Data */
+    .col-bm,
+    .col-ls,
+    .col-forwarding,
+    .col-insurance,
+    .col-others {
+        display: none;
+    }
+    <?php endif; ?>
 </style>
 
 <div class="card">
@@ -107,6 +118,7 @@ $total_fc = $h['cost_bm'] + $h['cost_bm_kite'] + $h['cost_bmt'] + $h['cost_cukai
             <div class="col-md-4"><strong>Total Net KG PIB:</strong> <?= number_format($h['total_kg_bersih_pib'], 4) ?></div>
         </div>
 
+        <?php if (!$is_lokal) : ?>
         <h6 class="fw-bold">F&C Estimation</h6>
         <div class="row mb-3">
             <div class="col-md-6">
@@ -227,6 +239,7 @@ $total_fc = $h['cost_bm'] + $h['cost_bm_kite'] + $h['cost_bmt'] + $h['cost_cukai
         <?php else : ?>
             <p class="text-muted">No other costs.</p>
         <?php endif; ?>
+        <?php endif; // !$is_lokal ?>
 
         <!-- DATA PO -->
         <div class="section-title data-po"><i class="fas fa-calculator"></i> PO Data & Inventory Value Calculation</div>
@@ -241,12 +254,12 @@ $total_fc = $h['cost_bm'] + $h['cost_bm_kite'] + $h['cost_bmt'] + $h['cost_cukai
                         <th class="text-center">Unit Price (U$)</th>
                         <th class="text-center">Total Value (U$)</th>
                         <th class="text-center">Total Value (Rp)</th>
-                        <th class="text-center">BM %</th>
-                        <th class="text-center">BM (Rp)</th>
-                        <th class="text-center">Prorate LS</th>
-                        <th class="text-center">Forwarding Cost</th>
-                        <th class="text-center">Pro Rate Insurance</th>
-                        <th class="text-center">Pro Rate Other Costs</th>
+                        <th class="text-center col-bm">BM %</th>
+                        <th class="text-center col-bm">BM (Rp)</th>
+                        <th class="text-center col-ls">Prorate LS</th>
+                        <th class="text-center col-forwarding">Forwarding Cost</th>
+                        <th class="text-center col-insurance">Pro Rate Insurance</th>
+                        <th class="text-center col-others">Pro Rate Other Costs</th>
                         <th class="text-center">Total Inventory Value</th>
                         <th class="text-center">Cost Book</th>
                     </tr>
@@ -279,12 +292,12 @@ $total_fc = $h['cost_bm'] + $h['cost_bm_kite'] + $h['cost_bmt'] + $h['cost_cukai
                             <td class="text-end"><?= number_format($m['unit_price_usd'], 6) ?></td>
                             <td class="text-end"><?= number_format($m['total_value_usd'], 4) ?></td>
                             <td class="text-end"><?= number_format($m['total_value_rp'], 0) ?></td>
-                            <td class="text-center"><?= number_format($m['bm_persen'], 0) ?>%</td>
-                            <td class="text-end"><?= number_format($m['bm_rp'], 0) ?></td>
-                            <td class="text-end"><?= number_format($m['prorate_ls'], 0) ?></td>
-                            <td class="text-end"><?= number_format($m['forwarding_cost'], 0) ?></td>
-                            <td class="text-end"><?= number_format($m['prorate_insurance'], 0) ?></td>
-                            <td class="text-end"><?= number_format($m['prorate_others'], 0) ?></td>
+                            <td class="text-center col-bm"><?= number_format($m['bm_persen'], 0) ?>%</td>
+                            <td class="text-end col-bm"><?= number_format($m['bm_rp'], 0) ?></td>
+                            <td class="text-end col-ls"><?= number_format($m['prorate_ls'], 0) ?></td>
+                            <td class="text-end col-forwarding"><?= number_format($m['forwarding_cost'], 0) ?></td>
+                            <td class="text-end col-insurance"><?= number_format($m['prorate_insurance'], 0) ?></td>
+                            <td class="text-end col-others"><?= number_format($m['prorate_others'], 0) ?></td>
                             <td class="text-end fw-bold"><?= number_format($m['total_nilai_inventory'], 0) ?></td>
                             <td class="text-end fw-bold"><?= number_format($m['cost_book'], 0) ?></td>
                         </tr>
@@ -295,12 +308,12 @@ $total_fc = $h['cost_bm'] + $h['cost_bm_kite'] + $h['cost_bmt'] + $h['cost_cukai
                         <td colspan="5" class="text-end">Total PO</td>
                         <td class="text-end"><?= number_format($sum_usd, 4) ?></td>
                         <td class="text-end"><?= number_format($sum_rp, 0) ?></td>
-                        <td></td>
-                        <td class="text-end"><?= number_format($sum_bm, 0) ?></td>
-                        <td class="text-end"><?= number_format($sum_ls, 0) ?></td>
-                        <td class="text-end"><?= number_format($sum_fwd, 0) ?></td>
-                        <td class="text-end"><?= number_format($sum_ins, 0) ?></td>
-                        <td class="text-end"><?= number_format($sum_oth, 0) ?></td>
+                        <td class="col-bm"></td>
+                        <td class="text-end col-bm"><?= number_format($sum_bm, 0) ?></td>
+                        <td class="text-end col-ls"><?= number_format($sum_ls, 0) ?></td>
+                        <td class="text-end col-forwarding"><?= number_format($sum_fwd, 0) ?></td>
+                        <td class="text-end col-insurance"><?= number_format($sum_ins, 0) ?></td>
+                        <td class="text-end col-others"><?= number_format($sum_oth, 0) ?></td>
                         <td class="text-end"><?= number_format($sum_inv, 0) ?></td>
                         <td></td>
                     </tr>

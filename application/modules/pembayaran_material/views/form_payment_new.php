@@ -855,6 +855,8 @@ foreach ($results['result_payment'] as $item) {
 					var baseurl;
 					if (tipe_payment === 'invoice_import') {
 						baseurl = siteurl + active_controller + 'save_payment_import';
+					} else if (tipe_payment === 'invoice_local') {
+						baseurl = siteurl + active_controller + 'save_payment_local';
 					} else {
 						baseurl = siteurl + active_controller + 'save_payment_po';
 					}

@@ -282,6 +282,15 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                 success: function(res) {
                     if (res.status == 1) {
                         $('#modal_close_ros_body').html(buildPreviewHtml(res));
+
+                        // PO Lokal: sembunyikan kolom biaya (BM, LS, Forwarding, Insurance, Others)
+                        if (res.loi && String(res.loi).toLowerCase() === 'lokal') {
+                            $('#modal_close_ros_body .col-bm, ' +
+                              '#modal_close_ros_body .col-ls, ' +
+                              '#modal_close_ros_body .col-forwarding, ' +
+                              '#modal_close_ros_body .col-insurance, ' +
+                              '#modal_close_ros_body .col-others').hide();
+                        }
                     } else {
                         $('#modal_close_ros_body').html(
                             '<div class="alert alert-danger">' + res.msg + '</div>'
@@ -330,7 +339,13 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                         Swal.close();
                         if (res.status == 1) {
                             $('#modalCloseROS').modal('hide');
-                            Swal.fire('Success!', res.msg, 'success').then(function() {
+                            Swal.fire({
+                                title: 'Success!',
+                                text: res.msg,
+                                icon: 'success',
+                                showConfirmButton: false,
+                                timer: 1500
+                            }).then(function() {
                                 tblDraft.ajax.reload();
                                 tblClose.ajax.reload();
                                 closeTabLoaded = true;
@@ -368,6 +383,7 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
             var h = res.header;
             var materials = res.materials;
             var others = res.others;
+            var isLokal = (res.loi && String(res.loi).toLowerCase() === 'lokal');
 
             var fmt = function(val, dec) {
                 dec = (dec !== undefined) ? dec : 0;
@@ -410,6 +426,8 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
             html += '<div class="col-md-4"><strong>Total Net KG:</strong> ' + fmt(h.total_kg_bersih_pib, 4) + '</div>';
             html += '</div>';
 
+            // ── F&C + LS + Insurance + Others (hanya untuk PO Import) ──
+            if (!isLokal) {
             // ── F&C ──
             html += '<div class="row mb-3"><div class="col-md-5">';
             html += '<table class="table table-bordered table-sm" style="font-size:12px;">';
@@ -472,19 +490,21 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                 html += '</tr>';
                 html += '</tbody></table></div></div>';
             }
+            } // end if (!isLokal)
 
             // ── Data PO & Kalkulasi ──
             html += '<div class="section-title-preview data-po"><i class="fas fa-calculator"></i> PO Data &amp; Inventory Value Calculation</div>';
             html += '<div class="table-responsive">';
             html += '<table class="table table-bordered table-sm" style="font-size:11px;">';
             html += '<thead class="table-light"><tr>';
-            $.each([
-                'No', 'PO Name', 'Alias Name', 'Kg Unit', 'Unit Price (U$)',
-                'Total Value (U$)', 'Total Value (Rp)', 'BM %', 'BM (Rp)',
-                'Prorate LS', 'Forwarding', 'Insurance', 'Other Costs',
-                'Total Inventory', 'Cost Book'
-            ], function(i, t) {
-                html += '<th class="text-center">' + t + '</th>';
+            var po_cols = [
+                ['No', ''], ['PO Name', ''], ['Alias Name', ''], ['Kg Unit', ''], ['Unit Price (U$)', ''],
+                ['Total Value (U$)', ''], ['Total Value (Rp)', ''], ['BM %', 'col-bm'], ['BM (Rp)', 'col-bm'],
+                ['Prorate LS', 'col-ls'], ['Forwarding', 'col-forwarding'], ['Insurance', 'col-insurance'], ['Other Costs', 'col-others'],
+                ['Total Inventory', ''], ['Cost Book', '']
+            ];
+            $.each(po_cols, function(i, t) {
+                html += '<th class="text-center ' + t[1] + '">' + t[0] + '</th>';
             });
             html += '</tr></thead><tbody>';
 
@@ -517,12 +537,12 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                 html += '<td class="text-end">' + fmt(m.unit_price_usd, 6) + '</td>';
                 html += '<td class="text-end">' + fmt(m.total_value_usd, 4) + '</td>';
                 html += '<td class="text-end">' + fmt(m.total_value_rp) + '</td>';
-                html += '<td class="text-center">' + fmt(m.bm_persen, 0) + '%' + '</td>';
-                html += '<td class="text-end">' + fmt(m.bm_rp) + '</td>';
-                html += '<td class="text-end">' + fmt(m.prorate_ls) + '</td>';
-                html += '<td class="text-end">' + fmt(m.forwarding_cost) + '</td>';
-                html += '<td class="text-end">' + fmt(m.prorate_insurance) + '</td>';
-                html += '<td class="text-end">' + fmt(m.prorate_others) + '</td>';
+                html += '<td class="text-center col-bm">' + fmt(m.bm_persen, 0) + '%' + '</td>';
+                html += '<td class="text-end col-bm">' + fmt(m.bm_rp) + '</td>';
+                html += '<td class="text-end col-ls">' + fmt(m.prorate_ls) + '</td>';
+                html += '<td class="text-end col-forwarding">' + fmt(m.forwarding_cost) + '</td>';
+                html += '<td class="text-end col-insurance">' + fmt(m.prorate_insurance) + '</td>';
+                html += '<td class="text-end col-others">' + fmt(m.prorate_others) + '</td>';
                 html += '<td class="text-end fw-bold">' + fmt(m.total_nilai_inventory) + '</td>';
                 html += '<td class="text-end fw-bold">' + fmt(m.cost_book) + '</td>';
                 html += '</tr>';
@@ -535,12 +555,12 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
             html += '<td></td>';
             html += '<td class="text-end">' + fmt(sum_usd, 4) + '</td>';
             html += '<td class="text-end">' + fmt(sum_rp) + '</td>';
-            html += '<td></td>';
-            html += '<td class="text-end">' + fmt(sum_bm) + '</td>';
-            html += '<td class="text-end">' + fmt(sum_ls) + '</td>';
-            html += '<td class="text-end">' + fmt(sum_fwd) + '</td>';
-            html += '<td class="text-end">' + fmt(sum_ins) + '</td>';
-            html += '<td class="text-end">' + fmt(sum_oth) + '</td>';
+            html += '<td class="col-bm"></td>';
+            html += '<td class="text-end col-bm">' + fmt(sum_bm) + '</td>';
+            html += '<td class="text-end col-ls">' + fmt(sum_ls) + '</td>';
+            html += '<td class="text-end col-forwarding">' + fmt(sum_fwd) + '</td>';
+            html += '<td class="text-end col-insurance">' + fmt(sum_ins) + '</td>';
+            html += '<td class="text-end col-others">' + fmt(sum_oth) + '</td>';
             html += '<td class="text-end">' + fmt(sum_inv) + '</td>';
             html += '<td></td></tr></tfoot>';
             html += '</table></div>';
@@ -659,7 +679,7 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                         var resp = JSON.parse(res);
                         if (resp.status == 1) {
                             Swal.fire('Deleted!', 'ROS data has been deleted.', 'success');
-                            table.ajax.reload();
+                            location.reload();
                         } else {
                             Swal.fire('Failed!', 'Failed to delete data.', 'error');
                         }

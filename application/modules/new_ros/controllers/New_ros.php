@@ -237,9 +237,14 @@ class New_ros extends Admin_Controller
         }
         $others = $this->New_ros_model->get_others($id_ros);
 
+        // Ambil loi (Lokal/Import) dari PO
+        $po_data = $this->db->get_where('tr_purchase_order', ['no_po' => $header['no_po']])->row();
+        $loi = $po_data ? $po_data->loi : 'Import';
+
         $this->template->set('header', $header);
         $this->template->set('materials', $materials);
         $this->template->set('others', $others);
+        $this->template->set('loi', $loi);
         $this->template->set('mode', 'view');
         $this->template->title('View New ROS');
         $this->template->render('view');
@@ -485,6 +490,10 @@ class New_ros extends Admin_Controller
             }
         }
 
+        // ── Tentukan tipe PO: Lokal atau Import ──
+        $po_data_save = $this->db->get_where('tr_purchase_order', ['no_po' => $post['no_po']])->row();
+        $is_lokal_save = ($po_data_save && strtolower($po_data_save->loi) === 'lokal');
+
         // ── Hitung total KG LS untuk prorate ──
         $total_kg_ls = 0;
         if (isset($post['mat']) && is_array($post['mat'])) {
@@ -505,31 +514,41 @@ class New_ros extends Admin_Controller
                 $total_value_usd = (float) str_replace(',', '', $mat['total_value_usd']);
                 $total_value_rp  = $total_value_usd * $kurs_pib;
                 $bm_persen       = (float) $mat['bm_persen'];
-                $bm_rp           = $total_value_rp * ($bm_persen / 100);
                 $ls_flag         = isset($mat['ls_flag']) ? $mat['ls_flag'] : 'TIDAK';
 
-                // Prorate LS
-                $prorate_ls = 0;
-                if ($ls_flag == 'YA' && $total_kg_ls > 0) {
-                    $prorate_ls = $biaya_ls * ($kg_unit / $total_kg_ls);
-                }
+                if ($is_lokal_save) {
+                    // PO Lokal: tidak ada komponen biaya tambahan
+                    $bm_rp             = 0;
+                    $prorate_ls        = 0;
+                    $forwarding_cost   = 0;
+                    $prorate_insurance = 0;
+                    $prorate_others    = 0;
+                } else {
+                    $bm_rp = $total_value_rp * ($bm_persen / 100);
 
-                // Forwarding cost = Rate dari master_forwarding_cost * kg_unit
-                $this->db->where('is_delete', '0');
-                $master_fwd = $this->db->get('master_forwarding_cost')->row();
-                $fwd_rate = ($master_fwd) ? (float) $master_fwd->value_cost : 0;
-                $forwarding_cost = $fwd_rate * $kg_unit;
+                    // Prorate LS
+                    $prorate_ls = 0;
+                    if ($ls_flag == 'YA' && $total_kg_ls > 0) {
+                        $prorate_ls = $biaya_ls * ($kg_unit / $total_kg_ls);
+                    }
 
-                // Prorate Insurance
-                $prorate_insurance = 0;
-                if ($total_kg_bersih > 0) {
-                    $prorate_insurance = $insurance * ($kg_unit / $total_kg_bersih);
-                }
+                    // Forwarding cost = Rate dari master_forwarding_cost * kg_unit
+                    $this->db->where('is_delete', '0');
+                    $master_fwd = $this->db->get('master_forwarding_cost')->row();
+                    $fwd_rate = ($master_fwd) ? (float) $master_fwd->value_cost : 0;
+                    $forwarding_cost = $fwd_rate * $kg_unit;
 
-                // Prorate Others
-                $prorate_others = 0;
-                if ($total_kg_bersih > 0) {
-                    $prorate_others = $total_others * ($kg_unit / $total_kg_bersih);
+                    // Prorate Insurance
+                    $prorate_insurance = 0;
+                    if ($total_kg_bersih > 0) {
+                        $prorate_insurance = $insurance * ($kg_unit / $total_kg_bersih);
+                    }
+
+                    // Prorate Others
+                    $prorate_others = 0;
+                    if ($total_kg_bersih > 0) {
+                        $prorate_others = $total_others * ($kg_unit / $total_kg_bersih);
+                    }
                 }
 
                 // Total Nilai Inventory
@@ -2023,13 +2042,26 @@ class New_ros extends Admin_Controller
 
         $tarif_forwarding = (float) $forwarding_master->value_cost;
 
+        // Tentukan tipe PO: Lokal atau Import
+        $po_data  = $this->db->get_where('tr_purchase_order', ['no_po' => $header['no_po']])->row();
+        $is_lokal = ($po_data && strtolower($po_data->loi) === 'lokal');
+
         foreach ($materials as $mat) {
             // total_nilai_inventory on-the-fly
             $total_value_rp_raw = (float)$mat['unit_price_usd'] * (float)$mat['kg_unit'] * $kurs_pib;
-            $bm_rp_raw          = $total_value_rp_raw * (float)$mat['bm_persen'] / 100;
-            $prorate_ls_raw     = $biaya_ls * (float)$mat['kg_unit'] / $total_kg_pib;
-            $forwarding_raw     = (float)$mat['kg_unit'] * $tarif_forwarding;
-            $insurance_raw      = $insurance * (float)$mat['kg_unit'] / $total_kg_pib;
+
+            if ($is_lokal) {
+                // PO Lokal: tidak ada komponen biaya tambahan
+                $bm_rp_raw      = 0;
+                $prorate_ls_raw = 0;
+                $forwarding_raw = 0;
+                $insurance_raw  = 0;
+            } else {
+                $bm_rp_raw      = $total_value_rp_raw * (float)$mat['bm_persen'] / 100;
+                $prorate_ls_raw = $biaya_ls * (float)$mat['kg_unit'] / $total_kg_pib;
+                $forwarding_raw = (float)$mat['kg_unit'] * $tarif_forwarding;
+                $insurance_raw  = $insurance * (float)$mat['kg_unit'] / $total_kg_pib;
+            }
 
             $total_nilai_inv_raw = $total_value_rp_raw + $bm_rp_raw + $prorate_ls_raw
                 + $forwarding_raw + $insurance_raw;
@@ -2051,9 +2083,6 @@ class New_ros extends Admin_Controller
         }
 
         // ── Generate Jurnal GL Interface (hanya untuk PO Import) ──
-        $po_data = $this->db->get_where('tr_purchase_order', ['no_po' => $header['no_po']])->row();
-        $is_lokal = ($po_data && strtolower($po_data->loi) === 'lokal');
-
         if ($is_lokal) {
             // PO Lokal: skip generate jurnal GL Interface
             ob_clean();
@@ -2122,6 +2151,10 @@ class New_ros extends Admin_Controller
 
         $others = $this->New_ros_model->get_others($id_ros);
 
+        // Ambil loi (Lokal/Import) dari PO
+        $po_data = $this->db->get_where('tr_purchase_order', ['no_po' => $header['no_po']])->row();
+        $loi = $po_data ? $po_data->loi : 'Import';
+
         $total_others_val = 0;
         foreach ($others as $ot) {
             $total_others_val += (float) $ot['nilai'];
@@ -2149,6 +2182,7 @@ class New_ros extends Admin_Controller
             'header'           => $header,
             'materials'        => $materials,
             'others'           => $others,
+            'loi'              => $loi,
             'total_others_val' => $total_others_val,
             'total_fc'         => $total_fc,
             'total_coil'       => $total_coil,
