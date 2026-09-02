@@ -1240,12 +1240,24 @@ class Pembayaran_material extends Admin_Controller
 
 			$this->load->model('gl_interface/Gl_interface_model');
 
-			$mapping = $this->db->get_where('ms_jurnal_mapping', ['menu' => 'Pembayaran Material', 'action' => 'save_payment_po'])->row();
+			// Kode jurnal pembayaran DP berbeda berdasarkan LOI PO (Import vs Lokal).
+			// no_po diambil dari request_payment.no_doc (referensi PO).
+			$po_ref = $this->db->select('loi')
+				->get_where('tr_purchase_order', ['no_po' => $first_req->no_doc])
+				->row();
+			$loi_po = strtolower(trim($po_ref->loi ?? ''));
+			if ($loi_po === 'import') {
+				$action_jurnal = 'save_payment_po_import';
+			} else {
+				$action_jurnal = 'save_payment_po_local';
+			}
+
+			$mapping = $this->db->get_where('ms_jurnal_mapping', ['menu' => 'Pembayaran Material', 'action' => $action_jurnal])->row();
 			$kode_jurnal = $mapping ? $mapping->kode_master_jurnal : 'BUK002'; // fallback
 			$id_gl = $this->Gl_interface_model->generate_jurnal_dari_template($kode_jurnal, $row_lengkap);
 
 			if ($id_gl === false) {
-				throw new Exception('Gagal generate jurnal: template BUK002 tidak ditemukan/kosong');
+				throw new Exception('Gagal generate jurnal: template ' . $kode_jurnal . ' tidak ditemukan/kosong');
 			}
 
 			$this->db->trans_commit();

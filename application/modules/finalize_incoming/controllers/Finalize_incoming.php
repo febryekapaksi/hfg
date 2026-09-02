@@ -1581,6 +1581,123 @@ class Finalize_incoming extends Admin_Controller
         exit;
     }
 
+    // public function _generate_jurnal_incoming(
+    //     $kode_trans,
+    //     $no_po,
+    //     $no_surat,
+    //     $id_supplier,
+    //     $no_ros,
+    //     array $details,
+    //     $gl_advance_purchase = 0,
+    //     $gl_persediaan_intransit = 0,
+    //     $gl_unbill = 0
+    // ) {
+    //     // Hitung value per gudang dari details (tetap dipakai utk validasi & value_inc_pro/sli)
+    //     $value_inc_pro = 0;
+    //     $value_inc_sli = 0;
+    //     $total_kredit  = 0;
+
+    //     foreach ($details as $d) {
+    //         if ($d['status_qc'] !== 'OK') continue;
+
+    //         $kd = strtoupper(trim($d['kd_gudang_ke']));
+    //         if ($kd === 'SLI') {
+    //             $value_inc_sli += (float) $d['price_per_coil'];
+    //         } else {
+    //             $value_inc_pro += (float) $d['price_per_coil'];
+    //         }
+    //         $total_kredit += (float) $d['price_per_coil'];
+    //     }
+
+    //     // Round setelah akumulasi
+    //     $value_inc_pro = round($value_inc_pro, 2);
+    //     $value_inc_sli = round($value_inc_sli, 2);
+    //     $total_kredit  = round($total_kredit, 2);
+
+    //     // Round nilai GL dari ROS (jaga-jaga kalau caller belum round)
+    //     $gl_advance_purchase     = round((float) $gl_advance_purchase, 2);
+    //     $gl_persediaan_intransit = round((float) $gl_persediaan_intransit, 2);
+    //     $gl_unbill               = round((float) $gl_unbill, 2);
+
+    //     if ($total_kredit <= 0) {
+    //         // Tidak ada nilai fisik yang perlu dijurnal (semua reject / nilai 0).
+    //         log_message('info', "Skip generate jurnal incoming {$kode_trans}: total_kredit = 0 (kemungkinan semua coil status_qc != OK).");
+    //         return;
+    //     }
+
+    //     // Tentukan tipe PO: Lokal atau Import
+    //     $po_row   = $this->db->get_where('tr_purchase_order', ['no_po' => $no_po])->row();
+    //     $is_lokal = ($po_row && strtolower($po_row->loi) === 'lokal');
+
+    //     // Lookup mapping berdasarkan tipe (action berbeda untuk lokal/import)
+    //     $action_key = $is_lokal ? 'finalize_lokal' : 'finalize_import';
+    //     $mapping = $this->db->get_where('ms_jurnal_mapping', [
+    //         'menu'   => 'finalize_incoming',
+    //         'action' => $action_key
+    //     ])->row();
+
+    //     $tipe_label = $is_lokal ? 'Lokal' : 'Import';
+
+    //     if (!$mapping) {
+    //         // Template jurnal belum dikonfigurasi — block proses
+    //         throw new Exception("Template jurnal untuk Incoming {$tipe_label} belum dibuat. Silakan konfigurasi di ms_jurnal_mapping (menu: finalize_incoming, action: {$action_key}).");
+    //     }
+
+    //     // ── Validasi tambahan: pastikan header & detail template jurnal juga sudah lengkap ──
+    //     // (ms_jurnal_mapping hanya menyimpan pointer kode_master_jurnal;
+    //     //  isi template sebenarnya ada di master_oto_jurnal_header/_detail)
+    //     $db_acc = $this->load->database('accounting', TRUE);
+
+    //     $tpl_header = $db_acc->get_where('master_oto_jurnal_header', [
+    //         'kode_master_jurnal' => $mapping->kode_master_jurnal
+    //     ])->row();
+
+    //     $tpl_detail_count = $db_acc
+    //         ->where('kode_master_jurnal', $mapping->kode_master_jurnal)
+    //         ->count_all_results('master_oto_jurnal_detail');
+
+    //     if (!$tpl_header || $tpl_detail_count === 0) {
+    //         throw new Exception("Template jurnal '{$mapping->kode_master_jurnal}' untuk Incoming {$tipe_label} belum lengkap (header/detail belum dikonfigurasi). Silakan lengkapi di menu Master Jurnal Template.");
+    //     }
+
+    //     // ── Gunakan generate_jurnal_dari_template ──
+    //     $this->load->model('gl_interface/Gl_interface_model');
+
+    //     $supplier      = $this->db->get_where('new_supplier', ['kode_supplier' => $id_supplier])->row();
+    //     $supplier_name = $supplier ? $supplier->nama : '-';
+
+    //     $data_source = [
+    //         'tanggal'        => date('Y-m-d'),
+    //         'no_po'          => $no_po,
+    //         'no_surat'       => $no_surat,
+    //         'id_supplier'    => $id_supplier,
+    //         'nm_supplier'    => $supplier_name,
+    //         'no_ros'         => $no_ros,
+    //         'kode_trans'     => $kode_trans,
+    //         'no_request'     => $kode_trans,
+    //         'no_doc'         => $no_po,
+    //         'value_inc_pro'  => $value_inc_pro,
+    //         'value_inc_sli'  => $value_inc_sli,
+
+    //         // ── Samakan nama key dengan field di master_oto_jurnal_detail ──
+    //         'gl_advance_purchase_from_ros'     => $gl_advance_purchase,
+    //         'gl_persediaan_intransit_from_ros' => $gl_persediaan_intransit,
+    //         'gl_unbill_from_ros'               => $gl_unbill,
+
+    //         'loi'            => $tipe_label,
+    //     ];
+
+    //     $kode_jurnal = $mapping->kode_master_jurnal;
+    //     $id_gl = $this->Gl_interface_model->generate_jurnal_dari_template($kode_jurnal, $data_source);
+
+    //     // Safety net: kalau meski sudah divalidasi di atas, generate_jurnal_dari_template
+    //     // tetap return false (misal race condition template dihapus di tengah proses),
+    //     // jangan biarkan finalize() melaporkan sukses.
+
+    //     if ($id_gl === false) {
+    //         throw new Exception("Gagal generate jurnal dari template '{$kode_jurnal}' untuk Incoming {$tipe_label}.");
+    //     }
+    // }
 
     /* ============================================================================
  * B. MODUL INCOMING — GANTI FUNGSI _generate_jurnal_incoming() SECARA UTUH

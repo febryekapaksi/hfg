@@ -405,7 +405,16 @@ class Purchase_order_payment extends Admin_Controller
 
 			try {
 				$this->load->model('gl_interface/Gl_interface_model');
-				$mapping = $this->db->get_where('ms_jurnal_mapping', ['menu' => 'Purchase Order Payment', 'action' => 'save_dp'])->row();
+
+				// Kode jurnal DP berbeda berdasarkan LOI PO (Import vs Lokal)
+				$loi_po = strtolower(trim($po_row['loi'] ?? ''));
+				if ($loi_po === 'import') {
+					$action_jurnal = 'save_dp_import';
+				} else {
+					$action_jurnal = 'save_dp_local';
+				}
+
+				$mapping = $this->db->get_where('ms_jurnal_mapping', ['menu' => 'Purchase Order Payment', 'action' => $action_jurnal])->row();
 				$kode_jurnal = $mapping ? $mapping->kode_master_jurnal : 'JV004'; // fallback
 				$this->Gl_interface_model->generate_jurnal_dari_template($kode_jurnal, $data_insert);
 			} catch (Exception $e) {
