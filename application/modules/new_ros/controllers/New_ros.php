@@ -233,8 +233,24 @@ class New_ros extends Admin_Controller
 
         $materials = $this->New_ros_model->get_materials($id_ros);
         foreach ($materials as &$mat) {
-            $mat['coils'] = $this->New_ros_model->get_coils($mat['id']);
+            $coils = $this->New_ros_model->get_coils($mat['id']);
+
+            $seen = [];
+            $unique_coils = [];
+            foreach ($coils as $coil) {
+                // Skip mother coil yang punya baby (bukan unit fisik) — sama seperti mode edit/finalize
+                $is_mother_with_baby = ((int) $coil['is_baby_coil'] === 0 && (int) $coil['qty_roll'] > 1);
+                if ($is_mother_with_baby) continue;
+
+                $key = $coil['no_coil'] . '_' . $coil['id_ros_material'];
+                if (!isset($seen[$key])) {
+                    $seen[$key] = true;
+                    $unique_coils[] = $coil;
+                }
+            }
+            $mat['coils'] = $unique_coils;
         }
+        unset($mat);
         $others = $this->New_ros_model->get_others($id_ros);
 
         // Ambil loi (Lokal/Import) dari PO
@@ -2139,6 +2155,10 @@ class New_ros extends Admin_Controller
             $seen = [];
             $unique_coils = [];
             foreach ($coils as $coil) {
+                // Skip mother coil yang punya baby (bukan unit fisik) — sama seperti mode edit/finalize
+                $is_mother_with_baby = ((int) $coil['is_baby_coil'] === 0 && (int) $coil['qty_roll'] > 1);
+                if ($is_mother_with_baby) continue;
+
                 $key = $coil['no_coil'] . '_' . $coil['id_ros_material'];
                 if (!isset($seen[$key])) {
                     $seen[$key] = true;
