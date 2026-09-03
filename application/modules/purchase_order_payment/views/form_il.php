@@ -124,7 +124,7 @@ if ($is_view) {
                 value="<?= number_format($dpp_local_val, 2) ?>" readonly tabindex="-1">
         </div>
         <div class="col-md-6">
-            <label class="form-label fw-semibold">PPn 12% (IDR)</label>
+            <label class="form-label fw-semibold">PPn (IDR)</label>
             <input type="text" id="ppn_local_display"
                 class="form-control form-control-sm text-end bg-light"
                 value="<?= number_format($ppn_local_val, 2) ?>" readonly tabindex="-1">
