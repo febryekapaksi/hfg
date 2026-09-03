@@ -1619,161 +1619,97 @@ $ENABLE_DELETE  = has_permission('Purchase_Request.Delete');
 	}
 
 	function HitAmmount(id) {
-		var alloyprice = getNum($("#dt_alloyprice_" + id).val().split(",").join(""));
-		var fabcost = getNum($("#dt_fabcost_" + id).val().split(",").join(""));
-		var diskon = getNum($("#dt_diskon_" + id).val().split(",").join(""));
-		var pajak = getNum($("#dt_pajak_" + id).val().split(",").join(""));
+		// --- Input per baris ---
 		var qty = getNum($("#dt_qty_" + id).val().split(",").join(""));
 		var hargasatuan = getNum($("#dt_hargasatuan_" + id).val().split(",").join(""));
-		var ppn = getNum($("#dt_nilai_ppn_" + id).val().split(",").join(""));
 		var persen_ppn = getNum($("#dt_persen_ppn_" + id).val().split(",").join(""));
-		var dt_width = getNum($("#dt_totalweight_" + id).val().split(",").join(""));
 		var disc_persen = getNum($('#disc_persen_' + id).val().split(',').join(''));
 		var disc_num = getNum($('#disc_num_' + id).val().split(',').join(''));
-		var loi = $("#loi").val();
 
-		// if(loi == 'Import'){
-		// 	var total 	= Number(alloyprice) + Number(fabcost);
-		// 	var jumlah 	= total * dt_width;	
-
-		// 	$("#dt_hargasatuan_"+id).val(number_format(total,2));
-		// }
-		//else{
-
-		// if (disc_num !== ((hargasatuan * qty) * disc_persen / 100)) {
-		// 	disc_num = ((hargasatuan * qty) * disc_persen / 100);
-		// }
-
-
-		var total = hargasatuan;
+		// Jumlah kotor (harga satuan x qty) -> kolom "Total Harga" (jumlahharga)
 		var jumlah = hargasatuan * qty;
+
+		// --- Diskon efektif (satu sumber kebenaran) ---
+		// Prioritas: jika user isi nominal diskon (disc_num) > 0, pakai nominal itu
+		// lalu turunkan persennya. Jika tidak, hitung nominal dari persen diskon.
+		var diskon_efektif;
+		if (disc_num > 0) {
+			diskon_efektif = disc_num;
+			disc_persen = (jumlah > 0) ? (diskon_efektif / jumlah * 100) : 0;
+		} else {
+			diskon_efektif = jumlah * disc_persen / 100;
+			disc_num = diskon_efektif;
+		}
+
+		var jumlah_w_disc = jumlah - diskon_efektif;
+
+		// PPN dihitung dari jumlah setelah diskon
+		var nilai_ppn = jumlah_w_disc * persen_ppn / 100;
+
+		// Total baris (Sub Total) = setelah diskon + ppn. INI yang dilihat user & disimpan.
+		var totalharga = jumlah_w_disc + nilai_ppn;
+
+		// Sisa kuota
 		var kuota_internal = getNum($("#dt_kuotainternal" + id).val().split(",").join(""));
 		var sisa_kuota = kuota_internal - qty;
 		$("#dt_sisa_kuota_" + id).val(number_format(sisa_kuota, 2));
-		var jumlah_w_disc = (jumlah - (jumlah * disc_persen / 100));
-		var ppn = (jumlah_w_disc * persen_ppn / 100);
-		var totalharga = (jumlah_w_disc + ppn);
-		// console.log(totalharga);
 
-		// alert(jumlah);
-		//}
-
-		var tot_pajak = pajak;
-		var tot_diskon = diskon / 100 * jumlah;
-		var tot_jumlah = totalharga - tot_diskon + tot_pajak;
-
-		var nilai_ppn = parseFloat(((hargasatuan - (hargasatuan * disc_persen / 100)) * qty) * persen_ppn / 100);
+		// --- Tulis balik nilai baris ---
 		$("#dt_nilai_ppn_" + id).val(number_format(nilai_ppn, 2));
-
 		$("#dt_jumlahharga_" + id).val(number_format(jumlah, 4));
 		$("#dt_totalharga_" + id).val(number_format(totalharga, 4));
-
-		$("#dt_ch_pajak_" + id).val(tot_pajak);
-		$("#dt_ch_diskon_" + id).val(tot_diskon);
-		$("#dt_ch_jumlah_" + id).val(tot_jumlah);
-
 		$("#disc_persen_" + id).val(number_format(disc_persen, 2));
 		$("#disc_num_" + id).val(number_format(disc_num, 2));
 
-		var SUM_JML = 0
-		var SUM_DIS = 0
-		var SUM_PJK = 0
-		var SUM_JMX = 0
-		var SUM_PPN = 0
-		var SUM_DISC = 0
+		// Field legacy tetap disinkronkan agar tidak menyeret nilai lama
+		$("#dt_ch_diskon_" + id).val(diskon_efektif);
+		$("#dt_ch_pajak_" + id).val(nilai_ppn);
+		$("#dt_ch_jumlah_" + id).val(totalharga);
 
-		$(".ch_diskon").each(function() {
-			SUM_DIS += Number($(this).val());
-		});
-
-		$(".ch_pajak").each(function() {
-			SUM_PJK += Number($(this).val());
-		});
-
-		$(".ch_jumlah").each(function() {
-			SUM_JML += Number($(this).val());
-		});
-
-		$(".ch_jumlah_ex").each(function() {
-			SUM_JMX += Number($(this).val().split(",").join(""));
-		});
-		$(".ch_ppn").each(function() {
-			SUM_PPN += Number($(this).val().split(",").join(""));
-		});
-		$(".disc_num").each(function() {
-			SUM_DISC += Number($(this).val().split(",").join(""));
-		});
-
-		// --- MULAI PERBAIKAN DI SINI ---
-		// 1. Ambil status Pajak dari Switch HTML Anda
-		var pajakAktif = $('#show_tax').is(':checked');
-		var kirim = getNum($("#kirim").val().split(",").join(""));
-		var diskonKhusus = getNum($("#diskonkhusus").val().split(",").join(""));
-
-		// 2. Gunakan SUM_JML (Total dari semua baris item)
-		var totalAwal = Math.max(0, SUM_JML - diskonKhusus);
-		var dpp = 0;
-		var ppn = 0;
-		var totalOrder = totalAwal;
-
-		if (pajakAktif) {
-			// RUMUS EXCLUSIVE (SESUAI EXCEL ANDA)
-			dpp = totalAwal * (11 / 12); //
-			ppn = dpp * 0.12; //
-			totalOrder = totalAwal + ppn; //
-		}
-
-		// 3. Masukkan kembali ke ID Input yang Anda punya
-		$("#totalinppn").val(number_format(SUM_JML, 4));
-		$("#dpp").val(number_format(dpp, 2));
-		$("#ppn").val(number_format(ppn, 2));
-
-		// Total Order Akhir (Harga + Pajak + Ongkir)
-		var grandTotal = totalOrder + kirim;
-		$("#subtotal").val(number_format(grandTotal, 4));
-
-		// Fungsi pembantu jika ada (opsional)
-		if (typeof TotalSemua === "function") {
-			TotalSemua();
-		}
-		cariTotal()
+		// Hitung ulang total footer dari basis baris yang sama
+		cariTotal();
 	}
 
+	// cariTotal() = satu-satunya sumber kebenaran untuk total footer.
+	// Selalu MENJUMLAHKAN ULANG seluruh baris (bukan membaca nilai lama).
 	function cariTotal() {
+		// 1. Jumlahkan Sub Total semua baris item (kelas ch_jumlah_ex2 = #dt_totalharga_*)
+		var totalItem = 0;
+		$(".ch_jumlah_ex2").each(function() {
+			totalItem += getNum($(this).val().split(",").join(""));
+		});
+
 		var diskonKhusus = getNum($("#diskonkhusus").val().split(",").join(""));
-		var totalAwal = getNum($("#totalinppn").val().split(",").join(""));
 		var kirim = getNum($("#kirim").val().split(",").join(""));
 
-		var baseSetelahDiskon = Math.max(0, totalAwal - diskonKhusus);
+		// 2. Total (sebelum pajak & ongkir) = total item - diskon khusus
+		var baseSetelahDiskon = Math.max(0, totalItem - diskonKhusus);
 
-		// Rumus sesuai Excel: DPP = Total Awal * 11/12
-		var dpp = baseSetelahDiskon * (11 / 12);
-
-		var ppn = 0;
-		var totalPlusPajak = 0;
-
-		// UPDATE: Gunakan ID 'show_tax' sesuai HTML Anda
 		var pajakAktif = $('#show_tax').is(':checked');
+		var dpp = 0;
+		var ppn = 0;
+		var totalPlusPajak = baseSetelahDiskon;
 
 		if (pajakAktif) {
-			// PPn = DPP * 12%
+			// Rumus sesuai Excel: DPP = base * 11/12 ; PPn = DPP * 12%
+			dpp = baseSetelahDiskon * (11 / 12);
 			ppn = dpp * 0.12;
-
-			// Total Akhir = Total Awal + PPn
 			totalPlusPajak = baseSetelahDiskon + ppn;
-
-			$("#dpp").val(number_format(dpp, 2));
-			$("#ppn").val(number_format(ppn, 2));
-		} else {
-			totalPlusPajak = baseSetelahDiskon;
-			$("#dpp").val(0);
-			$("#ppn").val(0);
 		}
 
+		// 3. Total Order = (base + ppn) + biaya kirim
 		var grandtotal = totalPlusPajak + kirim;
 
+		// 4. Tulis ke footer
+		$("#totalinppn").val(number_format(totalItem, 4));
+		$("#totalexppn").val(number_format(baseSetelahDiskon, 4));
+		$("#dpp").val(number_format(dpp, 2));
+		$("#ppn").val(number_format(ppn, 2));
 		$("#subtotal").val(number_format(grandtotal, 4));
-		$("#kirim").val(number_format(kirim, 2));
+
+		// Field hidden yang dibaca backend
+		$("#hargatotal").val(number_format(totalItem, 4));
+		$("#taxtotal").val(number_format(kirim, 2));
 	}
 
 	// function SumDel() {

@@ -39,7 +39,12 @@ class Finalize_incoming extends Admin_Controller
         $where_search = '';
         if (!empty($search)) {
             $s = $this->db->escape_like_str($search);
-            $where_search = " AND (r.id LIKE '%{$s}%' OR r.no_po LIKE '%{$s}%' OR s.nama LIKE '%{$s}%')";
+            $where_search = " AND (r.id LIKE '%{$s}%' OR r.no_po LIKE '%{$s}%' OR s.nama LIKE '%{$s}%'
+                OR EXISTS (
+                    SELECT 1 FROM tr_purchase_order p
+                    WHERE FIND_IN_SET(p.no_po, REPLACE(r.no_po, ' ', ''))
+                      AND p.no_surat LIKE '%{$s}%'
+                ))";
         }
 
         $base_sql = " FROM tr_ros_header r
@@ -159,7 +164,7 @@ class Finalize_incoming extends Admin_Controller
         $where_search = '';
         if (!empty($search)) {
             $s = $this->db->escape_like_str($search);
-            $where_search = " WHERE (inc.kode_trans LIKE '%{$s}%' OR inc.no_ros LIKE '%{$s}%' OR inc.no_po LIKE '%{$s}%')";
+            $where_search = " WHERE (inc.kode_trans LIKE '%{$s}%' OR inc.no_ros LIKE '%{$s}%' OR inc.no_po LIKE '%{$s}%' OR inc.no_surat LIKE '%{$s}%' OR inc.nm_supplier LIKE '%{$s}%')";
         }
 
         // 1. Query Hitung Total Data

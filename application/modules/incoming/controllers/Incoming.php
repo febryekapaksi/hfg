@@ -44,7 +44,12 @@ class Incoming extends Admin_Controller
         $where_search = '';
         if (!empty($search)) {
             $s = $this->db->escape_like_str($search);
-            $where_search = " AND (r.id LIKE '%{$s}%' OR r.no_po LIKE '%{$s}%' OR s.nama LIKE '%{$s}%')";
+            $where_search = " AND (r.id LIKE '%{$s}%' OR r.no_po LIKE '%{$s}%' OR s.nama LIKE '%{$s}%'
+                OR EXISTS (
+                    SELECT 1 FROM tr_purchase_order p
+                    WHERE FIND_IN_SET(p.no_po, REPLACE(r.no_po, ' ', ''))
+                      AND p.no_surat LIKE '%{$s}%'
+                ))";
         }
 
         $base_sql = " FROM tr_ros_header r
@@ -187,7 +192,12 @@ class Incoming extends Admin_Controller
         $where_search = '';
         if (!empty($search)) {
             $s = $this->db->escape_like_str($search);
-            $where_search = " AND (r.id LIKE '%{$s}%' OR r.no_po LIKE '%{$s}%' OR s.nama LIKE '%{$s}%')";
+            $where_search = " AND (r.id LIKE '%{$s}%' OR r.no_po LIKE '%{$s}%' OR s.nama LIKE '%{$s}%'
+                OR EXISTS (
+                    SELECT 1 FROM tr_purchase_order p
+                    WHERE FIND_IN_SET(p.no_po, REPLACE(r.no_po, ' ', ''))
+                      AND p.no_surat LIKE '%{$s}%'
+                ))";
         }
 
         $base_sql = " FROM tr_ros_header r
@@ -267,7 +277,12 @@ class Incoming extends Admin_Controller
         $where_search = '';
         if (!empty($search)) {
             $s = $this->db->escape_like_str($search);
-            $where_search = " AND (r.id LIKE '%{$s}%' OR r.no_po LIKE '%{$s}%' OR s.nama LIKE '%{$s}%')";
+            $where_search = " AND (r.id LIKE '%{$s}%' OR r.no_po LIKE '%{$s}%' OR s.nama LIKE '%{$s}%'
+                OR EXISTS (
+                    SELECT 1 FROM tr_purchase_order p
+                    WHERE FIND_IN_SET(p.no_po, REPLACE(r.no_po, ' ', ''))
+                      AND p.no_surat LIKE '%{$s}%'
+                ))";
         }
 
         $base_sql = " FROM tr_ros_header r
@@ -418,7 +433,12 @@ class Incoming extends Admin_Controller
         $where_search = '';
         if (!empty($search)) {
             $s = $this->db->escape_like_str($search);
-            $where_search = " AND (r.id LIKE '%{$s}%' OR r.no_po LIKE '%{$s}%' OR s.nama LIKE '%{$s}%')";
+            $where_search = " AND (r.id LIKE '%{$s}%' OR r.no_po LIKE '%{$s}%' OR s.nama LIKE '%{$s}%'
+                OR EXISTS (
+                    SELECT 1 FROM tr_purchase_order p
+                    WHERE FIND_IN_SET(p.no_po, REPLACE(r.no_po, ' ', ''))
+                      AND p.no_surat LIKE '%{$s}%'
+                ))";
         }
 
         $base_sql = " FROM tr_ros_header r
@@ -2760,7 +2780,12 @@ class Incoming extends Admin_Controller
         $where_search = '';
         if (!empty($search)) {
             $s = $this->db->escape_like_str($search);
-            $where_search = " AND (r.id LIKE '%{$s}%' OR r.no_po LIKE '%{$s}%' OR s.nama LIKE '%{$s}%' OR inc.kode_trans LIKE '%{$s}%')";
+            $where_search = " AND (r.id LIKE '%{$s}%' OR r.no_po LIKE '%{$s}%' OR s.nama LIKE '%{$s}%' OR inc.kode_trans LIKE '%{$s}%'
+                OR EXISTS (
+                    SELECT 1 FROM tr_purchase_order p
+                    WHERE FIND_IN_SET(p.no_po, REPLACE(r.no_po, ' ', ''))
+                      AND p.no_surat LIKE '%{$s}%'
+                ))";
         }
 
         $base_sql = " FROM tr_ros_header r

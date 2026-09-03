@@ -27,6 +27,9 @@ if ($is_view) {
     $status_payment      = $data['status_payment'] ?? null;
     $total_dp_rupiah_val = $data['total_dp_rupiah_val'] ?? null;
     $jumlah_rupiah_val   = $data['jumlah_rupiah'] ?? ($sisa_tagihan_val * $kurs);
+    // Local: DPP/PPn dari data tersimpan (nilai_ppn sudah dihitung saat save)
+    $ppn_local_val = (float)($data['nilai_ppn'] ?? 0);
+    $dpp_local_val = $sisa_tagihan_val * 11 / 12;
 } else {
     $no_surat    = $data_po['no_surat'];
     $nm_supplier = $get_supplier['nama'] ?? '-';
@@ -39,12 +42,17 @@ if ($is_view) {
     $id_incoming_val = $id_incoming ?? '';
     $sisa_tagihan_val = $sisa_tagihan ?? 0;
     $total_dp_rupiah_val = $total_dp_rupiah ?? 0;
-    // Local selalu IDR: kurs dikunci ke 1 dan Jumlah Invoice (IDR) langsung terisi
+    // Local selalu IDR: kurs dikunci ke 1, dan ada perhitungan DPP + PPn
     if ($tipe === 'local') {
         $kurs = 1;
-        $jumlah_rupiah_val = $sisa_tagihan_val * 1;
+        // DPP = sisa tagihan * 11/12 ; PPn = DPP * 12% ; Jumlah Invoice = sisa tagihan + PPn
+        $dpp_local_val     = $sisa_tagihan_val * 11 / 12;
+        $ppn_local_val     = $dpp_local_val * 0.12;
+        $jumlah_rupiah_val = $sisa_tagihan_val + $ppn_local_val;
     } else {
         $kurs = 0;
+        $dpp_local_val     = 0;
+        $ppn_local_val     = 0;
         $jumlah_rupiah_val = 0;
     }
     $nomor_invoice = '';
@@ -64,7 +72,7 @@ if ($is_view) {
 <input type="hidden" name="id_dp" value="<?= $is_view ? $id_dp : ($id_dp_val ?? '') ?>">
 <input type="hidden" name="id_ros" value="<?= $id_ros_val ?>">
 <input type="hidden" name="id_incoming" value="<?= $id_incoming_val ?>">
-<input type="hidden" name="nilai_ppn" value="0">
+<input type="hidden" name="nilai_ppn" id="input_nilai_ppn" value="<?= ($tipe === 'local' && !$is_view) ? $ppn_local_val : '0' ?>">
 <input type="hidden" name="nilai_disc" value="0">
 
 <div class="row g-3">
@@ -104,23 +112,48 @@ if ($is_view) {
     </div>
 
     <?php $is_local = ($tipe === 'local'); ?>
-    <div class="col-md-6">
-        <label class="form-label fw-semibold">
-            Kurs <?php if (!$is_view && !$is_local): ?><span class="text-danger">*</span><?php endif; ?>
-        </label>
-        <input type="text" name="kurs" id="input_kurs_il"
-            class="form-control form-control-sm text-end <?= (!$is_view && !$is_local) ? 'auto_num' : 'bg-light' ?>"
-            value="<?= $is_local ? '1' : ($kurs > 0 ? number_format($kurs, 2) : '') ?>"
-            placeholder="<?= (!$is_view && !$is_local) ? 'Masukkan kurs' : '' ?>"
-            <?= ($is_view || $is_local) ? 'readonly tabindex="-1"' : '' ?>>
-    </div>
 
-    <div class="col-md-6">
-        <label class="form-label fw-semibold">Jumlah Invoice (IDR)</label>
-        <input type="text" id="jumlah_invoice_idr"
-            class="form-control form-control-sm text-end bg-light"
-            value="<?= number_format($jumlah_rupiah_val, 2) ?>" readonly tabindex="-1">
-    </div>
+    <?php if ($is_local): ?>
+        <!-- Kurs local selalu 1 (hidden, tetap terkirim) -->
+        <input type="hidden" name="kurs" id="input_kurs_il" value="1">
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">DPP (IDR)</label>
+            <input type="text" id="dpp_local_display"
+                class="form-control form-control-sm text-end bg-light"
+                value="<?= number_format($dpp_local_val, 2) ?>" readonly tabindex="-1">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">PPn 12% (IDR)</label>
+            <input type="text" id="ppn_local_display"
+                class="form-control form-control-sm text-end bg-light"
+                value="<?= number_format($ppn_local_val, 2) ?>" readonly tabindex="-1">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">Jumlah Invoice (IDR)</label>
+            <input type="text" id="jumlah_invoice_idr"
+                class="form-control form-control-sm text-end bg-light"
+                value="<?= number_format($jumlah_rupiah_val, 2) ?>" readonly tabindex="-1">
+        </div>
+    <?php else: ?>
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">
+                Kurs <?php if (!$is_view): ?><span class="text-danger">*</span><?php endif; ?>
+            </label>
+            <input type="text" name="kurs" id="input_kurs_il"
+                class="form-control form-control-sm text-end <?= !$is_view ? 'auto_num' : '' ?>"
+                value="<?= $kurs > 0 ? number_format($kurs, 2) : '' ?>"
+                placeholder="<?= !$is_view ? 'Masukkan kurs' : '' ?>"
+                <?= $ro ?>>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">Jumlah Invoice (IDR)</label>
+            <input type="text" id="jumlah_invoice_idr"
+                class="form-control form-control-sm text-end bg-light"
+                value="<?= number_format($jumlah_rupiah_val, 2) ?>" readonly tabindex="-1">
+        </div>
+    <?php endif; ?>
 
     <!-- Bagian Wajib Diisi -->
     <div class="col-12 mt-4">
@@ -269,6 +302,7 @@ if ($is_view) {
             });
 
             var sisaTagihan = <?= (float)$sisa_tagihan_val ?>;
+            var isLocal = <?= $is_local ? 'true' : 'false' ?>;
 
             function formatNumber(num) {
                 return num.toLocaleString('id-ID', {
@@ -278,12 +312,22 @@ if ($is_view) {
             }
 
             function hitungSemua() {
-                var kursRaw = $('#input_kurs_il').autoNumeric('get');
-                var kurs = parseFloat(kursRaw) || 0;
+                if (isLocal) {
+                    // Local: kurs = 1. DPP = sisa * 11/12, PPn = DPP * 12%, Jumlah = sisa + PPn
+                    var dpp = sisaTagihan * 11 / 12;
+                    var ppn = dpp * 0.12;
+                    var jumlahIdr = sisaTagihan + ppn;
 
-                var jumlahIdr = sisaTagihan * kurs;
-
-                $('#jumlah_invoice_idr').val(formatNumber(jumlahIdr));
+                    $('#dpp_local_display').val(formatNumber(dpp));
+                    $('#ppn_local_display').val(formatNumber(ppn));
+                    $('#jumlah_invoice_idr').val(formatNumber(jumlahIdr));
+                    $('#input_nilai_ppn').val(ppn);
+                } else {
+                    var kursRaw = $('#input_kurs_il').autoNumeric('get');
+                    var kurs = parseFloat(kursRaw) || 0;
+                    var jumlahIdr = sisaTagihan * kurs;
+                    $('#jumlah_invoice_idr').val(formatNumber(jumlahIdr));
+                }
             }
 
             $('#input_kurs_il').on('change keyup', function() {

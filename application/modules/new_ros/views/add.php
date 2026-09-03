@@ -1694,7 +1694,13 @@ $list_po_data = isset($list_po) ? $list_po : [];
                         qty_roll: coil.qty_roll || 1,
                         parent_no_coil: coil.parent_no_coil || null
                     });
-                    added++;
+
+                    // Hitung hanya coil fisik: mother coil yang punya baby
+                    // (is_baby_coil = 0 && qty_roll > 1) tidak dihitung
+                    var isMotherWithBaby = (parseInt(coil.is_baby_coil) === 0 && parseInt(coil.qty_roll) > 1);
+                    if (!isMotherWithBaby) {
+                        added++;
+                    }
                 }
             });
 

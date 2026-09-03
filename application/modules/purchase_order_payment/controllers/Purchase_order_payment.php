@@ -675,7 +675,12 @@ class Purchase_order_payment extends Admin_Controller
 		};
 
 		$sisa_nilai = $clean($this->input->post('sisa_nilai'));
-		$jumlah_rupiah = $sisa_nilai * $kurs;
+
+		// Local selalu IDR (kurs = 1). Hitung ulang PPn server-side (anti-manipulasi):
+		// DPP = sisa tagihan * 11/12 ; PPn = DPP * 12% ; Jumlah Invoice = sisa tagihan + PPn
+		$dpp_local     = $sisa_nilai * 11 / 12;
+		$nilai_ppn     = $dpp_local * 0.12;
+		$jumlah_rupiah = $sisa_nilai + $nilai_ppn;
 		$gl_hutang_dagang = round($jumlah_rupiah);
 
 		// Hitung unbill dan selisih kurs dari incoming header (gl_unbill_from_ros)
@@ -705,12 +710,13 @@ class Purchase_order_payment extends Admin_Controller
 			'invoice_date'         => $this->input->post('invoice_date'),
 			'invoice_date_real'    => $this->input->post('invoice_date_real') ?: null,
 			'nilai_invoice'        => $sisa_nilai,
-			'nilai_ppn'            => $clean($this->input->post('nilai_ppn')),
+			'nilai_ppn'            => $nilai_ppn,
 			'jumlah_rupiah'        => $jumlah_rupiah,
 			'value_ros_by_po'      => $nominal_unbill,
 			'gl_unbill'            => $nominal_unbill,
 			'gl_selisih'           => $selisih,
 			'gl_hutang_dagang'     => $gl_hutang_dagang,
+			'gl_ppn'               => round($nilai_ppn),
 			'currency'             => $currency,
 			'kurs'                 => $kurs,
 			'nomor_faktur_pajak'   => $this->input->post('nomor_faktur_pajak') ?: null,
