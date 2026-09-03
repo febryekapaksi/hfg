@@ -547,7 +547,7 @@ if ($type == 'expense') {
                                                 <tr>
                                                     <td>Sisa Nilai</td>
                                                     <td class="text-center" style="width:10px">:</td>
-                                                    <td class="text-end fw-semibold"><?= number_format($dtl->value_ros_by_po ?? 0, 2) ?></td>
+                                                    <td class="text-end fw-semibold"><?= number_format($dtl->nilai_invoice ?? 0, 2) ?></td>
                                                 </tr>
                                             <?php endif; ?>
                                             <tr>
