@@ -264,6 +264,9 @@ $ro       = $is_view ? 'readonly' : '';
                 });
             }
 
+            // ── Nilai PPN (currency asli) ───────────────────────────────────
+            var nilaiPpn = <?= (float)($is_view ? $d['nilai_ppn'] : $nilai_ppn) ?>;
+
             // ── Hitung Jumlah Invoice IDR ───────────────────────────────────
             function hitungSemua() {
                 var valueDp = <?= (float)($is_view ? $d['value_dp'] : $data_po['nilai']) ?>;
@@ -274,7 +277,8 @@ $ro       = $is_view ? 'readonly' : '';
                     kurs = parseFloat(kursRaw) || 0;
                 }
 
-                var jumlahRupiah = valueDp * kurs;
+                // Jumlah Invoice (IDR) = (Value DP + Nilai PPN) x kurs
+                var jumlahRupiah = (valueDp + nilaiPpn) * kurs;
 
                 $('#jumlah_rupiah').val(formatNumber(jumlahRupiah));
                 $('#jumlah_po').val(formatNumber(jumlahPoForeign, 4));

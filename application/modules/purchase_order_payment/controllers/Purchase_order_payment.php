@@ -109,6 +109,12 @@ class Purchase_order_payment extends Admin_Controller
 			$this->db->join('payment_approve pa', "pa.id_payment = ril.no_po AND pa.tipe = 'invoice_import'", 'left');
 			$this->db->where('a.loi', 'Import');
 			$this->db->where('rh.status', 1);
+			// Sembunyikan PO yang DP-nya 100% DAN sudah lunas (tidak ada sisa tagihan)
+			$this->db->where("NOT EXISTS (
+				SELECT 1 FROM tr_top_po dptop
+				JOIN tr_receive_invoice dpri ON dpri.id_top = dptop.id AND dpri.tipe = 'dp' AND dpri.status = 'payment'
+				WHERE dptop.no_po = a.no_po AND dptop.group_top = 76 AND dptop.progress >= 100
+			)", null, false);
 			$this->db->group_by('rh.id');
 			$this->db->order_by('rh.created_on', 'desc');
 			$list_po = $this->db->get()->result_array();
@@ -136,6 +142,12 @@ class Purchase_order_payment extends Admin_Controller
 			$this->db->join('payment_approve pa', "pa.id_payment = ril.no_po AND pa.tipe = 'invoice_local'", 'left');
 			$this->db->where('a.loi', 'Lokal');
 			$this->db->where('ih.status', 'finalized');
+			// Sembunyikan PO yang DP-nya 100% DAN sudah lunas (tidak ada sisa tagihan)
+			$this->db->where("NOT EXISTS (
+				SELECT 1 FROM tr_top_po dptop
+				JOIN tr_receive_invoice dpri ON dpri.id_top = dptop.id AND dpri.tipe = 'dp' AND dpri.status = 'payment'
+				WHERE dptop.no_po = a.no_po AND dptop.group_top = 76 AND dptop.progress >= 100
+			)", null, false);
 			$this->db->group_by('ih.id');
 			$this->db->order_by('ih.created_at', 'desc');
 			$list_po = $this->db->get()->result_array();
@@ -183,7 +195,7 @@ class Purchase_order_payment extends Admin_Controller
 		])->row_array();
 
 		// DPP diambil langsung dari tr_top_po.nilai
-		$dpp = (float)($data_po['nilai'] ?? 0);
+		$dpp = (float)($data_po['nilai'] ?? 0) * (11 / 12);
 
 		// Hitung Nilai PPN
 		$ppn_persen = (float)($data_po['total_ppn_persen'] ?? 0);
@@ -267,12 +279,12 @@ class Purchase_order_payment extends Admin_Controller
 
 		// Total DP existing (dalam IDR)
 		$total_dp_rupiah = (float)($this->db
-			->select_sum('jumlah_rupiah')
+			->select_sum('gl_value_dp')
 			->where('no_po', $no_po)
 			->where('tipe', 'dp')
 			->get('tr_receive_invoice')
 			->row()
-			->jumlah_rupiah ?? 0);
+			->gl_value_dp ?? 0);
 
 		// Currency dari PO
 		$currency = strtoupper(trim($data_po['matauang'] ?? 'IDR'));
@@ -355,9 +367,16 @@ class Purchase_order_payment extends Admin_Controller
 			return (float)str_replace(',', '', $val ?? '0');
 		};
 
-		// Hitung jumlah_rupiah = value_dp × kurs
+		// Hitung jumlah_rupiah = (value_dp + nilai_ppn) × kurs
 		$value_dp      = $clean($this->input->post('value_dp'));
-		$jumlah_rupiah = $value_dp * $kurs;
+		$nilai_ppn_dp  = $clean($this->input->post('nilai_ppn'));
+		$jumlah_rupiah = ($value_dp + $nilai_ppn_dp) * $kurs;
+
+		// Value DP dalam IDR (value_dp × kurs, tanpa PPN)
+		// - value_dp_idr : nilai asli IDR (belum di-round) untuk kebutuhan perhitungan lanjutan
+		// - gl_value_dp  : sudah di-round, untuk kebutuhan jurnal
+		$value_dp_idr = $value_dp * $kurs;
+		$gl_value_dp  = round($value_dp_idr);
 
 		// Ambil data PO untuk recalculate server-side (anti manipulasi)
 		$po_row        = $this->db->get_where('tr_purchase_order', ['no_po' => $no_po])->row_array();
@@ -382,10 +401,14 @@ class Purchase_order_payment extends Admin_Controller
 			'invoice_date'         => $this->input->post('invoice_date'),
 			'invoice_date_real'    => $this->input->post('invoice_date_real') ?: null,
 			'nilai_invoice'        => $value_dp,
-			'nilai_ppn'            => $clean($this->input->post('nilai_ppn')),
+			'nilai_ppn'            => $nilai_ppn_dp,
+			'gl_ppn'               => round($nilai_ppn_dp),
 			'currency'             => $currency,
 			'kurs'                 => $kurs,
 			'jumlah_rupiah'        => $jumlah_rupiah,
+			'gl_hutang_dagang'     => round($jumlah_rupiah),
+			'value_dp_idr'         => $value_dp_idr,
+			'gl_value_dp'          => $gl_value_dp,
 			'nomor_faktur_pajak'   => $this->input->post('nomor_faktur_pajak') ?: null,
 			'tanggal_faktur_pajak' => $this->input->post('tanggal_faktur_pajak') ?: null,
 			'file_invoice'         => $file_invoice,
@@ -604,7 +627,7 @@ class Purchase_order_payment extends Admin_Controller
 	public function save_local()
 	{
 		// Validasi field wajib
-		$required = ['id_top', 'no_po', 'no_surat', 'nomor_invoice', 'invoice_date', 'bank', 'no_bank', 'nm_acc_bank'];
+		$required = ['no_po', 'no_surat', 'nomor_invoice', 'invoice_date', 'bank', 'no_bank', 'nm_acc_bank'];
 		foreach ($required as $field) {
 			if (empty($this->input->post($field))) {
 				echo json_encode(['status' => 0, 'message' => 'Field ' . $field . ' wajib diisi.']);
@@ -612,7 +635,7 @@ class Purchase_order_payment extends Admin_Controller
 			}
 		}
 
-		$id_top   = $this->input->post('id_top');
+		$id_top   = $this->input->post('id_top') ?: null;
 		$no_po    = $this->input->post('no_po');
 		$no_surat = $this->input->post('no_surat');
 		$id_dp    = $this->input->post('id_dp') ?: null;
@@ -907,6 +930,12 @@ class Purchase_order_payment extends Admin_Controller
 		$this->db->where('e.group_top', 101);
 		$this->db->where('rh.status_incoming', 'closed');
 		$this->db->where('a.id_suplier', $kode_supplier);
+		// Sembunyikan PO yang DP-nya 100% DAN sudah lunas (tidak ada sisa tagihan)
+		$this->db->where("NOT EXISTS (
+			SELECT 1 FROM tr_top_po dptop
+			JOIN tr_receive_invoice dpri ON dpri.id_top = dptop.id AND dpri.tipe = 'dp' AND dpri.status = 'payment'
+			WHERE dptop.no_po = a.no_po AND dptop.group_top = 76 AND dptop.progress >= 100
+		)", null, false);
 		$this->db->group_by('e.id');
 		$this->db->order_by('a.created_on', 'desc');
 		$list_po = $this->db->get()->result_array();
@@ -939,6 +968,12 @@ class Purchase_order_payment extends Admin_Controller
 		$this->db->where('a.loi', 'Lokal');
 		$this->db->where('ih.status', 'finalized');
 		$this->db->where('a.id_suplier', $kode_supplier);
+		// Sembunyikan PO yang DP-nya 100% DAN sudah lunas (tidak ada sisa tagihan)
+		$this->db->where("NOT EXISTS (
+			SELECT 1 FROM tr_top_po dptop
+			JOIN tr_receive_invoice dpri ON dpri.id_top = dptop.id AND dpri.tipe = 'dp' AND dpri.status = 'payment'
+			WHERE dptop.no_po = a.no_po AND dptop.group_top = 76 AND dptop.progress >= 100
+		)", null, false);
 		$this->db->group_by('ih.id');
 		$this->db->order_by('ih.created_at', 'desc');
 		$list_po = $this->db->get()->result_array();

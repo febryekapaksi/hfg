@@ -167,7 +167,7 @@ class Request_payment extends Admin_Controller
 
 	public function list_approve_checker()
 	{
-		$data = $this->Request_payment_model->GetListDataApproval("a.app_checker IS NULL");
+		$data = $this->Request_payment_model->GetListDataApproval("a.status = 'approve checker' AND a.app_checker IS NULL");
 
 		$data_kasbon = $this->Request_payment_model->GetListDataApproval('1 = 1');
 		$data_expense = $this->Request_payment_model->GetListDataApproval('1 = 1');
@@ -273,6 +273,12 @@ class Request_payment extends Admin_Controller
 			$data_detail	= [$data];
 		}
 
+		// Document Import (ROS Payment: BM, LS, Insurance, Other Cost)
+		if (in_array($type, ['ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'])) {
+			$data 			= $this->db->get_where('tr_ros_payment', ['id' => $id])->row();
+			$data_detail	= [$data];
+		}
+
 		$get_req_payment = $this->db->get_where('request_payment', ['id' => $id_exp])->row_array();
 
 		$this->template->set([
@@ -342,6 +348,12 @@ class Request_payment extends Admin_Controller
 		// Invoice PO (DP, Import, Local)
 		if (in_array($type, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
 			$data 			= $this->db->get_where('tr_receive_invoice', ['id' => $id])->row();
+			$data_detail	= [$data];
+		}
+
+		// Document Import (ROS Payment: BM, LS, Insurance, Other Cost)
+		if (in_array($type, ['ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'])) {
+			$data 			= $this->db->get_where('tr_ros_payment', ['id' => $id])->row();
 			$data_detail	= [$data];
 		}
 
@@ -572,6 +584,10 @@ class Request_payment extends Admin_Controller
 		if (in_array($Data['tipe'], ['invoice_dp', 'invoice_import', 'invoice_local'])) {
 			$header 	= $this->db->get_where('request_payment', ['no_doc' => $Data['no_doc'], 'tipe' => $Data['tipe']])->row_array();
 		}
+		// Document Import (ROS Payment) — cari by ids karena 1 no_po bisa punya beberapa baris ros_*
+		if (in_array($Data['tipe'], ['ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'])) {
+			$header 	= $this->db->get_where('request_payment', ['ids' => $Data['id'], 'tipe' => $Data['tipe']])->row_array();
+		}
 
 		if (empty($header)) {
 			// Cegah insert kosong jika request_payment tidak ditemukan
@@ -586,8 +602,8 @@ class Request_payment extends Admin_Controller
 		$no_coa_bank = $no_coa_bank[0] ?? '';
 
 		$kode_bank = '';
-		if (in_array($Data['tipe'], ['invoice_dp', 'invoice_import', 'invoice_local'])) {
-			// Untuk invoice PO, skip COA lookup — gunakan kode_bank kosong
+		if (in_array($Data['tipe'], ['invoice_dp', 'invoice_import', 'invoice_local', 'ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'])) {
+			// Untuk invoice PO & Document Import (ROS), skip COA lookup — gunakan kode_bank kosong
 			$kode_bank = '';
 		} else {
 			$get_kode_bank = $this->db->get_where(DBACC . '.coa_master', ['no_perkiraan' => $no_coa_bank])->row();
@@ -838,6 +854,35 @@ class Request_payment extends Admin_Controller
 				];
 				$Harga[] 		= $nilai;
 			}
+
+			// Document Import (ROS Payment: BM, LS, Insurance, Other Cost)
+			if (in_array($Data['tipe'], ['ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'])) {
+				$dtl   = $this->db->get_where('tr_ros_payment', ['id' => $detail['id']])->row();
+				$nilai = (float)($dtl->nominal ?? 0);
+
+				$tipe_label = str_replace(['ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'], ['BM', 'LS (Surveyor)', 'Insurance', 'Other Cost'], $Data['tipe']);
+
+				$ArrDetail[] = [
+					'id' 			=> $id_detail,
+					'payment_id' 	=> $Id,
+					'no_doc' 		=> $header['no_doc'],
+					'tgl_doc' 		=> $header['tgl_doc'],
+					'deskripsi' 	=> $tipe_label . ' - ' . $header['no_doc'] . (!empty($dtl->keterangan) ? ' - ' . $dtl->keterangan : ''),
+					'qty' 			=> '1',
+					'harga' 		=> $nilai,
+					'total' 		=> $nilai,
+					'keterangan' 	=> $header['keperluan'] ?? $tipe_label,
+					'doc_file' 		=> '',
+					'coa' 			=> '',
+					'created_by' 	=> $this->auth->user_name(),
+					'created_on' 	=> date("Y-m-d h:i:s"),
+				];
+				$updateDetail[] = [
+					'id' 			=> $dtl->id,
+					'status' 		=> 'approve management'
+				];
+				$Harga[] 		= $nilai;
+			}
 			$id_detail++;
 		}
 
@@ -890,6 +935,15 @@ class Request_payment extends Admin_Controller
 
 			if (in_array($Data['tipe'], ['invoice_dp', 'invoice_import', 'invoice_local'])) {
 				$this->db->update('tr_receive_invoice', ['status' => 'approve management'], ['id' => $Data['id']]);
+			}
+
+			// Document Import (ROS Payment)
+			if (in_array($Data['tipe'], ['ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'])) {
+				$this->db->update('tr_ros_payment', [
+					'status'      => 'approve management',
+					'modified_by' => $this->auth->user_id(),
+					'modified_on' => date('Y-m-d H:i:s'),
+				], ['id' => $Data['id']]);
 			}
 		}
 
@@ -956,6 +1010,14 @@ class Request_payment extends Admin_Controller
 					}
 					if (in_array($post['tipe'], ['invoice_dp', 'invoice_import', 'invoice_local'])) {
 						$this->db->update('tr_receive_invoice', ['status' => 'approve checker'], ['id' => $item['id']]);
+					}
+					// Document Import (ROS Payment)
+					if (in_array($post['tipe'], ['ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'])) {
+						$this->db->update('tr_ros_payment', [
+							'status'      => 'approve checker',
+							'modified_by' => $this->auth->user_id(),
+							'modified_on' => date('Y-m-d H:i:s'),
+						], ['id' => $item['id']]);
 					}
 				}
 			}
@@ -2657,16 +2719,50 @@ class Request_payment extends Admin_Controller
 		$pilih = $post['pilih'] ?? [];
 
 		if (!empty($pilih)) {
-			foreach ($pilih as $no_doc) {
-				$tanggal_pembayaran = $post['tanggal_pembayaran_' . $no_doc] ?? null;
+			foreach ($pilih as $key) {
+				$tanggal_pembayaran = $post['tanggal_pembayaran_' . $key] ?? null;
 
-				// Update tanggal dan status
-				$this->db->update('request_payment', [
-					'tanggal' => $tanggal_pembayaran,
-					'status'  => 'approve checker'
-				], [
-					'no_doc' => $no_doc
-				]);
+				// Untuk tipe Document Import (ros_*), key = id (PK request_payment) — unik
+				// per komponen. Cek dulu apakah $key merujuk ke satu baris ros_*.
+				$ros_row = null;
+				if (is_numeric($key)) {
+					$ros_row = $this->db
+						->select('id')
+						->from('request_payment')
+						->where('id', $key)
+						->like('tipe', 'ros_', 'after')
+						->get()
+						->row();
+				}
+
+				if ($ros_row) {
+					// ── Jalur ROS: proses HANYA komponen ini (per id) ──
+					$this->db->update('request_payment', [
+						'tanggal' => $tanggal_pembayaran,
+						'status'  => 'approve checker'
+					], [
+						'id' => $ros_row->id
+					]);
+
+					// Sinkronkan tr_ros_payment ke 'approve checker' hanya untuk komponen ini,
+					// dan hanya jika masih 'diajukan' (tidak menurunkan yang sudah lebih maju).
+					$this->db->update('tr_ros_payment', [
+						'status'      => 'approve checker',
+						'modified_by' => $this->auth->user_id(),
+						'modified_on' => date('Y-m-d H:i:s'),
+					], [
+						'id_request_payment' => $ros_row->id,
+						'status'             => 'diajukan',
+					]);
+				} else {
+					// ── Jalur lama (tipe lain): per no_doc, TIDAK diubah ──
+					$this->db->update('request_payment', [
+						'tanggal' => $tanggal_pembayaran,
+						'status'  => 'approve checker'
+					], [
+						'no_doc' => $key
+					]);
+				}
 			}
 		}
 

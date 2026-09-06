@@ -1283,6 +1283,265 @@ class Pembayaran_material extends Admin_Controller
 	}
 
 	/**
+	 * Save Payment untuk Document Import (ROS Payment: BM/LS/Insurance/Other Cost)
+	 * Nilai dibaca dari tr_ros_payment.nominal (bukan tr_receive_invoice).
+	 * Tanpa PPN/PPH. Setelah simpan:
+	 *  - tr_ros_payment.status  -> 'lunas'
+	 *  - request_payment.status -> 'finish'
+	 *  - jika SEMUA payment ROS lunas -> tr_ros_header.status_payment = 'close'
+	 */
+	public function save_payment_ros()
+	{
+		ob_start();
+
+		$post = $this->input->post();
+
+		$this->db->trans_begin();
+
+		try {
+			// id_payment dari form = ID request_payment (bisa lebih dari 1, dipisah koma)
+			$id_req_arr = [];
+			$raw_ids = explode(',', $post['id_payment']);
+			foreach ($raw_ids as $rid) {
+				$rid = trim($rid);
+				if (!empty($rid) && is_numeric($rid)) {
+					$id_req_arr[] = $rid;
+				}
+			}
+			if (empty($id_req_arr) && !empty($post['dt'])) {
+				foreach ($post['dt'] as $dt_item) {
+					if (!empty($dt_item['id_payment'])) {
+						$id_req_arr[] = $dt_item['id_payment'];
+					}
+				}
+			}
+			if (empty($id_req_arr)) {
+				throw new Exception('Data request payment tidak ditemukan.');
+			}
+
+			$req_payment_rows = $this->db->where_in('id', $id_req_arr)->get('request_payment')->result();
+			if (empty($req_payment_rows)) {
+				throw new Exception('Data request payment tidak valid.');
+			}
+			$first_req    = $req_payment_rows[0];
+			$tipe_payment = $first_req->tipe; // ros_bm / ros_ls / ros_insurance / ros_other_cost
+
+			$tgl_bayar    = $post['tgl_bayar'];
+			$bank_coa     = $post['bank'];
+			$mata_uang    = $post['mata_uang'] ?? 'IDR';
+			$kurs         = (float) str_replace(',', '', $post['kurs_payment'] ?? '1');
+			if ($kurs <= 0) $kurs = 1;
+			$payment_bank = (float) str_replace(',', '', $post['payment_bank'] ?? '0');
+			$bank_charge  = (float) str_replace(',', '', $post['bank_charge'] ?? '0');
+			$keterangan   = $post['keterangan_pembayaran'] ?? '';
+			$id_supplier  = $post['supplier_input'] ?? '';
+			$nm_supplier  = $post['nm_supplier_input'] ?? '';
+
+			$nilai_bank_idr = $payment_bank * $kurs;
+
+			$db_acc = $this->load->database('accounting', TRUE);
+			$kode_bank = '';
+			$no_doc_payment = $this->Pembayaran_material_model->generate_id_payment_paid($kode_bank, $tgl_bayar);
+
+			// Subtotal = SUM nominal tr_ros_payment dari item terpilih (tanpa PPN/PPH)
+			$subtotal        = 0;
+			$ros_payment_ids = [];
+			if (!empty($post['dt'])) {
+				foreach ($post['dt'] as $detail) {
+					$id_rospay = $detail['ids'] ?? '';
+					if (!empty($id_rospay)) {
+						$rp = $this->db->get_where('tr_ros_payment', ['id' => $id_rospay])->row();
+						if ($rp) {
+							$subtotal          += (float) $rp->nominal;
+							$ros_payment_ids[]  = $rp->id;
+						}
+					}
+				}
+			}
+
+			// Grand Total = subtotal + bank_charge (tanpa PPN/PPH)
+			$grand_total = $subtotal + $bank_charge;
+
+			$nm_coa_bank = '';
+			$row_bank = $db_acc->get_where('coa_master', ['no_perkiraan' => $bank_coa])->row();
+			if (!empty($row_bank)) $nm_coa_bank = $row_bank->nama;
+
+			$id_payment_val = $first_req->no_doc;
+
+			// INSERT header payment_approve
+			$this->db->insert('payment_approve', [
+				'no_doc'                => $no_doc_payment,
+				'tipe'                  => $tipe_payment,
+				'tgl_bayar'             => $tgl_bayar,
+				'tgl_doc'               => $tgl_bayar,
+				'pay_by'                => $this->auth->user_name(),
+				'pay_on'                => date('Y-m-d H:i:s'),
+				'created_by'            => $this->auth->user_name(),
+				'created_on'            => date('Y-m-d H:i:s'),
+				'supplier'              => $id_supplier,
+				'keterangan_pembayaran' => $keterangan,
+				'coa_bank'              => $bank_coa,
+				'nm_coa_bank'           => $nm_coa_bank,
+				'mata_uang'             => $mata_uang,
+				'currency'              => $mata_uang,
+				'kurs_payment'          => $kurs,
+				'payment_bank'          => $payment_bank,
+				'total_payment'         => $subtotal,
+				'total_pph'             => 0,
+				'total_ppn'             => 0,
+				'grand_total_payment'   => $grand_total,
+				'tipe_pph'              => '',
+				'id_supplier'           => $id_supplier,
+				'nm_supplier'           => $nm_supplier,
+				'link_doc'              => '',
+				'bank_charge'           => $bank_charge,
+				'nominal_asli'          => $payment_bank,
+				'nominal_asli_idr'      => $nilai_bank_idr,
+				'tagihan_idr'           => $subtotal,
+				'dibayar_idr'           => (int) round($nilai_bank_idr),
+				'selisih_kurs_idr'      => 0,
+				'selisih'               => 0,
+				'id_payment'            => $id_payment_val,
+				'gl_hutang_dagang'      => (int) round($subtotal),
+				'gl_selisih_kurs'       => 0,
+			]);
+
+			// INSERT payment_approve_details per item ros_*
+			if (!empty($post['dt'])) {
+				foreach ($post['dt'] as $detail) {
+					$id_rospay = $detail['ids'] ?? '';
+					$nominal   = 0;
+					$ket_row   = '';
+					if (!empty($id_rospay)) {
+						$rp = $this->db->get_where('tr_ros_payment', ['id' => $id_rospay])->row();
+						if ($rp) {
+							$nominal = (float) $rp->nominal;
+							$ket_row = $rp->keterangan;
+						}
+					}
+
+					$file_upload_row = $this->upload_doc_per_row($detail['id_payment'] ?? '');
+
+					$this->db->insert('payment_approve_details', [
+						'payment_id'         => $no_doc_payment,
+						'no_doc'             => $detail['no_surat'] ?? '',
+						'no_po'              => $detail['no_doc'] ?? '',
+						'deskripsi'          => 'Payment ' . ($detail['no_surat'] ?? $detail['no_doc'] ?? '') . ($ket_row ? ' - ' . $ket_row : ''),
+						'nilai_invoice_kurs' => $nominal,
+						'nilai_invoice_idr'  => $nominal,
+						'total_bayar_kurs'   => $payment_bank,
+						'total_bayar_idr'    => (float) str_replace(',', '', $post['nilai_bank_idr'] ?? '0'),
+						'total'              => $nominal,
+						'nilai_invoice'      => $nominal,
+						'nilai_ppn'          => 0,
+						'nilai_pph'          => 0,
+						'tipe_pph'           => '',
+						'kurs_invoice'       => $kurs,
+						'id_receive_invoice' => null,
+						'currency'           => $mata_uang,
+						'file_original_name' => $file_upload_row['file_original_name'],
+						'file_hash_name'     => $file_upload_row['file_hash_name'],
+						'created_by'         => $this->auth->user_name(),
+						'created_on'         => date('Y-m-d H:i:s'),
+					]);
+				}
+			}
+
+			// Update tr_ros_payment -> lunas
+			if (!empty($ros_payment_ids)) {
+				$this->db->where_in('id', $ros_payment_ids);
+				$this->db->update('tr_ros_payment', [
+					'status'      => 'lunas',
+					'modified_by' => $this->auth->user_id(),
+					'modified_on' => date('Y-m-d H:i:s'),
+				]);
+			}
+
+			// Update request_payment -> finish
+			$this->db->where_in('id', $id_req_arr);
+			$this->db->update('request_payment', ['status' => 'finish']);
+
+			// Hapus tr_choosed_payment untuk item yang sudah diproses
+			$this->db->where('id_user', $this->auth->user_id());
+			$this->db->where_in('id_payment', $id_req_arr);
+			$this->db->delete('tr_choosed_payment');
+
+			// ── Auto close ROS: jika SEMUA tr_ros_payment untuk ROS ini sudah lunas ──
+			$ros_header_ids = [];
+			if (!empty($ros_payment_ids)) {
+				$rows_ros = $this->db->select('DISTINCT id_ros_header', false)
+					->where_in('id', $ros_payment_ids)
+					->get('tr_ros_payment')
+					->result();
+				foreach ($rows_ros as $r) {
+					$ros_header_ids[] = $r->id_ros_header;
+				}
+			}
+			foreach (array_unique($ros_header_ids) as $id_ros_header) {
+				$belum_lunas = $this->db
+					->where('id_ros_header', $id_ros_header)
+					->where('status !=', 'lunas')
+					->count_all_results('tr_ros_payment');
+
+				if ($belum_lunas == 0) {
+					$this->db->update('tr_ros_header', [
+						'status_payment' => 'close',
+						'modified_by'    => $this->auth->user_id(),
+						'modified_on'    => date('Y-m-d H:i:s'),
+					], ['id' => $id_ros_header]);
+				}
+			}
+
+			// ── Generate Jurnal via ms_jurnal_mapping ──
+			$row_lengkap = $this->db->get_where('payment_approve', ['no_doc' => $no_doc_payment])->row_array();
+			if (empty($row_lengkap)) {
+				throw new Exception('Gagal mengambil data payment_approve yang baru disimpan (no_doc: ' . $no_doc_payment . ').');
+			}
+
+			$this->load->model('gl_interface/Gl_interface_model');
+
+			$suffix_map = [
+				'ros_bm'         => 'save_payment_ros_bm',
+				'ros_ls'         => 'save_payment_ros_ls',
+				'ros_insurance'  => 'save_payment_ros_insurance',
+				'ros_other_cost' => 'save_payment_ros_other_cost',
+			];
+			$action_jurnal = isset($suffix_map[$tipe_payment]) ? $suffix_map[$tipe_payment] : 'save_payment_ros_bm';
+
+			$mapping = $this->db->get_where('ms_jurnal_mapping', ['menu' => 'Pembayaran Material', 'action' => $action_jurnal])->row();
+			if (!$mapping) {
+				throw new Exception('Template jurnal untuk ' . $action_jurnal . ' belum dikonfigurasi di Master Jurnal Mapping.');
+			}
+			$kode_jurnal = $mapping->kode_master_jurnal;
+			$id_gl = $this->Gl_interface_model->generate_jurnal_dari_template($kode_jurnal, $row_lengkap);
+
+			if ($id_gl === false) {
+				throw new Exception('Gagal generate jurnal: template ' . $kode_jurnal . ' tidak ditemukan/kosong.');
+			}
+
+			$this->db->trans_commit();
+
+			ob_end_clean();
+			header('Content-Type: application/json');
+			echo json_encode([
+				'status' => 1,
+				'pesan'  => 'Payment Document Import berhasil disimpan.'
+			]);
+			exit;
+		} catch (Exception $e) {
+			$this->db->trans_rollback();
+
+			ob_end_clean();
+			header('Content-Type: application/json');
+			echo json_encode([
+				'status' => 0,
+				'pesan'  => 'Gagal: ' . $e->getMessage()
+			]);
+			exit;
+		}
+	}
+
+	/**
 	 * Save Payment untuk tipe Invoice Local
 	 * Logika penyimpanan identik dengan save_payment_po,
 	 * hanya kode jurnal yang berbeda (BUK003).

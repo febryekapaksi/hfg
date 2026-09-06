@@ -10,6 +10,9 @@ $count_expense = 0;
 $count_periodik = 0;
 $count_pembayaran_po = 0;
 $count_direct_payment = 0;
+$count_document_import = 0;
+
+$ros_payment_types = ['ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'];
 
 foreach ($data as $item) :
     if ($item->tipe == 'transportasi') {
@@ -34,18 +37,27 @@ foreach ($data as $item) :
     if (in_array($item->tipe, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
         $count_pembayaran_po += 1;
     }
+    if (in_array($item->tipe, $ros_payment_types)) {
+        $count_document_import += 1;
+    }
 endforeach;
 ?>
 
 <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.min.css">
 <style>
     .card-counter {
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.15s ease;
     }
 
     .card-counter:hover {
         transform: translateY(-3px);
         box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
+    }
+
+    .card-counter.active-card {
+        background-color: #eef6ff;
+        box-shadow: 0 0 0 2px #0d6efd inset, 0 .5rem 1rem rgba(13, 110, 253, .15) !important;
     }
 
     .table thead th {
@@ -129,6 +141,18 @@ endforeach;
                     <h2 class="fw-bold m-0 mt-1 text-secondary"><?= $count_direct_payment ?></h2>
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-secondary btn_view_req" data-val="direct_payment"><i class="fa fa-eye"></i> View</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-md-4">
+        <div class="card h-100 border-0 shadow-sm card-counter border-start border-4 border-dark">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted fw-bold text-uppercase">Document Import</small>
+                    <h2 class="fw-bold m-0 mt-1 text-dark"><?= $count_document_import ?></h2>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-dark btn_view_req" data-val="document_import"><i class="fa fa-eye"></i> View</button>
             </div>
         </div>
     </div>
@@ -540,6 +564,71 @@ endforeach;
         </div>
     </div>
 
+    <div class="col-12 list_document_import" style="display: none;">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h5 class="fw-bold text-dark m-0">Data Request: Document Import</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover table-bordered align-middle w-100 data-table-init">
+                        <thead class="text-center">
+                            <tr>
+                                <th>No PO</th>
+                                <th>No ROS</th>
+                                <th>Request By</th>
+                                <th>Tanggal</th>
+                                <th>Keperluan</th>
+                                <th>Tipe</th>
+                                <th>Nilai Pengajuan</th>
+                                <th>Tanggal Pembayaran</th>
+                                <th>Supplier</th>
+                                <th>Status</th>
+                                <th style="width: 10%">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($data as $item_ros) :
+                                if (in_array($item_ros->tipe, $ros_payment_types)) :
+                                    $tipe_label = str_replace(
+                                        ['ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'],
+                                        ['BM', 'LS (Surveyor)', 'Insurance', 'Other Cost'],
+                                        $item_ros->tipe
+                                    ); ?>
+                                    <tr>
+                                        <td class="text-center fw-semibold"><?= $item_ros->no_surat ?: $item_ros->no_doc ?></td>
+                                        <td class="text-center"><?= $item_ros->id_ros ?? '' ?></td>
+                                        <td><?= $item_ros->nama ?></td>
+                                        <td class="text-center"><?= $item_ros->tgl_doc ?></td>
+                                        <td><?= $item_ros->keperluan ?></td>
+                                        <td class="text-center small"><?= $tipe_label ?></td>
+                                        <td class="text-end fw-semibold"><?= number_format($item_ros->jumlah, 2) ?></td>
+                                        <td class="text-center"><?= $item_ros->tanggal ?></td>
+                                        <td><?= $item_ros->nm_supplier ?? '' ?></td>
+                                        <td class="text-center">
+                                            <?php if ($item_ros->status == '0' || $item_ros->status == 'open') {
+                                                echo '<span class="badge bg-info">Open</span>';
+                                            } elseif ($item_ros->status == '9' || $item_ros->status == 'reject') {
+                                                echo '<span class="badge bg-danger">Rejected</span>';
+                                            } else {
+                                                echo '<span class="badge bg-warning text-dark">Process</span>';
+                                            } ?>
+                                        </td>
+                                        <td class="text-center">
+                                            <?php if ($ENABLE_MANAGE) : ?>
+                                                <a href="<?= base_url($this->uri->segment(1) . '/approval_payment/?type=' . $item_ros->tipe . '&id=' . $item_ros->id . '&nilai=' . $item_ros->jumlah); ?>" class="btn btn-success btn-sm" title="Approve"><i class="fa fa-check-square"></i></a>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                            <?php endif;
+                            endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="col-12 list_direct_payment" style="display: none;">
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-transparent border-0 pt-3">
@@ -639,10 +728,23 @@ endforeach;
     // Toggle Visibility Section List berdasarkan Card Counter yang di-click
     $(document).on("click", ".btn_view_req", function() {
         var val = $(this).data('val');
+        var $card = $(this).closest('.card-counter');
+        var $target = $(".list_" + val);
+        var willShow = !$target.is(':visible');
 
         // Sembunyikan semua tabel list terlebih dahulu, lalu toggle target list
         $("[class*='list_']").not(".list_" + val).hide();
         $(".list_" + val).slideToggle(300);
+
+        // Highlight card aktif (mengikuti kondisi buka/tutup)
+        $(".card-counter").removeClass('active-card');
+        if (willShow) $card.addClass('active-card');
+    });
+
+    // Klik di area card juga men-trigger view
+    $(document).on("click", ".card-counter", function(e) {
+        if ($(e.target).closest('.btn_view_req').length) return;
+        $(this).find('.btn_view_req').trigger('click');
     });
 
     // Request AJAX View Invoice Modal Pop-up 

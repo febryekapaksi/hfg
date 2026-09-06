@@ -55,6 +55,15 @@ if ($type == 'expense') {
     $bank_id = $header->bank;
     $accnumber = $header->no_bank;
     $accname = $header->nm_acc_bank;
+} elseif (in_array($type, ['ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'])) {
+    // Document Import (ROS Payment). $header = tr_ros_payment; data dokumen/bank dari request_payment.
+    $keterangan = $data_req_payment['keperluan'] ?? '';
+    $no_doc     = $data_req_payment['no_doc'] ?? '';
+    $no_surat   = $data_req_payment['no_surat'] ?? '';
+    $tgl_doc    = $data_req_payment['tgl_doc'] ?? date('Y-m-d');
+    $bank_id    = $data_req_payment['bank_id'] ?? '';
+    $accnumber  = $data_req_payment['accnumber'] ?? '';
+    $accname    = $data_req_payment['accname'] ?? '';
 }
 ?>
 
@@ -90,7 +99,7 @@ if ($type == 'expense') {
         <input type="hidden" name="req_payment_id" value="<?= $data_req_payment['id'] ?? ''; ?>">
         <input type="hidden" name="tipe" value="<?= $type; ?>">
         <input type="hidden" name="tingkat_approval" value="1">
-        <?php if (in_array($type, ['invoice_dp', 'invoice_import', 'invoice_local'])) : ?>
+        <?php if (in_array($type, ['invoice_dp', 'invoice_import', 'invoice_local', 'ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'])) : ?>
             <input type="hidden" name="no_doc" value="<?= $no_doc; ?>">
         <?php endif; ?>
 
@@ -99,8 +108,8 @@ if ($type == 'expense') {
                 <div class="row mb-3 align-items-center">
                     <label class="col-sm-4 col-form-label text-md-end fw-semibold small">Nomor Dokumen</label>
                     <div class="col-sm-8">
-                        <?php if (in_array($type, ['invoice_dp', 'invoice_import', 'invoice_local'])) : ?>
-                            <input type="text" class="form-control bg-light" readonly value="<?= $no_surat ?? $no_doc; ?>">
+                        <?php if (in_array($type, ['invoice_dp', 'invoice_import', 'invoice_local', 'ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'])) : ?>
+                            <input type="text" class="form-control bg-light" readonly value="<?= $no_surat ?: $no_doc; ?>">
                         <?php else : ?>
                             <input type="text" name="no_doc" class="form-control bg-light" readonly value="<?= $no_doc; ?>">
                         <?php endif; ?>
@@ -576,6 +585,37 @@ if ($type == 'expense') {
                                             -
                                         <?php endif; ?>
                                     </td>
+                                    <td class="text-center">
+                                        <input type="checkbox" checked value="<?= $dtl->id; ?>" name="item[<?= $n; ?>][id]" class="form-check-input check_item">
+                                    </td>
+                                </tr>
+                            <?php
+                            // ------------------------- TYPE DOCUMENT IMPORT (ROS Payment) -------------------------
+                            elseif (in_array($type, ['ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'])) :
+                                $nilai_ros = (float)($dtl->nominal ?? 0);
+                                $gTotal += $nilai_ros;
+                                $label_ros = str_replace(
+                                    ['ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'],
+                                    ['BM', 'LS (Surveyor)', 'Insurance', 'Other Cost'],
+                                    $type
+                                );
+                            ?>
+                                <tr>
+                                    <td class="text-center"><?= $n; ?></td>
+                                    <td><?= $label_ros; ?><?= !empty($dtl->keterangan) ? ' - ' . $dtl->keterangan : ''; ?></td>
+                                    <td class="text-center"><?= $tgl_doc; ?></td>
+                                    <td class="text-center">1</td>
+                                    <td class="text-center fw-bold text-primary">IDR</td>
+                                    <td>
+                                        <table class="table table-nested table-sm mb-0 w-100 small">
+                                            <tr class="fw-bold">
+                                                <td>Total (IDR)</td>
+                                                <td class="text-center" style="width:10px">:</td>
+                                                <td class="text-end text-success"><?= number_format($nilai_ros, 2) ?></td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td class="text-center">-</td>
                                     <td class="text-center">
                                         <input type="checkbox" checked value="<?= $dtl->id; ?>" name="item[<?= $n; ?>][id]" class="form-check-input check_item">
                                     </td>

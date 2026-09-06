@@ -53,8 +53,8 @@ $nm_supplier = [];
 
 foreach ($results['result_payment'] as $item) {
 
-	// Untuk tipe invoice PO baru — supplier sudah tersimpan di payment_approve
-	if (in_array($item->tipe, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
+	// Untuk tipe invoice PO baru & Document Import (ROS) — supplier sudah tersimpan di request_payment
+	if (in_array($item->tipe, ['invoice_dp', 'invoice_import', 'invoice_local', 'ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'])) {
 		if (!empty($item->id_supplier)) {
 			$kode_supplier[$item->id_supplier] = $item->id_supplier;
 		}
@@ -247,11 +247,11 @@ foreach ($results['result_payment'] as $item) {
 						$nilai_utuh = 0;
 						$persen_progress = 1;
 
-						// Untuk tipe invoice PO baru — supplier langsung dari payment_approve
-						if (in_array($item->tipe, ['invoice_dp', 'invoice_import', 'invoice_local'])) {
+						// Untuk tipe invoice PO baru & Document Import (ROS) — supplier langsung dari request_payment
+						if (in_array($item->tipe, ['invoice_dp', 'invoice_import', 'invoice_local', 'ros_bm', 'ros_ls', 'ros_insurance', 'ros_other_cost'])) {
 							$nm_supplier_row = $item->nm_supplier ?? '';
 							$kurs_invoice = 1;
-							$ppn = $item->total_pph ?? 0;
+							$ppn = 0;
 						} else {
 							// Cara lama: resolve via tr_invoice_po
 							$no_po = [];
@@ -857,6 +857,8 @@ foreach ($results['result_payment'] as $item) {
 						baseurl = siteurl + active_controller + 'save_payment_import';
 					} else if (tipe_payment === 'invoice_local') {
 						baseurl = siteurl + active_controller + 'save_payment_local';
+					} else if (tipe_payment === 'ros_bm' || tipe_payment === 'ros_ls' || tipe_payment === 'ros_insurance' || tipe_payment === 'ros_other_cost') {
+						baseurl = siteurl + active_controller + 'save_payment_ros';
 					} else {
 						baseurl = siteurl + active_controller + 'save_payment_po';
 					}

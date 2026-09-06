@@ -29,7 +29,7 @@ class New_ros extends Admin_Controller
         $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
         $ENABLE_CLOSE  = has_permission('ROS_(Packing_List).Manage');
 
-        $tab   = $this->input->post('tab') ?: 'draft';
+        $tab   = $this->input->post('tab') ?: 'open';
         $fetch = $this->New_ros_model->get_datatables($tab);
         $totalData     = $fetch['totalData'];
         $totalFiltered = $fetch['totalFiltered'];
@@ -60,28 +60,36 @@ class New_ros extends Admin_Controller
                 $close_btn = '<a href="javascript:void(0)" class="btn btn-sm btn-success btn_close_ros" style="width: 80px;" title="Close ROS" data-id="' . $row['id'] . '"><i class="fas fa-check-double"></i> Close</a>';
             }
 
-            $view_btn = '<a href="' . base_url('new_ros/view/' . $row['id']) . '" class="btn btn-sm btn-info" style="width: 80px;" title="View"><i class="fa fa-eye"> View</i></a>';
-
+            // Badge status
             $sts = '<span class="badge rounded-pill bg-warning">Draft</span>';
             if ($row['status'] == '1') {
-                $sts = '<span class="badge rounded-pill bg-success">Final</span>';
+                $status_payment = isset($row['status_payment']) ? $row['status_payment'] : null;
+                if ($status_payment == 'proses_payment') {
+                    $sts = '<span class="badge rounded-pill bg-info">Payment Process</span>';
+                } elseif ($status_payment == 'close') {
+                    $sts = '<span class="badge rounded-pill bg-success">Payment Completed</span>';
+                } else {
+                    $sts = '<span class="badge rounded-pill bg-success">Final</span>';
+                }
             }
 
             $action_buttons = '
             <div style="display: flex; flex-direction: column; gap: 5px; align-items: center;">
                 <div style="display: flex; gap: 5px;">
-                    ' . $view_btn . '
                     ' . $edit_btn . '
+                    ' . $del_btn . '
                 </div>
                 <div style="display: flex; gap: 5px;">
-                    ' . $del_btn . '
                     ' . $close_btn . '
                 </div>
             </div>';
 
+            // Nomor ROS jadi link ke View
+            $ros_link = '<a href="' . base_url('new_ros/view/' . $row['id']) . '" title="View ROS">' . $row['id'] . '</a>';
+
             $nestedData   = [];
             $nestedData[] = "<div class='text-center'>{$nomor}</div>";
-            $nestedData[] = "<div class='text-left'>{$row['id']}</div>";
+            $nestedData[] = "<div class='text-left'>{$ros_link}</div>";
             $nestedData[] = "<div class='text-left'>" . ($row['no_surat'] ?: $row['no_po']) . "</div>";
             $nestedData[] = "<div class='text-left'>{$row['nm_supplier']}</div>";
             $nestedData[] = "<div class='text-end'>" . number_format($row['nilai_po_pib_rp'], 2) . "</div>";
@@ -99,6 +107,150 @@ class New_ros extends Admin_Controller
             "recordsFiltered" => intval($totalFiltered),
             "data"            => $data
         ]);
+    }
+
+    // ─── AJAX: List ROS di Payment Process (grouped per ROS + detail payment) ──
+    public function get_payment_process_list()
+    {
+        $search = trim((string) $this->input->post('search'));
+
+        // Ambil ROS Import yang status_payment = proses_payment
+        $this->db->select('a.id, a.no_po, a.no_surat, a.nm_supplier, a.nilai_po_pib_rp, a.created_on');
+        $this->db->from('tr_ros_header a');
+        $this->db->where('a.status', '1');
+        $this->db->where('a.status_payment', 'proses_payment');
+
+        if ($search !== '') {
+            $this->db->group_start();
+            $this->db->like('a.id', $search);
+            $this->db->or_like('a.no_po', $search);
+            $this->db->or_like('a.no_surat', $search);
+            $this->db->or_like('a.nm_supplier', $search);
+            $this->db->group_end();
+        }
+
+        $this->db->order_by('a.created_on', 'DESC');
+        $ros_list = $this->db->get()->result_array();
+
+        // Ambil semua payment untuk ROS-ROS tsb
+        $result = [];
+        foreach ($ros_list as $ros) {
+            $payments = $this->db->get_where('tr_ros_payment', ['id_ros_header' => $ros['id']])->result_array();
+            $ros['payments'] = $payments;
+            $result[] = $ros;
+        }
+
+        echo json_encode(['status' => 1, 'data' => $result]);
+    }
+
+    // ─── AJAX: Jumlah ROS di Payment Process (untuk badge) ──
+    public function get_payment_process_count()
+    {
+        $this->db->where('status', '1');
+        $this->db->where('status_payment', 'proses_payment');
+        $count = $this->db->count_all_results('tr_ros_header');
+
+        echo json_encode(['status' => 1, 'count' => (int) $count]);
+    }
+
+    // ─── AJAX: Ajukan satu baris payment (belum_diajukan -> diajukan) ──
+    // Selain ubah status tr_ros_payment, juga INSERT ke request_payment
+    // (mengikuti pola invoice_import/invoice_local) agar muncul di menu Request Payment.
+    public function ajukan_payment()
+    {
+        $id_payment = $this->input->post('id_payment');
+        $bank_id    = trim((string) $this->input->post('bank_id'));     // free-text nama bank
+        $accnumber  = trim((string) $this->input->post('accnumber'));   // free-text no rekening
+        $accname    = trim((string) $this->input->post('accname'));     // free-text atas nama
+
+        $payment = $this->db->get_where('tr_ros_payment', ['id' => $id_payment])->row();
+        if (!$payment) {
+            echo json_encode(['status' => 0, 'msg' => 'Data payment tidak ditemukan.']);
+            return;
+        }
+
+        if ($payment->status !== 'belum_diajukan') {
+            echo json_encode(['status' => 0, 'msg' => 'Payment ini sudah diajukan atau sudah lunas.']);
+            return;
+        }
+
+        if ($bank_id === '' || $accnumber === '' || $accname === '') {
+            echo json_encode(['status' => 0, 'msg' => 'Bank, No. Rekening, dan Atas Nama wajib diisi.']);
+            return;
+        }
+
+        // Ambil header ROS untuk data supplier & no_po
+        $header = $this->New_ros_model->get_header($payment->id_ros_header);
+        if (!$header) {
+            echo json_encode(['status' => 0, 'msg' => 'Data ROS tidak ditemukan.']);
+            return;
+        }
+
+        // Mapping tipe request_payment + label keperluan
+        $tipe_map = [
+            'bm'         => ['tipe' => 'ros_bm',         'label' => 'BM'],
+            'ls'         => ['tipe' => 'ros_ls',         'label' => 'LS (Surveyor)'],
+            'insurance'  => ['tipe' => 'ros_insurance',  'label' => 'Insurance'],
+            'other_cost' => ['tipe' => 'ros_other_cost', 'label' => 'Other Cost'],
+        ];
+        $map      = isset($tipe_map[$payment->payment_type]) ? $tipe_map[$payment->payment_type] : null;
+        if (!$map) {
+            echo json_encode(['status' => 0, 'msg' => 'Tipe payment tidak dikenali.']);
+            return;
+        }
+        $tipe_rp = $map['tipe'];
+
+        $get_user   = $this->db->get_where('users', ['id_user' => $this->auth->user_id()])->row_array();
+        $keterangan = 'Pembayaran ' . $map['label'] . ' ROS - ' . $header['id']
+            . ' - ' . ($header['no_surat'] ?: $header['no_po'])
+            . (($payment->payment_type === 'other_cost' && $payment->keterangan) ? ' (' . $payment->keterangan . ')' : '');
+
+        $data_insert = [
+            'no_doc'      => $header['no_po'] ?? '',
+            'no_surat'    => $header['no_surat'] ?? '',
+            'nama'        => $get_user['nm_lengkap'] ?? $this->auth->user_name(),
+            'tgl_doc'     => date('Y-m-d'),
+            'keperluan'   => $keterangan,
+            'tipe'        => $tipe_rp,
+            'jumlah'      => (float) $payment->nominal,
+            'status'      => 'open',
+            'tanggal'     => null,
+            'currency'    => 'IDR',
+            'bank_id'     => $bank_id,
+            'accnumber'   => $accnumber,
+            'accname'     => $accname,
+            'ids'         => (string) $payment->id,   // referensi ke tr_ros_payment.id
+            'id_ros'      => $header['id'] ?? null,
+            'admin_bank'  => 0,
+            'total_pph'   => 0,
+            'id_supplier' => $header['id_supplier'] ?? '',
+            'nm_supplier' => $header['nm_supplier'] ?? '',
+            'created_by'  => $get_user['nm_lengkap'] ?? $this->auth->user_name(),
+            'created_on'  => date('Y-m-d H:i:s'),
+        ];
+
+        $this->db->trans_begin();
+
+        // Insert ke request_payment
+        $this->db->insert('request_payment', $data_insert);
+        $id_rp = $this->db->insert_id();
+
+        // Update tr_ros_payment: status + id_request_payment
+        $this->db->update('tr_ros_payment', [
+            'status'             => 'diajukan',
+            'id_request_payment' => $id_rp,
+            'modified_by'        => $this->auth->user_id(),
+            'modified_on'        => date('Y-m-d H:i:s'),
+        ], ['id' => $id_payment]);
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            echo json_encode(['status' => 0, 'msg' => 'Gagal mengajukan payment.']);
+            return;
+        }
+        $this->db->trans_commit();
+
+        echo json_encode(['status' => 1, 'msg' => 'Payment berhasil diajukan ke Request Payment.']);
     }
 
     // ─── ADD ─────────────────────────────────────────────────────────
@@ -425,11 +577,17 @@ class New_ros extends Admin_Controller
         // Ambil supplier info
         $get_supplier = $this->db->get_where('new_supplier', ['kode_supplier' => $post['id_supplier']])->row_array();
 
+        // ── Tentukan tipe PO: Lokal atau Import ──
+        $po_data_save  = $this->db->get_where('tr_purchase_order', ['no_po' => $post['no_po']])->row();
+        $is_lokal_save = ($po_data_save && strtolower($po_data_save->loi) === 'lokal');
+        $jenis_po      = $is_lokal_save ? 'lokal' : 'import';
+
         // ── Header ──
         $header_data = [
             'id_supplier'        => $post['id_supplier'],
             'nm_supplier'        => $get_supplier ? $get_supplier['nama'] : '',
             'no_po'              => $post['no_po'],
+            'jenis_po'           => $jenis_po,
             'no_surat'           => $post['no_surat'],
             'nilai_po_usd'       => (float) str_replace(',', '', $post['nilai_po_usd']),
             'kurs_pib'           => $kurs_pib,
@@ -505,10 +663,6 @@ class New_ros extends Admin_Controller
                 }
             }
         }
-
-        // ── Tentukan tipe PO: Lokal atau Import ──
-        $po_data_save = $this->db->get_where('tr_purchase_order', ['no_po' => $post['no_po']])->row();
-        $is_lokal_save = ($po_data_save && strtolower($po_data_save->loi) === 'lokal');
 
         // ── Hitung total KG LS untuk prorate ──
         $total_kg_ls = 0;
@@ -1862,12 +2016,12 @@ class New_ros extends Admin_Controller
         // ── 2. ADVANCE PURCHASE (1104-01-02) ──
         // SUM jumlah_rupiah dari tr_receive_invoice WHERE no_po AND tipe = 'dp'
         $gl_advance_purchase = (float) ($this->db
-            ->select_sum('jumlah_rupiah')
+            ->select_sum('gl_value_dp')
             ->where('no_po', $no_po)
             ->where('tipe', 'dp')
             ->get('tr_receive_invoice')
             ->row()
-            ->jumlah_rupiah ?? 0);
+            ->gl_value_dp ?? 0);
 
         // ── 3. UNBILL / HUTANG BELUM TERTAGIH (2101-01-06) ──
         // (nilai_po_usd - SUM(tr_top_po.nilai WHERE group_top=76)) × kurs_pib
@@ -2031,11 +2185,19 @@ class New_ros extends Admin_Controller
         // (Perhitungan manual komponen biaya, selisih kurs, dan validasi COA lama dihapus
         //  karena sudah menggunakan gl_* di tr_ros_header dan template JV005)
 
+        // Tentukan tipe PO: Lokal atau Import
+        $po_data  = $this->db->get_where('tr_purchase_order', ['no_po' => $header['no_po']])->row();
+        $is_lokal = ($po_data && strtolower($po_data->loi) === 'lokal');
+
+        // status_payment: Lokal langsung 'close', Import 'proses_payment' (menunggu pembayaran)
+        $status_payment = $is_lokal ? 'close' : 'proses_payment';
+
         // ── Update status ROS ──
         $this->db->trans_begin();
         $this->db->update('tr_ros_header', [
             'status'          => '1',
             'status_incoming' => 'open',
+            'status_payment'  => $status_payment,
             'modified_by'     => $this->auth->user_id(),
             'modified_on'     => date('Y-m-d H:i:s')
         ], ['id' => $id_ros]);
@@ -2057,10 +2219,6 @@ class New_ros extends Admin_Controller
         ])->row();
 
         $tarif_forwarding = (float) $forwarding_master->value_cost;
-
-        // Tentukan tipe PO: Lokal atau Import
-        $po_data  = $this->db->get_where('tr_purchase_order', ['no_po' => $header['no_po']])->row();
-        $is_lokal = ($po_data && strtolower($po_data->loi) === 'lokal');
 
         foreach ($materials as $mat) {
             // total_nilai_inventory on-the-fly
@@ -2100,12 +2258,15 @@ class New_ros extends Admin_Controller
 
         // ── Generate Jurnal GL Interface (hanya untuk PO Import) ──
         if ($is_lokal) {
-            // PO Lokal: skip generate jurnal GL Interface
+            // PO Lokal: skip generate jurnal GL Interface, langsung close (payment completed)
             ob_clean();
             header('Content-Type: application/json');
             echo json_encode(['status' => 1, 'msg' => 'ROS closed successfully.']);
             exit;
         }
+
+        // ── PO Import: buat kebutuhan pembayaran (tr_ros_payment) ──
+        $this->_generate_ros_payment($id_ros, $header, $others);
 
         if (isset($header['gl_persediaan_intransit']) && $header['gl_persediaan_intransit'] > 0) {
             try {
@@ -2136,6 +2297,92 @@ class New_ros extends Admin_Controller
     }
 
     // function _generate_jurnal_ros telah dihapus karena digantikan oleh generate_jurnal_dari_template('JV005')
+
+    // ─── Generate kebutuhan pembayaran ROS (PO Import) ───────────────
+    /**
+     * Membuat baris tr_ros_payment saat close ROS Import.
+     * - bm         : total F&C Estimation (cost_bm + kite + bmt + cukai + ppn + ppnbm + pph_import)
+     * - ls         : biaya_ls + ppn_ls - pph_ls (Total Biaya LS)
+     * - insurance  : insurance
+     * - other_cost : 1 baris per item tr_ros_others (nominal + keterangan)
+     * Hanya membuat baris untuk nominal > 0.
+     */
+    private function _generate_ros_payment($id_ros, $header, $others)
+    {
+        $user_id = $this->auth->user_id();
+        $now     = date('Y-m-d H:i:s');
+
+        // Hindari duplikat: hapus payment lama untuk ROS ini yang belum diproses
+        $this->db->where('id_ros_header', $id_ros);
+        $this->db->where('status', 'belum_diajukan');
+        $this->db->delete('tr_ros_payment');
+
+        $rows = [];
+
+        // 1. BM = total F&C Estimation
+        $total_bm = (float) $header['cost_bm']
+            + (float) $header['cost_bm_kite']
+            + (float) $header['cost_bmt']
+            + (float) $header['cost_cukai']
+            + (float) $header['cost_ppn']
+            + (float) $header['cost_ppnbm']
+            + (float) $header['cost_pph_import'];
+        if ($total_bm > 0) {
+            $rows[] = [
+                'payment_type' => 'bm',
+                'keterangan'   => 'Pembayaran BM',
+                'nominal'      => $total_bm,
+            ];
+        }
+
+        // 2. LS = biaya_ls + ppn_ls - pph_ls
+        $total_ls = (float) $header['biaya_ls']
+            + (float) $header['ppn_ls']
+            - (float) $header['pph_ls'];
+        if ($total_ls > 0) {
+            $rows[] = [
+                'payment_type' => 'ls',
+                'keterangan'   => 'Pembayaran LS (Surveyor)',
+                'nominal'      => $total_ls,
+            ];
+        }
+
+        // 3. Insurance
+        $total_insurance = (float) $header['insurance'];
+        if ($total_insurance > 0) {
+            $rows[] = [
+                'payment_type' => 'insurance',
+                'keterangan'   => 'Pembayaran Insurance',
+                'nominal'      => $total_insurance,
+            ];
+        }
+
+        // 4. Other Cost = 1 baris per item tr_ros_others
+        if (!empty($others)) {
+            foreach ($others as $ot) {
+                $nilai = (float) $ot['nilai'];
+                if ($nilai <= 0) continue;
+                $rows[] = [
+                    'payment_type' => 'other_cost',
+                    'keterangan'   => $ot['keterangan'] ?: 'Other Cost',
+                    'nominal'      => $nilai,
+                ];
+            }
+        }
+
+        // Insert semua baris payment
+        foreach ($rows as $r) {
+            $this->db->insert('tr_ros_payment', [
+                'id_ros_header' => $id_ros,
+                'payment_type'  => $r['payment_type'],
+                'keterangan'    => $r['keterangan'],
+                'nominal'       => $r['nominal'],
+                'status'        => 'belum_diajukan',
+                'created_by'    => $user_id,
+                'created_on'    => $now,
+            ]);
+        }
+    }
 
     // ─── AJAX: Get data ROS untuk preview modal close ────────────────
     public function get_ros_preview()

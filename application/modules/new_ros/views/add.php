@@ -1533,6 +1533,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
             parsedCoils = res.coils;
             var totalExcelNW = 0;
             var matchCount = 0;
+            var countedCoils = 0;
 
             $.each(parsedCoils, function(i, coil) {
                 var matched = findMaterialMatch(coil.nama_alias);
@@ -1545,14 +1546,15 @@ $list_po_data = isset($list_po) ? $list_po : [];
                     coil._matched_name = matched.name;
                 }
 
-                if (matched.idx !== null) matchCount++;
-
-                // Hitung total NW hanya dari coil yang ditampilkan (skip mother dengan baby)
+                // Skip mother coil yang punya baby (qty_roll > 1, is_baby_coil = 0).
+                // Mother dihitung hanya jika tidak punya baby, mengikuti pola yang ditampilkan.
                 var isMother = (!coil.is_baby_coil || parseInt(coil.is_baby_coil) === 0);
                 var qtyRoll = parseInt(coil.qty_roll) || 1;
-                if (!(isMother && qtyRoll > 1)) {
-                    totalExcelNW += parseFloat(coil.berat_bersih) || 0;
-                }
+                if (isMother && qtyRoll > 1) return; // mother dengan baby: tidak dihitung
+
+                countedCoils++;
+                if (matched.idx !== null) matchCount++;
+                totalExcelNW += parseFloat(coil.berat_bersih) || 0;
             });
 
             var totalPoKg = 0;
@@ -1580,7 +1582,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
             }
 
             var html = summaryHtml;
-            html += '<p class="mb-2"><small class="text-muted">' + res.msg + '</small></p>';
+            html += '<p class="mb-2"><small class="text-muted">Successfully read ' + countedCoils + ' coil rows.</small></p>';
             html += '<div class="table-responsive"><table class="table table-bordered table-sm" style="font-size:11px;">';
             html += '<thead class="table-light"><tr>' +
                 '<th>No</th><th>Coil No.</th><th>Alias Name</th><th>Original Name</th>' +
@@ -1629,7 +1631,7 @@ $list_po_data = isset($list_po) ? $list_po : [];
             html += '</table></div>';
 
             html += '<p class="text-muted small mt-2"><i class="fas fa-info-circle"></i> ' +
-                matchCount + ' matched, ' + (parsedCoils.length - matchCount) + ' not match.</p>';
+                matchCount + ' matched, ' + (countedCoils - matchCount) + ' not match.</p>';
 
             $('#modal_body_review').html(html);
             $('#btn_confirm_upload').prop('disabled', !isMatched);

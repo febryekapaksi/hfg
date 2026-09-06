@@ -58,24 +58,31 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
         <!-- ── TABS ── -->
         <ul class="nav nav-tabs mb-3" id="rosTab" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="tab-draft-btn" data-bs-toggle="tab"
-                    data-bs-target="#tab-draft" type="button" role="tab">
-                    <i class="fas fa-file-alt text-warning me-1"></i> Draft
+                <button class="nav-link active" id="tab-open-btn" data-bs-toggle="tab"
+                    data-bs-target="#tab-open" type="button" role="tab">
+                    <i class="fas fa-file-alt text-warning me-1"></i> Open
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="tab-close-btn" data-bs-toggle="tab"
-                    data-bs-target="#tab-close" type="button" role="tab">
-                    <i class="fas fa-check-double text-success me-1"></i> Closed
+                <button class="nav-link" id="tab-payment-btn" data-bs-toggle="tab"
+                    data-bs-target="#tab-payment" type="button" role="tab">
+                    <i class="fas fa-hourglass-half text-info me-1"></i> Close (Payment Process)
+                    <span class="badge rounded-pill bg-danger ms-1" id="badge_payment_count" style="display:none;">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-completed-btn" data-bs-toggle="tab"
+                    data-bs-target="#tab-completed" type="button" role="tab">
+                    <i class="fas fa-check-double text-success me-1"></i> Close (Payment Completed)
                 </button>
             </li>
         </ul>
 
         <div class="tab-content" id="rosTabContent">
 
-            <!-- TAB DRAFT  -->
-            <div class="tab-pane fade show active" id="tab-draft" role="tabpanel">
-                <table id="tbl_ros_draft" class="table table-bordered table-striped" width="100%">
+            <!-- TAB OPEN  -->
+            <div class="tab-pane fade show active" id="tab-open" role="tabpanel">
+                <table id="tbl_ros_open" class="table table-bordered table-striped" width="100%">
                     <thead>
                         <tr>
                             <th class="text-center" width="5%">No</th>
@@ -91,9 +98,42 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                 </table>
             </div>
 
-            <!-- TAB CLOSED -->
-            <div class="tab-pane fade" id="tab-close" role="tabpanel">
-                <table id="tbl_ros_close" class="table table-bordered table-striped" width="100%">
+            <!-- TAB CLOSE (PAYMENT PROCESS) -->
+            <div class="tab-pane fade" id="tab-payment" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="input-group input-group-sm" style="max-width:320px;">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" id="search_payment" class="form-control" placeholder="Search ROS / PO / Supplier...">
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn_refresh_payment">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <table class="table table-bordered table-sm align-middle" id="tbl_payment_process" width="100%">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center" width="4%">No</th>
+                            <th class="text-center">ROS Number</th>
+                            <th class="text-center">PO Number</th>
+                            <th class="text-center">Supplier</th>
+                            <th class="text-center">Payment Type</th>
+                            <th class="text-center">Description</th>
+                            <th class="text-center">Nominal (Rp)</th>
+                            <th class="text-center" width="12%">Payment Status</th>
+                            <th class="text-center" width="10%">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payment_process_body">
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-3">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TAB CLOSE (PAYMENT COMPLETED) -->
+            <div class="tab-pane fade" id="tab-completed" role="tabpanel">
+                <table id="tbl_ros_completed" class="table table-bordered table-striped" width="100%">
                     <thead>
                         <tr>
                             <th class="text-center" width="5%">No</th>
@@ -101,7 +141,7 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                             <th class="text-center">PO Number</th>
                             <th class="text-center">Supplier</th>
                             <th class="text-center">PIB Value (Rp)</th>
-                            <th class="text-center" width="10%">Incoming Status</th>
+                            <th class="text-center" width="12%">Status</th>
                             <th class="text-center" width="12%">Action</th>
                         </tr>
                     </thead>
@@ -151,80 +191,279 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
 
 <script>
     $(document).ready(function() {
-        // DATATABLE — DRAFT (status = 0)
-        var tblDraft = $('#tbl_ros_draft').DataTable({
+        var dtColumns = [{
+                data: 0
+            }, {
+                data: 1
+            }, {
+                data: 2
+            }, {
+                data: 3
+            },
+            {
+                data: 4
+            }, {
+                data: 5
+            }, {
+                data: 6
+            }
+        ];
+
+        // DATATABLE — OPEN (status = 0)
+        var tblOpen = $('#tbl_ros_open').DataTable({
             processing: true,
             serverSide: true,
             ajax: {
                 url: siteurl + 'new_ros/data_side',
                 type: 'POST',
                 data: {
-                    tab: 'draft'
+                    tab: 'open'
                 }
             },
-            columns: [{
-                    data: 0
-                }, {
-                    data: 1
-                }, {
-                    data: 2
-                },
-                {
-                    data: 3
-                }, {
-                    data: 4
-                }, {
-                    data: 5
-                }, {
-                    data: 6
-                }
-            ],
+            columns: dtColumns,
             order: [
                 [1, 'desc']
             ],
             pageLength: 25
         });
 
-
-        // DATATABLE — CLOSED (status = 1)
-        var tblClose = $('#tbl_ros_close').DataTable({
+        // DATATABLE — CLOSE (PAYMENT COMPLETED)
+        var tblCompleted = $('#tbl_ros_completed').DataTable({
             processing: true,
             serverSide: true,
             ajax: {
                 url: siteurl + 'new_ros/data_side',
                 type: 'POST',
                 data: {
-                    tab: 'close'
+                    tab: 'payment_completed'
                 }
             },
-            columns: [{
-                    data: 0
-                }, {
-                    data: 1
-                }, {
-                    data: 2
-                },
-                {
-                    data: 3
-                }, {
-                    data: 4
-                }, {
-                    data: 5
-                }, {
-                    data: 6
-                }
-            ],
+            columns: dtColumns,
             order: [
                 [1, 'desc']
             ],
             pageLength: 25
         });
 
-        var closeTabLoaded = false;
-        $('#tab-close-btn').on('shown.bs.tab', function() {
-            if (!closeTabLoaded) {
-                tblClose.ajax.reload();
-                closeTabLoaded = true;
+        // ── PAYMENT PROCESS (tabel custom) ──
+        var fmtRp = function(val) {
+            return (parseFloat(val) || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        };
+
+        var paymentTypeLabel = {
+            'bm': 'BM',
+            'ls': 'LS (Surveyor)',
+            'insurance': 'Insurance',
+            'other_cost': 'Other Cost'
+        };
+
+        function paymentStatusBadge(status) {
+            switch (status) {
+                case 'belum_diajukan':
+                    return '<span class="badge bg-secondary">Belum Diajukan</span>';
+                case 'diajukan':
+                    return '<span class="badge bg-warning text-dark">Diajukan</span>';
+                case 'approve checker':
+                    return '<span class="badge bg-info text-dark">Approve Checker</span>';
+                case 'approve management':
+                    return '<span class="badge bg-primary">Approve Management</span>';
+                case 'lunas':
+                    return '<span class="badge bg-success">Lunas</span>';
+                default:
+                    return '<span class="badge bg-light text-dark">' + status + '</span>';
+            }
+        }
+
+        function loadPaymentProcess() {
+            var search = $('#search_payment').val() || '';
+            $('#payment_process_body').html('<tr><td colspan="9" class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Loading...</td></tr>');
+
+            $.ajax({
+                url: siteurl + 'new_ros/get_payment_process_list',
+                type: 'POST',
+                data: {
+                    search: search
+                },
+                dataType: 'json',
+                success: function(res) {
+                    var html = '';
+                    if (res.status == 1 && res.data.length > 0) {
+                        var no = 1;
+                        $.each(res.data, function(i, ros) {
+                            var payments = ros.payments || [];
+                            var rowspan = payments.length > 0 ? payments.length : 1;
+                            var rosLink = '<a href="' + siteurl + 'new_ros/view/' + ros.id + '" title="View ROS"><b>' + ros.id + '</b></a>';
+                            var poDisplay = ros.no_surat ? ros.no_surat : ros.no_po;
+
+                            if (payments.length === 0) {
+                                html += '<tr>';
+                                html += '<td class="text-center">' + no + '</td>';
+                                html += '<td>' + rosLink + '</td>';
+                                html += '<td>' + poDisplay + '</td>';
+                                html += '<td>' + (ros.nm_supplier || '') + '</td>';
+                                html += '<td colspan="5" class="text-center text-muted">No payment items.</td>';
+                                html += '</tr>';
+                            } else {
+                                $.each(payments, function(j, p) {
+                                    html += '<tr>';
+                                    if (j === 0) {
+                                        html += '<td class="text-center align-middle" rowspan="' + rowspan + '">' + no + '</td>';
+                                        html += '<td class="align-middle" rowspan="' + rowspan + '">' + rosLink + '</td>';
+                                        html += '<td class="align-middle" rowspan="' + rowspan + '">' + poDisplay + '</td>';
+                                        html += '<td class="align-middle" rowspan="' + rowspan + '">' + (ros.nm_supplier || '') + '</td>';
+                                    }
+                                    html += '<td>' + (paymentTypeLabel[p.payment_type] || p.payment_type) + '</td>';
+                                    html += '<td>' + (p.keterangan || '-') + '</td>';
+                                    html += '<td class="text-end">' + fmtRp(p.nominal) + '</td>';
+                                    html += '<td class="text-center">' + paymentStatusBadge(p.status) + '</td>';
+                                    html += '<td class="text-center">';
+
+                                    // Handler Tombol Aksi Berdasarkan Status
+                                    if (p.status === 'belum_diajukan') {
+                                        html += '<button type="button" class="btn btn-sm btn-primary btn-ajukan-payment" data-id="' + p.id + '"><i class="fas fa-paper-plane"></i> Ajukan</button>';
+                                    } else {
+                                        html += '<span class="text-muted small">-</span>';
+                                    }
+
+                                    html += '</td>';
+                                    html += '</tr>';
+                                });
+                            }
+                            no++;
+                        });
+                    } else {
+                        html = '<tr><td colspan="9" class="text-center text-muted py-3">No data in payment process.</td></tr>';
+                    }
+                    $('#payment_process_body').html(html);
+                },
+                error: function() {
+                    $('#payment_process_body').html('<tr><td colspan="9" class="text-center text-danger py-3">Failed to load data.</td></tr>');
+                }
+            });
+        }
+
+        function loadPaymentBadge() {
+            $.ajax({
+                url: siteurl + 'new_ros/get_payment_process_count',
+                type: 'POST',
+                dataType: 'json',
+                success: function(res) {
+                    if (res.status == 1 && res.count > 0) {
+                        $('#badge_payment_count').text(res.count).show();
+                    } else {
+                        $('#badge_payment_count').hide();
+                    }
+                }
+            });
+        }
+
+        // Load badge saat halaman dibuka
+        loadPaymentBadge();
+
+        var paymentTabLoaded = false;
+        $('#tab-payment-btn').on('shown.bs.tab', function() {
+            if (!paymentTabLoaded) {
+                loadPaymentProcess();
+                paymentTabLoaded = true;
+            }
+        });
+
+        // Search (debounce)
+        var searchTimer = null;
+        $('#search_payment').on('keyup', function() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(loadPaymentProcess, 400);
+        });
+
+        $('#btn_refresh_payment').on('click', function() {
+            loadPaymentProcess();
+            loadPaymentBadge();
+        });
+
+        // Tombol Ajukan
+        $(document).on('click', '.btn-ajukan-payment', function() {
+            var idPayment = $(this).data('id');
+
+            Swal.fire({
+                title: 'Ajukan Pembayaran',
+                html: '<div style="text-align:left;">' +
+                    '<label class="form-label small fw-bold mb-1">Bank <span class="text-danger">*</span></label>' +
+                    '<input id="swal_bank" class="form-control form-control-sm mb-2" placeholder="Nama Bank">' +
+                    '<label class="form-label small fw-bold mb-1">No. Rekening <span class="text-danger">*</span></label>' +
+                    '<input id="swal_accnumber" class="form-control form-control-sm mb-2" placeholder="No. Rekening">' +
+                    '<label class="form-label small fw-bold mb-1">Atas Nama <span class="text-danger">*</span></label>' +
+                    '<input id="swal_accname" class="form-control form-control-sm" placeholder="Nama Pemilik Rekening">' +
+                    '</div>',
+                showCancelButton: true,
+                confirmButtonColor: '#0d6efd',
+                confirmButtonText: '<i class="fas fa-paper-plane"></i> Ajukan',
+                cancelButtonText: 'Batal',
+                focusConfirm: false,
+                preConfirm: function() {
+                    var bank = document.getElementById('swal_bank').value.trim();
+                    var accnumber = document.getElementById('swal_accnumber').value.trim();
+                    var accname = document.getElementById('swal_accname').value.trim();
+                    if (!bank || !accnumber || !accname) {
+                        Swal.showValidationMessage('Bank, No. Rekening, dan Atas Nama wajib diisi.');
+                        return false;
+                    }
+                    return {
+                        bank_id: bank,
+                        accnumber: accnumber,
+                        accname: accname
+                    };
+                }
+            }).then(function(result) {
+                if (!result.isConfirmed) return;
+                var payload = result.value;
+                Swal.fire({
+                    title: 'Processing...',
+                    allowOutsideClick: false,
+                    didOpen: function() {
+                        Swal.showLoading();
+                    }
+                });
+                $.ajax({
+                    url: siteurl + 'new_ros/ajukan_payment',
+                    type: 'POST',
+                    data: {
+                        id_payment: idPayment,
+                        bank_id: payload.bank_id,
+                        accnumber: payload.accnumber,
+                        accname: payload.accname
+                    },
+                    dataType: 'json',
+                    success: function(res) {
+                        Swal.close();
+                        if (res.status == 1) {
+                            Swal.fire({
+                                title: 'Success',
+                                text: res.msg,
+                                icon: 'success',
+                                timer: 1600,
+                                showConfirmButton: false
+                            });
+                            loadPaymentProcess();
+                        } else {
+                            Swal.fire('Failed', res.msg, 'error');
+                        }
+                    },
+                    error: function() {
+                        Swal.close();
+                        Swal.fire('Error', 'Gagal mengajukan payment.', 'error');
+                    }
+                });
+            });
+        });
+
+        var completedTabLoaded = false;
+        $('#tab-completed-btn').on('shown.bs.tab', function() {
+            if (!completedTabLoaded) {
+                tblCompleted.ajax.reload();
+                completedTabLoaded = true;
             }
         });
 
@@ -248,7 +487,7 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                         var resp = (typeof res === 'string') ? JSON.parse(res) : res;
                         if (resp.status == 1) {
                             Swal.fire('Deleted!', 'ROS data has been deleted.', 'success');
-                            tblDraft.ajax.reload();
+                            tblOpen.ajax.reload();
                         } else {
                             Swal.fire('Failed!', 'Failed to delete data.', 'error');
                         }
@@ -286,10 +525,10 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                         // PO Lokal: sembunyikan kolom biaya (BM, LS, Forwarding, Insurance, Others)
                         if (res.loi && String(res.loi).toLowerCase() === 'lokal') {
                             $('#modal_close_ros_body .col-bm, ' +
-                              '#modal_close_ros_body .col-ls, ' +
-                              '#modal_close_ros_body .col-forwarding, ' +
-                              '#modal_close_ros_body .col-insurance, ' +
-                              '#modal_close_ros_body .col-others').hide();
+                                '#modal_close_ros_body .col-ls, ' +
+                                '#modal_close_ros_body .col-forwarding, ' +
+                                '#modal_close_ros_body .col-insurance, ' +
+                                '#modal_close_ros_body .col-others').hide();
                         }
                     } else {
                         $('#modal_close_ros_body').html(
@@ -346,9 +585,13 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
                                 showConfirmButton: false,
                                 timer: 1500
                             }).then(function() {
-                                tblDraft.ajax.reload();
-                                tblClose.ajax.reload();
-                                closeTabLoaded = true;
+                                // Reload semua tab: Open berkurang, Payment Process / Completed bertambah
+                                tblOpen.ajax.reload();
+                                tblCompleted.ajax.reload();
+                                loadPaymentProcess();
+                                loadPaymentBadge();
+                                paymentTabLoaded = true;
+                                completedTabLoaded = true;
                             });
                         } else if (res.status == 2) {
                             Swal.fire('Warning', res.msg, 'warning');
@@ -428,68 +671,68 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
 
             // ── F&C + LS + Insurance + Others (hanya untuk PO Import) ──
             if (!isLokal) {
-            // ── F&C ──
-            html += '<div class="row mb-3"><div class="col-md-5">';
-            html += '<table class="table table-bordered table-sm" style="font-size:12px;">';
-            html += '<thead class="table-light"><tr><th colspan="2">F&amp;C Estimation</th></tr></thead><tbody>';
-            var fc_items = [
-                ['BM', h.cost_bm],
-                ['BM Kite', h.cost_bm_kite],
-                ['BMT', h.cost_bmt],
-                ['Excise Duty', h.cost_cukai],
-                ['PPN', h.cost_ppn],
-                ['PPnBM', h.cost_ppnbm],
-                ['PPH Import', h.cost_pph_import]
-            ];
-            $.each(fc_items, function(i, item) {
-                html += '<tr><td>' + item[0] + '</td><td class="text-end">' + fmt(item[1]) + '</td></tr>';
-            });
-            html += '<tr class="table-secondary"><td class="fw-bold">TOTAL</td>';
-            html += '<td class="text-end fw-bold">' + fmt(res.total_fc) + '</td></tr>';
-            html += '</tbody></table></div></div>';
-
-            // ── Biaya LS ──
-            html += '<div class="section-title-preview ls"><i class="fas fa-search-dollar"></i> LS Cost (Surveyor)</div>';
-            html += '<div class="row mb-3">';
-            html += '<div class="col-md-3"><strong>No. Invoice LS:</strong> ' + (h.no_invoice_ls || '-') + '</div>';
-            html += '<div class="col-md-3"><strong>LS Cost:</strong> ' + fmt(h.biaya_ls) + '</div>';
-            html += '<div class="col-md-3"><strong>PPN LS:</strong> ' + fmt(h.ppn_ls) + '</div>';
-            html += '<div class="col-md-3"><strong>PPH LS:</strong> ' + fmt(h.pph_ls) + '</div>';
-            html += '</div>';
-            var dpp_ls = (parseFloat(h.biaya_ls) || 0) * (11 / 12);
-            var total_ls = dpp_ls + (parseFloat(h.ppn_ls) || 0) - (parseFloat(h.pph_ls) || 0);
-            html += '<div class="row mb-3">';
-            html += '<div class="col-md-3"><strong>DPP (LS × 11/12):</strong> ' + fmt(dpp_ls) + '</div>';
-            html += '<div class="col-md-3"><strong>Total Biaya LS:</strong> ' + fmt(total_ls) + '</div>';
-            html += '</div>';
-
-            // ── Insurance ──
-            html += '<div class="section-title-preview insurance"><i class="fas fa-shield-alt"></i> Insurance</div>';
-            html += '<div class="row mb-3">';
-            html += '<div class="col-md-3"><strong>No. Insurance:</strong> ' + (h.no_insurance || '-') + '</div>';
-            html += '<div class="col-md-3"><strong>Insurance Value:</strong> ' + fmt(h.insurance) + '</div>';
-            html += '</div>';
-
-            // ── Biaya Lain ──
-            if (others && others.length > 0) {
-                html += '<div class="section-title-preview others"><i class="fas fa-coins"></i> Other Costs</div>';
-                html += '<div class="row mb-3"><div class="col-md-6">';
+                // ── F&C ──
+                html += '<div class="row mb-3"><div class="col-md-5">';
                 html += '<table class="table table-bordered table-sm" style="font-size:12px;">';
-                html += '<thead class="table-light"><tr><th>No</th><th>No. Ref</th><th>Description</th><th class="text-end">Amount (Rp)</th></tr></thead><tbody>';
-                $.each(others, function(i, ot) {
-                    html += '<tr>';
-                    html += '<td class="text-center">' + (i + 1) + '</td>';
-                    html += '<td>' + (ot.no_others || '-') + '</td>';
-                    html += '<td>' + ot.keterangan + '</td>';
-                    html += '<td class="text-end">' + fmt(ot.nilai) + '</td>';
-                    html += '</tr>';
+                html += '<thead class="table-light"><tr><th colspan="2">F&amp;C Estimation</th></tr></thead><tbody>';
+                var fc_items = [
+                    ['BM', h.cost_bm],
+                    ['BM Kite', h.cost_bm_kite],
+                    ['BMT', h.cost_bmt],
+                    ['Excise Duty', h.cost_cukai],
+                    ['PPN', h.cost_ppn],
+                    ['PPnBM', h.cost_ppnbm],
+                    ['PPH Import', h.cost_pph_import]
+                ];
+                $.each(fc_items, function(i, item) {
+                    html += '<tr><td>' + item[0] + '</td><td class="text-end">' + fmt(item[1]) + '</td></tr>';
                 });
-                html += '<tr class="table-secondary">';
-                html += '<td colspan="3" class="text-end fw-bold">Total</td>';
-                html += '<td class="text-end fw-bold">' + fmt(res.total_others_val) + '</td>';
-                html += '</tr>';
+                html += '<tr class="table-secondary"><td class="fw-bold">TOTAL</td>';
+                html += '<td class="text-end fw-bold">' + fmt(res.total_fc) + '</td></tr>';
                 html += '</tbody></table></div></div>';
-            }
+
+                // ── Biaya LS ──
+                html += '<div class="section-title-preview ls"><i class="fas fa-search-dollar"></i> LS Cost (Surveyor)</div>';
+                html += '<div class="row mb-3">';
+                html += '<div class="col-md-3"><strong>No. Invoice LS:</strong> ' + (h.no_invoice_ls || '-') + '</div>';
+                html += '<div class="col-md-3"><strong>LS Cost:</strong> ' + fmt(h.biaya_ls) + '</div>';
+                html += '<div class="col-md-3"><strong>PPN LS:</strong> ' + fmt(h.ppn_ls) + '</div>';
+                html += '<div class="col-md-3"><strong>PPH LS:</strong> ' + fmt(h.pph_ls) + '</div>';
+                html += '</div>';
+                var dpp_ls = (parseFloat(h.biaya_ls) || 0) * (11 / 12);
+                var total_ls = dpp_ls + (parseFloat(h.ppn_ls) || 0) - (parseFloat(h.pph_ls) || 0);
+                html += '<div class="row mb-3">';
+                html += '<div class="col-md-3"><strong>DPP (LS × 11/12):</strong> ' + fmt(dpp_ls) + '</div>';
+                html += '<div class="col-md-3"><strong>Total Biaya LS:</strong> ' + fmt(total_ls) + '</div>';
+                html += '</div>';
+
+                // ── Insurance ──
+                html += '<div class="section-title-preview insurance"><i class="fas fa-shield-alt"></i> Insurance</div>';
+                html += '<div class="row mb-3">';
+                html += '<div class="col-md-3"><strong>No. Insurance:</strong> ' + (h.no_insurance || '-') + '</div>';
+                html += '<div class="col-md-3"><strong>Insurance Value:</strong> ' + fmt(h.insurance) + '</div>';
+                html += '</div>';
+
+                // ── Biaya Lain ──
+                if (others && others.length > 0) {
+                    html += '<div class="section-title-preview others"><i class="fas fa-coins"></i> Other Costs</div>';
+                    html += '<div class="row mb-3"><div class="col-md-6">';
+                    html += '<table class="table table-bordered table-sm" style="font-size:12px;">';
+                    html += '<thead class="table-light"><tr><th>No</th><th>No. Ref</th><th>Description</th><th class="text-end">Amount (Rp)</th></tr></thead><tbody>';
+                    $.each(others, function(i, ot) {
+                        html += '<tr>';
+                        html += '<td class="text-center">' + (i + 1) + '</td>';
+                        html += '<td>' + (ot.no_others || '-') + '</td>';
+                        html += '<td>' + ot.keterangan + '</td>';
+                        html += '<td class="text-end">' + fmt(ot.nilai) + '</td>';
+                        html += '</tr>';
+                    });
+                    html += '<tr class="table-secondary">';
+                    html += '<td colspan="3" class="text-end fw-bold">Total</td>';
+                    html += '<td class="text-end fw-bold">' + fmt(res.total_others_val) + '</td>';
+                    html += '</tr>';
+                    html += '</tbody></table></div></div>';
+                }
             } // end if (!isLokal)
 
             // ── Data PO & Kalkulasi ──
@@ -498,10 +741,21 @@ $ENABLE_DELETE = has_permission('ROS_(Packing_List).Delete');
             html += '<table class="table table-bordered table-sm" style="font-size:11px;">';
             html += '<thead class="table-light"><tr>';
             var po_cols = [
-                ['No', ''], ['PO Name', ''], ['Alias Name', ''], ['Kg Unit', ''], ['Unit Price (U$)', ''],
-                ['Total Value (U$)', ''], ['Total Value (Rp)', ''], ['BM %', 'col-bm'], ['BM (Rp)', 'col-bm'],
-                ['Prorate LS', 'col-ls'], ['Forwarding', 'col-forwarding'], ['Insurance', 'col-insurance'], ['Other Costs', 'col-others'],
-                ['Total Inventory', ''], ['Cost Book', '']
+                ['No', ''],
+                ['PO Name', ''],
+                ['Alias Name', ''],
+                ['Kg Unit', ''],
+                ['Unit Price (U$)', ''],
+                ['Total Value (U$)', ''],
+                ['Total Value (Rp)', ''],
+                ['BM %', 'col-bm'],
+                ['BM (Rp)', 'col-bm'],
+                ['Prorate LS', 'col-ls'],
+                ['Forwarding', 'col-forwarding'],
+                ['Insurance', 'col-insurance'],
+                ['Other Costs', 'col-others'],
+                ['Total Inventory', ''],
+                ['Cost Book', '']
             ];
             $.each(po_cols, function(i, t) {
                 html += '<th class="text-center ' + t[1] + '">' + t[0] + '</th>';

@@ -88,9 +88,20 @@ class New_ros_model extends BF_Model
         ];
 
         // Filter status berdasarkan tab
-        $status_filter = ($tab === 'draft') ? '0' : '1';
-
-        $where = "a.status = '{$status_filter}'";
+        // - open              : status = 0 (draft, belum di-close)
+        // - payment_process   : status = 1 & status_payment = proses_payment (Import menunggu pembayaran)
+        // - payment_completed : status = 1 & status_payment = close (Lokal / Import lunas)
+        // (nilai lama 'draft'/'close' tetap didukung untuk kompatibilitas)
+        if ($tab === 'open' || $tab === 'draft') {
+            $where = "a.status = '0'";
+        } elseif ($tab === 'payment_process') {
+            $where = "a.status = '1' AND a.status_payment = 'proses_payment'";
+        } elseif ($tab === 'payment_completed') {
+            $where = "a.status = '1' AND a.status_payment = 'close'";
+        } else {
+            // fallback ('close' lama) → semua yang sudah final
+            $where = "a.status = '1'";
+        }
 
         if ($search) {
             $like = $this->db->escape_like_str($search);

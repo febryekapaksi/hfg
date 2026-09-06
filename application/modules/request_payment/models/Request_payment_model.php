@@ -473,11 +473,17 @@ class Request_payment_model extends BF_Model
 
             $checked = '';
 
-            $input_tanggal_pembayaran = '<input type="text" class="form-control form-control-sm tanggal" name="tanggal_pembayaran_' . $item->no_doc . '" placeholder="Pilih tanggal...">';
+            // Untuk tipe Document Import (ros_*), beberapa komponen (BM/LS/Insurance/Other)
+            // berbagi no_doc (= no_po) yang sama. Agar checkbox unik per komponen,
+            // pakai id (PK request_payment) sebagai key. Tipe lain tetap pakai no_doc.
+            $is_ros = (strpos((string) $item->tipe, 'ros_') === 0);
+            $row_key = $is_ros ? $item->id : $item->no_doc;
 
-            $action = '<input type="checkbox" class="pilih_data" name="pilih[]" value="' . $item->no_doc . '" data-kategori="' . $item->tipe . '" ' . $checked . '>';
-            $action .= '<input type="hidden" name="kategori_' . $item->no_doc . '" value="' . $item->tipe . '">';
-            $action .= '<input type="hidden" name="nilai_pengajuan_' . $item->no_doc . '" value="' . $item->jumlah . '">';
+            $input_tanggal_pembayaran = '<input type="text" class="form-control form-control-sm tanggal" name="tanggal_pembayaran_' . $row_key . '" placeholder="Pilih tanggal...">';
+
+            $action = '<input type="checkbox" class="pilih_data" name="pilih[]" value="' . $row_key . '" data-kategori="' . $item->tipe . '" ' . $checked . '>';
+            $action .= '<input type="hidden" name="kategori_' . $row_key . '" value="' . $item->tipe . '">';
+            $action .= '<input type="hidden" name="nilai_pengajuan_' . $row_key . '" value="' . $item->jumlah . '">';
 
             $btn_print = '';
             if ($item->tipe == 'Periodik') {
