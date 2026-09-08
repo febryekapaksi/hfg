@@ -1389,13 +1389,8 @@ if (!empty($results['headerso'])) {
 
 		$(document).on('change', '.input_progress', function() {
 			var no = $(this).data('no');
-			var subtotal = $('#subtotal').val();
-			if (subtotal == '' || subtotal == null) {
-				subtotal = 0;
-			} else {
-				subtotal = subtotal.split(',').join('');
-				subtotal = parseFloat(subtotal);
-			}
+			// Group TOP dihitung dari TOTAL (jumlah item, sebelum PPN & ongkir), bukan Total Order
+			var total = getNum($('#totalinppn').val().split(',').join(''));
 
 			var progress = $(this).val();
 			if (progress == '' || progress == null) {
@@ -1405,21 +1400,20 @@ if (!empty($results['headerso'])) {
 				progress = parseFloat(progress);
 			}
 
-			var nilai_top = (subtotal * progress / 100);
+			// Validasi: progress per baris & total akumulasi tidak boleh > 100%
+			progress = validasiProgressTop(no, progress);
 
+			var nilai_top = (total * progress / 100);
+
+			$(this).val(number_format(progress, 2));
 			$('.nilai_top_' + no).val(number_format(nilai_top, 4));
 		});
 
 		$(document).on('change', '.nilai_top', function() {
 			var no = $(this).data('no');
 
-			var subtotal = $('#subtotal').val();
-			if (subtotal == '' || subtotal == null) {
-				subtotal = 0;
-			} else {
-				subtotal = subtotal.split(',').join('');
-				subtotal = parseFloat(subtotal);
-			}
+			// Group TOP dihitung dari TOTAL (jumlah item, sebelum PPN & ongkir), bukan Total Order
+			var total = getNum($('#totalinppn').val().split(',').join(''));
 
 			var nilai_top = $(this).val();
 			if (nilai_top == '' || nilai_top == null) {
@@ -1429,7 +1423,14 @@ if (!empty($results['headerso'])) {
 				nilai_top = parseFloat(nilai_top);
 			}
 
-			var progress = (nilai_top / subtotal * 100);
+			var progress = (total > 0) ? (nilai_top / total * 100) : 0;
+
+			// Validasi: progress per baris & total akumulasi tidak boleh > 100%
+			var progress_valid = validasiProgressTop(no, progress);
+			if (progress_valid !== progress) {
+				progress = progress_valid;
+				nilai_top = (total * progress / 100);
+			}
 
 			$(this).val(number_format(nilai_top, 4));
 			$('.progress_' + no).val(number_format(progress, 2));
@@ -1900,6 +1901,35 @@ if (!empty($results['headerso'])) {
 		});
 
 
+	}
+
+	// Validasi progress Group TOP tidak boleh > 100% (per baris maupun akumulasi seluruh baris)
+	function validasiProgressTop(no, progress) {
+		if (isNaN(progress) || progress < 0) progress = 0;
+
+		// Batas per baris
+		if (progress > 100) {
+			swal("Peringatan", "Progress tidak boleh lebih dari 100%.", "warning");
+			return 100;
+		}
+
+		// Total progress baris lain (selain baris yang sedang diubah)
+		var totalLain = 0;
+		$('.input_progress').each(function() {
+			if ($(this).data('no') == no) return; // lewati baris ini
+			var p = getNum(($(this).val() || '').split(',').join(''));
+			totalLain += p;
+		});
+
+		var sisa = 100 - totalLain;
+		if (sisa < 0) sisa = 0;
+
+		if ((totalLain + progress) > 100) {
+			swal("Peringatan", "Total progress semua Group TOP tidak boleh lebih dari 100%. Sisa yang tersedia: " + number_format(sisa, 2) + "%.", "warning");
+			return sisa;
+		}
+
+		return progress;
 	}
 
 	function HitAmmount(id) {
