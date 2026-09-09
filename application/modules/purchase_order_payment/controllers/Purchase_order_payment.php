@@ -194,14 +194,11 @@ class Purchase_order_payment extends Admin_Controller
 			'kode_supplier' => $data_po['id_suplier']
 		])->row_array();
 
-		// DPP diambil langsung dari tr_top_po.nilai
+		// DPP = value_dp (tr_top_po.nilai) × 11/12
 		$dpp = (float)($data_po['nilai'] ?? 0) * (11 / 12);
 
-		// Hitung Nilai PPN
-		$ppn_persen = (float)($data_po['total_ppn_persen'] ?? 0);
-		$nilai_ppn  = $ppn_persen > 0
-			? $dpp * $ppn_persen / 100
-			: (float)($data_po['total_ppn'] ?? 0);
+		// Nilai PPN = DPP × 12% (konsisten dengan tab local)
+		$nilai_ppn = $dpp * 0.12;
 
 		// Jumlah PO murni dari database (hargatotal)
 		$jumlah_po = (float)($data_po['hargatotal'] ?? 0);
@@ -367,9 +364,12 @@ class Purchase_order_payment extends Admin_Controller
 			return (float)str_replace(',', '', $val ?? '0');
 		};
 
-		// Hitung jumlah_rupiah = (value_dp + nilai_ppn) × kurs
+		// Recompute PPN server-side (anti-manipulasi), konsisten dengan tab local:
+		// DPP = value_dp × 11/12 ; nilai_ppn = DPP × 12%
 		$value_dp      = $clean($this->input->post('value_dp'));
-		$nilai_ppn_dp  = $clean($this->input->post('nilai_ppn'));
+		$dpp_dp        = $value_dp * 11 / 12;
+		$nilai_ppn_dp  = $dpp_dp * 0.12;
+		// jumlah_rupiah = (value_dp + nilai_ppn) × kurs
 		$jumlah_rupiah = ($value_dp + $nilai_ppn_dp) * $kurs;
 
 		// Value DP dalam IDR (value_dp × kurs, tanpa PPN)
