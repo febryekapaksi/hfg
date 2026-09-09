@@ -370,13 +370,23 @@ $ENABLE_DELETE  = has_permission('Purchase_Request.Delete');
 									<input readonly type="text" class="form-control auto_num text-end" id="totalexppn" value="<?= number_format($results['header_po']->total_exclude_ppn) ?>" required name="totalexppn">
 								</td>
 							</tr>
-							<tr <?= (isset($results['header_po']->show_tax) ? 'hidden' : '') ?>>
+							<?php
+								// total_dpp tidak disimpan di tr_purchase_order, jadi turunkan dari total_ppn.
+								// PPn = DPP * 12%  =>  DPP = PPn / 0.12
+								$dpp_val = 0;
+								if (!empty($results['header_po']->total_dpp)) {
+									$dpp_val = $results['header_po']->total_dpp;
+								} elseif (!empty($results['header_po']->total_ppn)) {
+									$dpp_val = $results['header_po']->total_ppn / 0.12;
+								}
+							?>
+							<tr <?= ((isset($results['header_po']->show_tax) && $results['header_po']->show_tax == 'Y') ? '' : 'hidden') ?>>
 								<td class="text-end" colspan="9"><b>DPP</b></td>
 								<td colspan="2">
-									<input readonly type="text" class="form-control auto_num text-end" id="dpp" value="<?= number_format($results['header_po']->total_dpp) ?>" required name="dpp">
+									<input readonly type="text" class="form-control auto_num text-end" id="dpp" value="<?= number_format($dpp_val, 2, '.', ',') ?>" required name="dpp">
 								</td>
 							</tr>
-							<tr <?= (isset($results['header_po']->show_tax) ? 'hidden' : '') ?>>
+							<tr <?= ((isset($results['header_po']->show_tax) && $results['header_po']->show_tax == 'Y') ? '' : 'hidden') ?>>
 								<td class="text-end" colspan="9"><b>PPn</b></td>
 								<td colspan="2">
 									<input readonly type="text" class="form-control auto_num text-end" id="ppn" value="<?= number_format($results['header_po']->total_ppn) ?>" required name="ppn">

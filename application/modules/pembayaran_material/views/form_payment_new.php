@@ -228,7 +228,7 @@ foreach ($results['result_payment'] as $item) {
 						<th class="text-center" colspan="2" <?= $hide_ppn_pph_style ?>>PPH</th>
 						<th class="text-center" <?= $hide_ppn_pph_style ?>>PPN</th>
 						<th class="text-center">Lampiran</th>
-						<th class="text-center">DPP</th>
+						<th class="text-center">Total</th>
 					</tr>
 				</thead>
 				<tbody>
